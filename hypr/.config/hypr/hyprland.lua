@@ -231,7 +231,7 @@ hl.config({
 
         -- Faster key repeat than the defaults (25/s after 600ms)
         repeat_rate  = 40,
-        repeat_delay = 250,
+        repeat_delay = 100,
 
         follow_mouse = 1,
 
