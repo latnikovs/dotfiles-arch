@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Usage: wallpaper init   ensure the current-wallpaper link exists (run before hyprpaper)
+#        wallpaper next   switch to the next wallpaper in ~/.config/hypr/wallpapers
+set -euo pipefail
+
+dir=$HOME/.config/hypr/wallpapers
+current=${XDG_STATE_HOME:-$HOME/.local/state}/hypr/wallpaper
+
+mapfile -t walls < <(find -L "$dir" -maxdepth 1 -type f | sort)
+(( ${#walls[@]} )) || { echo "No wallpapers in $dir" >&2; exit 1; }
+mkdir -p "$(dirname "$current")"
+
+case ${1:-} in
+    init)
+        [[ -e $current ]] || ln -sfn "${walls[0]}" "$current"
+        ;;
+    next)
+        now=$(readlink "$current" 2>/dev/null || true)
+        next=${walls[0]}
+        for i in "${!walls[@]}"; do
+            if [[ ${walls[$i]} == "$now" ]]; then
+                next=${walls[$(( (i + 1) % ${#walls[@]} ))]}
+                break
+            fi
+        done
+        ln -sfn "$next" "$current"
+        hyprctl hyprpaper wallpaper ",$next" >/dev/null
+        ;;
+    *)
+        echo "Usage: wallpaper init|next" >&2
+        exit 1
+        ;;
+esac
