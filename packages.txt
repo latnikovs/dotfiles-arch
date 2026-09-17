@@ -8,3 +8,8 @@ hyprpaper
 chromium
 less
 git-delta
+grim
+slurp
+wl-clipboard
+hyprpicker
+jq

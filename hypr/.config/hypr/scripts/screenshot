@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Usage: screenshot [region|output]
+#   region  drag a region or click a window (default)
+#   output  capture the focused monitor
+# Saves to ~/Pictures/Screenshots, links it as latest.png and copies it to the clipboard.
+set -euo pipefail
+
+dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
+file=$dir/screenshot-$(date +%Y%m%d-%H%M%S).png
+mkdir -p "$dir"
+
+case ${1:-region} in
+    region)
+        # Freeze the screen so menus and hover states survive the selection.
+        hyprpicker -r -z & freeze=$!
+        trap 'kill $freeze 2>/dev/null || true' EXIT
+        sleep 0.1
+
+        # Offer the visible windows as click targets; dragging still selects a region.
+        ws=$(hyprctl -j monitors | jq -c '[.[].activeWorkspace.id]')
+        geom=$(hyprctl -j clients \
+            | jq -r --argjson ws "$ws" '.[] | select(.workspace.id as $w | $ws | index($w))
+                | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' \
+            | slurp) || exit 0 # Escape cancels
+        grim -g "$geom" "$file"
+        ;;
+    output)
+        grim -o "$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')" "$file"
+        ;;
+    *)
+        echo "Unknown mode: $1" >&2
+        exit 1
+        ;;
+esac
+
+ln -sfn "$file" "$dir/latest.png"
+wl-copy --type image/png < "$file"
+hyprctl notify 1 2000 0 "Screenshot saved: ${file/#$HOME/\~}" >/dev/null || true

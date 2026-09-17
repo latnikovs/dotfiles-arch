@@ -272,6 +272,14 @@ hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
 hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
+
+-- Screenshots; SUPER + CTRL variants for keyboards without a Print key (e.g. Mac)
+local screenshot = "~/.config/hypr/scripts/screenshot"
+hl.bind("Print",                         hl.dsp.exec_cmd(screenshot .. " region"))
+hl.bind("SHIFT + Print",                 hl.dsp.exec_cmd(screenshot .. " output"))
+hl.bind(mainMod .. " + CTRL + S",         hl.dsp.exec_cmd(screenshot .. " region"))
+hl.bind(mainMod .. " + CTRL + SHIFT + S", hl.dsp.exec_cmd(screenshot .. " output"))
+
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
