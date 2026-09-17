@@ -6,3 +6,5 @@ waybar
 ttf-jetbrains-mono-nerd
 hyprpaper
 chromium
+less
+git-delta
