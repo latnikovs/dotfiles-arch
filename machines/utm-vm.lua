@@ -8,10 +8,12 @@ for _, key in ipairs({ "SUPER + Q", "SUPER + RETURN" }) do
     hl.bind(key, kitty)
 end
 
--- UTM's virtual display defaults to 1280x800; 2560x1440 isn't advertised, so Hyprland generates a custom mode.
+-- Dell P2721Q (4K) with macOS at "Default" and UTM in Retina mode, so each VM pixel is one
+-- physical pixel. 1.5 gives a 2560x1440 workspace. 4K isn't advertised by UTM, so Hyprland
+-- generates a custom mode.
 hl.monitor({
     output   = "Virtual-1",
-    mode     = "2560x1440@60",
+    mode     = "3840x2160@60",
     position = "auto",
-    scale    = 1,
+    scale    = 1.5,
 })
