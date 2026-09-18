@@ -19,6 +19,8 @@ PanelWindow {
     readonly property color warning: "#ebcb8b"
     readonly property color urgent: "#bf616a"
 
+    required property Notifications notifications
+
     anchors {
         top: true
         left: true
@@ -288,6 +290,26 @@ PanelWindow {
                         implicitSize: 12
                     }
                 }
+            }
+        }
+
+        // Shown while notifications are silenced; click to turn them back on
+        MouseArea {
+            visible: bar.notifications.dnd
+            implicitWidth: dndIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, "Notifications silenced") : bar.hideTooltip(this)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.notifications.dnd = false;
+            }
+
+            BarText {
+                id: dndIcon
+                anchors.centerIn: parent
+                text: "󰂛"
             }
         }
 

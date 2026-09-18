@@ -10,8 +10,11 @@ ShellRoot {
         Bar {
             required property ShellScreen modelData
             screen: modelData
+            notifications: notificationService
         }
     }
 
-    Notifications {}
+    Notifications {
+        id: notificationService
+    }
 }
