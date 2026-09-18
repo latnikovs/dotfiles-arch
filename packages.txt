@@ -2,7 +2,6 @@ hyprland
 kitty
 stow
 wofi
-waybar
 ttf-jetbrains-mono-nerd
 hyprpaper
 chromium

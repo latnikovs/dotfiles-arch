@@ -50,7 +50,6 @@ local menu        = "pkill -x wofi || wofi"
 -- end)
 
 hl.on("hyprland.start", function ()
-    hl.exec_cmd("waybar")
     hl.exec_cmd("quickshell")
     hl.exec_cmd("~/.config/hypr/scripts/wallpaper init; hyprpaper")
 end)
