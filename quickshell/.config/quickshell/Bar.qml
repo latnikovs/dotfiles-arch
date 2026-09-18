@@ -293,23 +293,22 @@ PanelWindow {
             }
         }
 
-        // Shown while notifications are silenced; click to turn them back on
+        // Do-not-disturb: click to toggle
         MouseArea {
-            visible: bar.notifications.dnd
             implicitWidth: dndIcon.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, "Notifications silenced") : bar.hideTooltip(this)
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.notifications.dnd ? "Notifications silenced" : "Notifications on") : bar.hideTooltip(this)
             onClicked: {
-                bar.hideTooltip(this);
-                bar.notifications.dnd = false;
+                bar.notifications.dnd = !bar.notifications.dnd;
+                bar.showTooltip(this, bar.notifications.dnd ? "Notifications silenced" : "Notifications on");
             }
 
             BarText {
                 id: dndIcon
                 anchors.centerIn: parent
-                text: "󰂛"
+                text: bar.notifications.dnd ? "󰂛" : "󰂚"
             }
         }
 
