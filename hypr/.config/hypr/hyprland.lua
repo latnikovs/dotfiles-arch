@@ -51,6 +51,7 @@ local menu        = "pkill -x wofi || wofi"
 
 hl.on("hyprland.start", function ()
     hl.exec_cmd("waybar")
+    hl.exec_cmd("quickshell")
     hl.exec_cmd("~/.config/hypr/scripts/wallpaper init; hyprpaper")
 end)
 
@@ -283,6 +284,13 @@ hl.bind("Print",                         hl.dsp.exec_cmd(screenshot .. " region"
 hl.bind("SHIFT + Print",                 hl.dsp.exec_cmd(screenshot .. " output"))
 hl.bind(mainMod .. " + CTRL + S",         hl.dsp.exec_cmd(screenshot .. " region"))
 hl.bind(mainMod .. " + CTRL + SHIFT + S", hl.dsp.exec_cmd(screenshot .. " output"))
+
+-- Notifications (quickshell), same keys as Omarchy
+local notifications = "quickshell ipc call notifications "
+hl.bind(mainMod .. " + comma",         hl.dsp.exec_cmd(notifications .. "dismissOne"))
+hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.exec_cmd(notifications .. "dismissAll"))
+hl.bind(mainMod .. " + ALT + comma",   hl.dsp.exec_cmd(notifications .. "invokeLast"))
+hl.bind(mainMod .. " + CTRL + comma",  hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
 
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only

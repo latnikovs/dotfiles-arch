@@ -35,4 +35,4 @@ esac
 
 ln -sfn "$file" "$dir/latest.png"
 wl-copy --type image/png < "$file"
-hyprctl notify 1 2000 0 "Screenshot saved: ${file/#$HOME/\~}" >/dev/null || true
+notify-send -a screenshot -u low -i "$file" "Screenshot saved" "${file/#$HOME/\~}" || true

@@ -13,3 +13,5 @@ slurp
 wl-clipboard
 hyprpicker
 jq
+quickshell
+libnotify

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Usage: notifications-dnd   toggle do-not-disturb in the quickshell notification daemon
+set -euo pipefail
+
+# app name "notifications" gets through while silenced, so both states are confirmed
+if [[ $(quickshell ipc call notifications toggleDnd) == on ]]; then
+    notify-send -a notifications -u low "Notifications silenced" "Critical ones still get through"
+else
+    notify-send -a notifications -u low "Notifications on"
+fi
