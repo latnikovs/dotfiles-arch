@@ -14,3 +14,4 @@ hyprpicker
 jq
 quickshell
 libnotify
+upower
