@@ -1,4 +1,5 @@
-// One notification toast. Presentational only: shell.qml drives the countdown and actions.
+// One notification card, used for toasts and history entries. Presentational only:
+// Notifications.qml drives the countdown and actions.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -7,7 +8,13 @@ import Quickshell.Services.Notifications
 Rectangle {
     id: card
 
-    required property Notification notification
+    property string appName: ""
+    property string summary: ""
+    property string body: ""
+    property string image: ""
+    property string appIcon: ""
+    property int urgency: NotificationUrgency.Normal
+    property string time: "" // shown next to the app name in history
     property real progress: 0 // 1 → 0 as the toast times out; 0 hides the bar
     readonly property alias hovered: hover.hovered
 
@@ -22,8 +29,8 @@ Rectangle {
     readonly property color urgent: "#bf616a"
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
-    readonly property bool critical: notification.urgency === NotificationUrgency.Critical
-    readonly property string iconSource: source(notification.image) || source(notification.appIcon)
+    readonly property bool critical: urgency === NotificationUrgency.Critical
+    readonly property string iconSource: source(image) || source(appIcon)
 
     // Accepts a file path, a URL, or an icon theme name ("" when the theme lacks it)
     function source(s) {
@@ -81,21 +88,40 @@ Rectangle {
             Layout.rightMargin: 14 // keep clear of the close button
             spacing: 2
 
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
-                visible: text !== "" && text !== card.notification.summary
-                text: card.notification.appName
-                textFormat: Text.PlainText
-                color: card.dim
-                font.family: card.fontFamily
-                font.pixelSize: 11
-                elide: Text.ElideRight
+                visible: appNameText.visible || card.time !== ""
+
+                Text {
+                    id: appNameText
+                    Layout.fillWidth: true
+                    visible: text !== "" && text !== card.summary
+                    text: card.appName
+                    textFormat: Text.PlainText
+                    color: card.dim
+                    font.family: card.fontFamily
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: !appNameText.visible // keeps the time right-aligned
+                }
+
+                Text {
+                    visible: text !== ""
+                    text: card.time
+                    color: card.dim
+                    font.family: card.fontFamily
+                    font.pixelSize: 11
+                }
             }
 
             Text {
                 Layout.fillWidth: true
                 visible: text !== ""
-                text: card.notification.summary
+                text: card.summary
                 textFormat: Text.PlainText
                 color: card.fg
                 font.family: card.fontFamily
@@ -109,7 +135,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 visible: text !== ""
-                text: card.notification.body
+                text: card.body
                 textFormat: Text.StyledText
                 color: card.bodyColor
                 font.family: card.fontFamily

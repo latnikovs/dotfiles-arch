@@ -241,6 +241,122 @@ PanelWindow {
         onTriggered: cpuProc.running = true
     }
 
+    // ---- Notification history, dropping down from the bell
+
+    function historyTime(date) {
+        const today = new Date().toDateString() === date.toDateString();
+        return Qt.formatDateTime(date, today ? "HH:mm" : "dd MMM HH:mm");
+    }
+
+    PopupWindow {
+        id: historyPanel
+        visible: bar.notifications.historyOpen && Hyprland.focusedMonitor?.name === bar.screen.name
+        color: "transparent"
+        implicitWidth: 400
+        implicitHeight: Math.min(historyColumn.implicitHeight + 26, bar.screen.height * 0.7)
+
+        // Right-aligned with the toasts (Hyprland's gaps_out, 6)
+        anchor {
+            window: bar
+            rect.x: bar.width - historyPanel.implicitWidth - 6
+            rect.y: bar.height
+            rect.width: 1
+            rect.height: 1
+            edges: Edges.Top | Edges.Left
+            gravity: Edges.Bottom | Edges.Right
+        }
+
+        Rectangle {
+            anchors {
+                fill: parent
+                topMargin: 6
+            }
+            color: bar.bg
+            border.color: bar.muted
+            border.width: 1
+            radius: 10
+            focus: true
+            Keys.onEscapePressed: bar.notifications.historyOpen = false
+
+            ColumnLayout {
+                id: historyColumn
+                anchors {
+                    fill: parent
+                    margins: 10
+                }
+                spacing: 8
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    BarText {
+                        Layout.fillWidth: true
+                        text: "Notifications"
+                        font.bold: true
+                    }
+
+                    BarText {
+                        visible: bar.notifications.history.length > 0
+                        text: "Clear"
+                        color: clearArea.containsMouse ? bar.fg : bar.muted
+
+                        MouseArea {
+                            id: clearArea
+                            anchors.fill: parent
+                            anchors.margins: -4
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: bar.notifications.history = []
+                        }
+                    }
+                }
+
+                BarText {
+                    Layout.alignment: Qt.AlignHCenter
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 8
+                    visible: bar.notifications.history.length === 0
+                    text: "No notifications"
+                    color: bar.muted
+                }
+
+                ListView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: contentHeight
+                    visible: count > 0
+                    clip: true
+                    spacing: 6
+                    boundsBehavior: Flickable.StopAtBounds
+                    model: bar.notifications.history
+
+                    // Clicking an entry removes it: the app stopped listening for
+                    // actions when the notification closed.
+                    delegate: NotificationCard {
+                        required property var modelData
+                        width: ListView.view.width
+                        appName: modelData.appName
+                        summary: modelData.summary
+                        body: modelData.body
+                        image: modelData.image
+                        appIcon: modelData.appIcon
+                        urgency: modelData.urgency
+                        time: bar.historyTime(modelData.time)
+                        onActivated: bar.notifications.forget(modelData.key)
+                        onCloseRequested: bar.notifications.forget(modelData.key)
+                    }
+                }
+            }
+        }
+    }
+
+    // Clicking anywhere else closes the history (the bar is included so the bell can toggle it)
+    HyprlandFocusGrab {
+        windows: [historyPanel, bar]
+        active: historyPanel.visible
+        onCleared: bar.notifications.historyOpen = false
+    }
+
     // ---- Right side
 
     readonly property var battery: UPower.displayDevice
@@ -293,14 +409,21 @@ PanelWindow {
             }
         }
 
-        // Do-not-disturb: click to toggle
+        // Bell: left click toggles do-not-disturb, right click opens the history
         MouseArea {
+            id: bell
             implicitWidth: dndIcon.implicitWidth
             Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.notifications.dnd ? "Notifications silenced" : "Notifications on") : bar.hideTooltip(this)
-            onClicked: {
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    bar.hideTooltip(this);
+                    bar.notifications.historyOpen = !bar.notifications.historyOpen;
+                    return;
+                }
                 bar.notifications.dnd = !bar.notifications.dnd;
                 bar.showTooltip(this, bar.notifications.dnd ? "Notifications silenced" : "Notifications on");
             }

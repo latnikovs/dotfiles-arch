@@ -290,6 +290,7 @@ hl.bind(mainMod .. " + comma",         hl.dsp.exec_cmd(notifications .. "dismiss
 hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.exec_cmd(notifications .. "dismissAll"))
 hl.bind(mainMod .. " + ALT + comma",   hl.dsp.exec_cmd(notifications .. "invokeLast"))
 hl.bind(mainMod .. " + CTRL + comma",  hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
+hl.bind(mainMod .. " + SHIFT + ALT + comma", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
 
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only

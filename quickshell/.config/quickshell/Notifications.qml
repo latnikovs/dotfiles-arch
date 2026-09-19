@@ -22,6 +22,38 @@ Scope {
 
     property bool dnd: false
 
+    // History: the last 30 notifications that left the screen (expired or dismissed) or
+    // arrived while silenced, newest first. Kept in memory, so it starts empty after a restart.
+    readonly property int historyLimit: 30
+    property var history: []
+    property int historySeq: 0
+    property bool historyOpen: false
+
+    // Copied while the notification is live: Quickshell clears its fields by the time `closed` fires
+    function snapshot(n) {
+        return {
+            keep: !n.transient && n.appName !== "notifications", // sender asked not to keep it, or our own status toast
+            appName: n.appName,
+            summary: n.summary,
+            body: n.body,
+            // Image data sent with the notification is served from memory and dies with it;
+            // image://icon/ (files and theme icons) keeps working
+            image: n.image.startsWith("image://") && !n.image.startsWith("image://icon/") ? "" : n.image,
+            appIcon: n.appIcon,
+            urgency: n.urgency
+        };
+    }
+
+    function remember(entry) {
+        if (!entry.keep)
+            return;
+        history = [Object.assign({ key: ++historySeq, time: new Date() }, entry), ...history].slice(0, historyLimit);
+    }
+
+    function forget(key) {
+        history = history.filter(e => e.key !== key);
+    }
+
     // Countdown state lives here, keyed by notification id, because the
     // Repeater recreates cards whenever the list changes.
     property var remaining: ({})
@@ -72,13 +104,25 @@ Scope {
 
         onNotification: n => {
             // Silenced notifications are dropped, except critical ones and our own status toasts
-            if (root.dnd && n.urgency !== NotificationUrgency.Critical && n.appName !== "notifications")
+            let entry = root.snapshot(n);
+            if (root.dnd && n.urgency !== NotificationUrgency.Critical && n.appName !== "notifications") {
+                root.remember(entry);
                 return;
+            }
             n.tracked = true;
+            // Withdrawn by the app itself (CloseRequested) means it's no longer relevant
+            n.closed.connect(reason => {
+                if (reason !== NotificationCloseReason.CloseRequested)
+                    root.remember(entry);
+            });
             root.restart(n);
             // A sender updating the notification in place (replaces_id) gets a fresh countdown
-            n.summaryChanged.connect(() => root.restart(n));
-            n.bodyChanged.connect(() => root.restart(n));
+            const updated = () => {
+                entry = root.snapshot(n);
+                root.restart(n);
+            };
+            n.summaryChanged.connect(updated);
+            n.bodyChanged.connect(updated);
         }
     }
 
@@ -131,6 +175,20 @@ Scope {
             root.dnd = !root.dnd;
             return root.dnd ? "on" : "off";
         }
+
+        function toggleHistory(): string {
+            root.historyOpen = !root.historyOpen;
+            return root.historyOpen ? "open" : "closed";
+        }
+
+        function listHistory(): string {
+            return JSON.stringify(root.history);
+        }
+
+        function clearHistory(): string {
+            root.history = [];
+            return "ok";
+        }
     }
 
     // Full-screen and click-through except over the cards: resizing the surface
@@ -167,7 +225,12 @@ Scope {
 
                 delegate: NotificationCard {
                     required property Notification modelData
-                    notification: modelData
+                    appName: modelData.appName
+                    summary: modelData.summary
+                    body: modelData.body
+                    image: modelData.image
+                    appIcon: modelData.appIcon
+                    urgency: modelData.urgency
                     progress: {
                         root.tick;
                         return root.progress(modelData);
