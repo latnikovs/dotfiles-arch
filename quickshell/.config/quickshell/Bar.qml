@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, clock in the middle, tray/network/CPU/battery on the right.
+// Top bar: workspaces on the left, clock and weather in the middle, tray/network/CPU/RAM/battery on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -172,6 +172,7 @@ PanelWindow {
     }
 
     MouseArea {
+        id: clockArea
         anchors.centerIn: parent
         width: clockText.implicitWidth
         height: parent.height
@@ -185,6 +186,314 @@ PanelWindow {
                 ? `${Qt.formatDate(clock.date, "dd MMMM")} W${String(bar.isoWeek(clock.date)).padStart(2, "0")} ${clock.date.getFullYear()}`
                 : Qt.formatDateTime(clock.date, "dddd HH:mm")
         }
+    }
+
+    // ---- Weather, right of the clock: current conditions from wttr.in (location by IP),
+    //      then the next three days from open-meteo (wttr.in only has two). Polled every 15min.
+
+    property var weather: null
+    property var forecast: []
+    property bool weatherOpen: false
+
+    // wttr.in weather codes to Nerd Font glyphs, same mapping as Omarchy
+    function weatherIcon(code, night) {
+        switch (code) {
+        case 113: return night ? "" : "";
+        case 116: return night ? "" : "";
+        case 143: case 248: case 260: return night ? "" : "";
+        case 176: case 263: case 353: return night ? "" : "";
+        case 179: case 227: case 230: case 323: case 326: case 368: return night ? "" : "";
+        case 182: case 185: case 281: case 284: case 311: case 314:
+        case 317: case 320: case 350: case 362: case 365: case 374: case 377: return "";
+        case 200: case 386: case 389: case 392: case 395: return "";
+        case 266: case 293: case 296: case 299: case 302: case 305: case 308: case 356: case 359: return "";
+        case 329: case 332: case 335: case 338: case 371: return "";
+        default: return ""; // cloudy (119, 122)
+        }
+    }
+
+    // Open-meteo (WMO) codes, via the closest wttr.in code
+    function openMeteoIcon(code) {
+        if (code === 0) return weatherIcon(113, false);
+        if (code === 1 || code === 2) return weatherIcon(116, false);
+        if (code === 45 || code === 48) return weatherIcon(143, false);
+        if ([51, 53, 55, 56, 57, 61].includes(code)) return weatherIcon(266, false);
+        if ([63, 65, 66, 67, 80, 81, 82].includes(code)) return weatherIcon(308, false);
+        if ([71, 73, 75, 77, 85, 86].includes(code)) return weatherIcon(338, false);
+        if ([95, 96, 99].includes(code)) return weatherIcon(389, false);
+        return weatherIcon(119, false);
+    }
+
+    // "07:23 AM" -> minutes since midnight
+    function wttrMinutes(time) {
+        const m = /(\d+):(\d+) ([AP]M)/.exec(time ?? "");
+        return m ? (Number(m[1]) % 12 + (m[3] === "PM" ? 12 : 0)) * 60 + Number(m[2]) : -1;
+    }
+
+    Process {
+        id: weatherProc
+        command: ["curl", "-fsS", "--max-time", "10", "https://wttr.in/?format=j1"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const d = JSON.parse(text);
+                    const c = d.current_condition[0];
+                    const today = d.weather[0];
+                    const now = clock.date.getHours() * 60 + clock.date.getMinutes();
+                    const sunrise = bar.wttrMinutes(today.astronomy[0].sunrise);
+                    const sunset = bar.wttrMinutes(today.astronomy[0].sunset);
+                    const area = d.nearest_area[0];
+                    bar.weather = {
+                        icon: bar.weatherIcon(Number(c.weatherCode), sunrise >= 0 && sunset >= 0 && (now < sunrise || now >= sunset)),
+                        temp: c.temp_C,
+                        description: c.weatherDesc[0].value,
+                        location: area.areaName[0].value,
+                        feels: `${c.FeelsLikeC}°C`,
+                        wind: `${c.windspeedKmph} km/h`,
+                        humidity: `${c.humidity}%`
+                    };
+                    weatherTimer.interval = 15 * 60 * 1000;
+                    forecastProc.command = ["curl", "-fsS", "--max-time", "5",
+                        `https://api.open-meteo.com/v1/forecast?latitude=${area.latitude}&longitude=${area.longitude}`
+                        + "&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto"];
+                    forecastProc.running = true;
+                } catch (e) {
+                    // Keep the last report and retry soon: wttr.in is often slow or flaky
+                    weatherTimer.interval = 60 * 1000;
+                }
+            }
+        }
+    }
+
+    Process {
+        id: forecastProc
+        stdout: StdioCollector {
+            onStreamFinished: {
+                try {
+                    const daily = JSON.parse(text).daily;
+                    // Index 0 is today
+                    bar.forecast = daily.time.slice(1, 4).map((date, i) => ({
+                        name: Qt.formatDate(new Date(`${date}T12:00:00`), "dddd"),
+                        icon: bar.openMeteoIcon(daily.weather_code[i + 1]),
+                        max: `${Math.round(daily.temperature_2m_max[i + 1])}°`,
+                        min: `${Math.round(daily.temperature_2m_min[i + 1])}°`
+                    }));
+                } catch (e) {
+                    // Keep the last forecast
+                }
+            }
+        }
+    }
+
+    Timer {
+        id: weatherTimer
+        interval: 15 * 60 * 1000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: weatherProc.running = true
+    }
+
+    // Left click opens the forecast, middle click refreshes
+    MouseArea {
+        id: weatherButton
+        anchors {
+            left: clockArea.right
+            leftMargin: 12
+            verticalCenter: parent.verticalCenter
+        }
+        width: weatherText.implicitWidth
+        height: parent.height
+        visible: bar.weather !== null
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+        cursorShape: Qt.PointingHandCursor
+        onClicked: mouse => {
+            if (mouse.button === Qt.MiddleButton) {
+                weatherProc.running = true;
+                return;
+            }
+            bar.weatherOpen = !bar.weatherOpen;
+            if (bar.weatherOpen)
+                bar.notifications.historyOpen = false;
+        }
+
+        BarText {
+            id: weatherText
+            anchors.centerIn: parent
+            text: bar.weather ? `${bar.weather.icon} ${bar.weather.temp}°C` : ""
+        }
+    }
+
+    component Caption: BarText {
+        color: Qt.darker(bar.fg, 1.4)
+        font.pixelSize: 10
+        font.letterSpacing: 1
+    }
+
+    PopupWindow {
+        id: weatherPanel
+        visible: bar.weatherOpen && bar.weather !== null
+        color: "transparent"
+        implicitWidth: Math.max(480, weatherColumn.implicitWidth + 40)
+        implicitHeight: weatherColumn.implicitHeight + 46
+
+        // Centered on the bar, like Omarchy
+        anchor {
+            window: bar
+            rect.x: Math.round((bar.width - weatherPanel.implicitWidth) / 2)
+            rect.y: bar.height
+            rect.width: 1
+            rect.height: 1
+            edges: Edges.Top | Edges.Left
+            gravity: Edges.Bottom | Edges.Right
+        }
+
+        Rectangle {
+            anchors {
+                fill: parent
+                topMargin: 6
+            }
+            color: bar.bg
+            border.color: bar.muted
+            border.width: 1
+            radius: 10
+            focus: true
+            Keys.onEscapePressed: bar.weatherOpen = false
+
+            ColumnLayout {
+                id: weatherColumn
+                anchors {
+                    fill: parent
+                    topMargin: 20
+                    bottomMargin: 20
+                    leftMargin: 20
+                    rightMargin: 20
+                }
+                spacing: 16
+
+                // Hero: big icon and temperature, then location and stats on the right
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 16
+
+                    BarText {
+                        Layout.topMargin: 6
+                        text: bar.weather?.icon ?? ""
+                        font.pixelSize: 56
+                    }
+
+                    RowLayout {
+                        spacing: 2
+
+                        BarText {
+                            text: bar.weather?.temp ?? ""
+                            font.pixelSize: 52
+                            font.bold: true
+                        }
+
+                        BarText {
+                            Layout.alignment: Qt.AlignTop
+                            Layout.topMargin: 8
+                            text: "°C"
+                            font.pixelSize: 22
+                        }
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+
+                    ColumnLayout {
+                        spacing: 12
+
+                        Caption {
+                            text: ` ${bar.weather?.location ?? ""} · ${bar.weather?.description ?? ""}`.toUpperCase()
+                            font.pixelSize: 12
+                        }
+
+                        RowLayout {
+                            spacing: 32
+
+                            Repeater {
+                                model: [["FEELS", bar.weather?.feels], ["WIND", bar.weather?.wind], ["HUMID", bar.weather?.humidity]]
+
+                                delegate: ColumnLayout {
+                                    required property var modelData
+                                    spacing: 4
+
+                                    Caption {
+                                        text: modelData[0]
+                                    }
+
+                                    BarText {
+                                        text: modelData[1] ?? ""
+                                        font.pixelSize: 16
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    implicitHeight: 1
+                    visible: bar.forecast.length > 0
+                    color: bar.fg
+                    opacity: 0.12
+                }
+
+                RowLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    visible: bar.forecast.length > 0
+                    spacing: 44
+
+                    Repeater {
+                        model: bar.forecast
+
+                        delegate: RowLayout {
+                            required property var modelData
+                            spacing: 10
+
+                            BarText {
+                                text: modelData.icon
+                                font.pixelSize: 26
+                            }
+
+                            ColumnLayout {
+                                spacing: 2
+
+                                Caption {
+                                    text: modelData.name.toUpperCase()
+                                }
+
+                                RowLayout {
+                                    spacing: 6
+
+                                    BarText {
+                                        text: modelData.max
+                                        font.pixelSize: 13
+                                    }
+
+                                    BarText {
+                                        text: modelData.min
+                                        color: Qt.darker(bar.fg, 1.5)
+                                        font.pixelSize: 13
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Clicking anywhere else closes the forecast (the bar is included so the widget can toggle it)
+    HyprlandFocusGrab {
+        windows: [weatherPanel, bar]
+        active: weatherPanel.visible
+        onCleared: bar.weatherOpen = false
     }
 
     // ---- Network, polled every 5s
@@ -233,12 +542,36 @@ PanelWindow {
         }
     }
 
+    // ---- Memory usage from /proc/meminfo, polled with the CPU
+
+    property real memUsage: 0
+    property string memDetail: ""
+
+    Process {
+        id: memProc
+        command: ["cat", "/proc/meminfo"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const kb = key => Number(new RegExp(`^${key}:\\s+(\\d+)`, "m").exec(text)?.[1] ?? 0);
+                const total = kb("MemTotal");
+                const used = total - kb("MemAvailable");
+                if (total > 0) {
+                    bar.memUsage = used / total;
+                    bar.memDetail = `RAM ${(used / 1048576).toFixed(1)} / ${(total / 1048576).toFixed(1)} GiB`;
+                }
+            }
+        }
+    }
+
     Timer {
         interval: 5000
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: cpuProc.running = true
+        onTriggered: {
+            cpuProc.running = true;
+            memProc.running = true;
+        }
     }
 
     // ---- Notification history, dropping down from the bell
@@ -422,6 +755,7 @@ PanelWindow {
                 if (mouse.button === Qt.RightButton) {
                     bar.hideTooltip(this);
                     bar.notifications.historyOpen = !bar.notifications.historyOpen;
+                    bar.weatherOpen = false;
                     return;
                 }
                 bar.notifications.dnd = !bar.notifications.dnd;
@@ -452,16 +786,22 @@ PanelWindow {
             }
         }
 
+        BarText {
+            text: ` ${Math.round(bar.cpuUsage * 100)}%`
+            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
+        }
+
         MouseArea {
-            implicitWidth: cpuIcon.implicitWidth
+            implicitWidth: memText.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, `CPU ${Math.round(bar.cpuUsage * 100)}%`) : bar.hideTooltip(this)
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.memDetail) : bar.hideTooltip(this)
 
             BarText {
-                id: cpuIcon
+                id: memText
                 anchors.centerIn: parent
-                text: ""
+                text: ` ${Math.round(bar.memUsage * 100)}%`
+                color: bar.memUsage >= 0.9 ? bar.urgent : bar.fg
             }
         }
 
