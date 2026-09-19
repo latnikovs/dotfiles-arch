@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, clock and weather in the middle, tray/CPU/RAM/battery/network/notifications on the right.
+// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/CPU/RAM/battery/network/notifications on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -18,6 +18,7 @@ PanelWindow {
     readonly property color muted: "#4c566a"
     readonly property color warning: "#ebcb8b"
     readonly property color urgent: "#bf616a"
+    readonly property color accent: "#88c0d0"
 
     required property Notifications notifications
 
@@ -37,6 +38,35 @@ PanelWindow {
         font.family: "JetBrainsMono Nerd Font"
         font.pixelSize: 12
         verticalAlignment: Text.AlignVCenter
+    }
+
+    // ---- Keys for the dropdowns. Hyprland may give keyboard focus to the bar rather than the
+    //      open popup, so both hand their keys here.
+
+    // Esc closes; in the calendar Left/Right (h/l) step months, Up/Down (k/j) years, Enter goes back to today
+    function panelKey(event) {
+        const k = event.key;
+        if (k === Qt.Key_Escape) {
+            calendarOpen = false;
+            weatherOpen = false;
+            notifications.historyOpen = false;
+        } else if (!calendarOpen) {
+            return;
+        } else if ([Qt.Key_Left, Qt.Key_H, Qt.Key_Right, Qt.Key_L].includes(k)) {
+            moveCalendar([Qt.Key_Left, Qt.Key_H].includes(k) ? -1 : 1);
+        } else if ([Qt.Key_Up, Qt.Key_K, Qt.Key_Down, Qt.Key_J].includes(k)) {
+            moveCalendar([Qt.Key_Up, Qt.Key_K].includes(k) ? -12 : 12);
+        } else if (k === Qt.Key_Return || k === Qt.Key_Enter) {
+            calendarView = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
+        } else {
+            return;
+        }
+        event.accepted = true;
+    }
+
+    Item {
+        focus: true
+        Keys.onPressed: event => bar.panelKey(event)
     }
 
     // ---- Tooltip, shared by every module
@@ -156,7 +186,7 @@ PanelWindow {
         }
     }
 
-    // ---- Clock: click for the date
+    // ---- Clock: left click for the calendar, right click for the date
 
     property bool showDate: false
 
@@ -176,16 +206,263 @@ PanelWindow {
         anchors.centerIn: parent
         width: clockText.implicitWidth
         height: parent.height
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: bar.showDate = !bar.showDate
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                bar.showDate = !bar.showDate;
+                return;
+            }
+            bar.toggleCalendar();
+        }
 
         BarText {
             id: clockText
             anchors.centerIn: parent
             text: bar.showDate
                 ? `${Qt.formatDate(clock.date, "dd MMMM")} W${String(bar.isoWeek(clock.date)).padStart(2, "0")} ${clock.date.getFullYear()}`
-                : Qt.formatDateTime(clock.date, "dddd HH:mm")
+                : Qt.formatDateTime(clock.date, "HH:mm")
         }
+    }
+
+    // ---- Calendar, dropping down from the clock (after Omarchy's): today, the year's
+    //      progress, and a month grid with ISO week numbers. Weeks start on Monday.
+
+    property bool calendarOpen: false
+    property date calendarView: new Date()
+
+    readonly property bool viewingThisMonth: calendarView.getFullYear() === clock.date.getFullYear() && calendarView.getMonth() === clock.date.getMonth()
+
+    readonly property real yearDone: {
+        const y = clock.date.getFullYear();
+        const day = Math.round((new Date(y, clock.date.getMonth(), clock.date.getDate()) - new Date(y, 0, 1)) / 86400000);
+        return day / (new Date(y, 1, 29).getMonth() === 1 ? 366 : 365);
+    }
+
+    // Grid cells, row by row: each week's ISO number, then its seven days.
+    // Always six rows, so the panel keeps its height from month to month.
+    readonly property var calendarCells: {
+        const y = calendarView.getFullYear();
+        const m = calendarView.getMonth();
+        const offset = (new Date(y, m, 1).getDay() + 6) % 7; // days since Monday
+        const today = clock.date.toDateString();
+        const cells = [];
+        for (let w = 0; w < 6; w++) {
+            cells.push({ week: isoWeek(new Date(y, m, 1 - offset + w * 7)) });
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(y, m, 1 - offset + w * 7 + i);
+                cells.push({ day: d.getDate(), inMonth: d.getMonth() === m, weekend: i >= 5, today: d.toDateString() === today });
+            }
+        }
+        return cells;
+    }
+
+    function toggleCalendar() {
+        calendarOpen = !calendarOpen;
+        if (calendarOpen) {
+            calendarView = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
+            weatherOpen = false;
+            notifications.historyOpen = false;
+        }
+    }
+
+    function moveCalendar(months) {
+        calendarView = new Date(calendarView.getFullYear(), calendarView.getMonth() + months, 1);
+    }
+
+    PopupWindow {
+        id: calendarPanel
+        visible: bar.calendarOpen
+        color: "transparent"
+        implicitWidth: calendarColumn.implicitWidth + 48
+        implicitHeight: calendarColumn.implicitHeight + 46
+
+        anchor {
+            window: bar
+            rect.x: Math.round((bar.width - calendarPanel.implicitWidth) / 2)
+            rect.y: bar.height
+            rect.width: 1
+            rect.height: 1
+            edges: Edges.Top | Edges.Left
+            gravity: Edges.Bottom | Edges.Right
+        }
+
+        Rectangle {
+            anchors {
+                fill: parent
+                topMargin: 6
+            }
+            color: bar.bg
+            border.color: bar.muted
+            border.width: 1
+            radius: 10
+            focus: true
+            Keys.onPressed: event => bar.panelKey(event)
+
+            ColumnLayout {
+                id: calendarColumn
+                anchors {
+                    fill: parent
+                    topMargin: 20
+                    bottomMargin: 20
+                    leftMargin: 24
+                    rightMargin: 24
+                }
+                spacing: 18
+
+                // Hero: today. Clicking it comes back from another month.
+                MouseArea {
+                    Layout.alignment: Qt.AlignHCenter
+                    implicitWidth: heroRow.implicitWidth
+                    implicitHeight: heroRow.implicitHeight
+                    enabled: !bar.viewingThisMonth
+                    hoverEnabled: enabled
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: bar.calendarView = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1)
+
+                    RowLayout {
+                        id: heroRow
+                        spacing: 18
+
+                        BarText {
+                            text: "󰃭"
+                            font.pixelSize: 40
+                            color: parent.parent.containsMouse ? bar.accent : bar.fg
+                        }
+
+                        BarText {
+                            text: Qt.formatDate(clock.date, "MMMM d")
+                            font.pixelSize: 44
+                            font.bold: true
+                            color: parent.parent.containsMouse ? bar.accent : bar.fg
+                        }
+                    }
+                }
+
+                // Year progress: whole days done over days in the year
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+
+                    Caption {
+                        text: clock.date.getFullYear()
+                        font.pixelSize: 11
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        implicitHeight: 6
+                        radius: 3
+                        color: Qt.rgba(bar.fg.r, bar.fg.g, bar.fg.b, 0.12)
+
+                        Rectangle {
+                            width: Math.round(parent.width * bar.yearDone)
+                            height: parent.height
+                            radius: parent.radius
+                            color: bar.accent
+                        }
+                    }
+
+                    BarText {
+                        text: `${Math.round(bar.yearDone * 100)}%`
+                        font.pixelSize: 11
+                    }
+                }
+
+                // Month grid, scroll to change month
+                GridLayout {
+                    Layout.alignment: Qt.AlignHCenter
+                    columns: 8
+                    rowSpacing: 2
+                    columnSpacing: 2
+
+                    WheelHandler {
+                        onWheel: event => {
+                            if (event.angleDelta.y !== 0)
+                                bar.moveCalendar(event.angleDelta.y > 0 ? -1 : 1);
+                        }
+                    }
+
+                    Caption {
+                        Layout.preferredWidth: 36
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "W"
+                        font.bold: true
+                        color: Qt.darker(bar.fg, 1.9)
+                    }
+
+                    Repeater {
+                        model: ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+                        delegate: Caption {
+                            required property string modelData
+                            Layout.preferredWidth: 44
+                            Layout.preferredHeight: 18
+                            horizontalAlignment: Text.AlignHCenter
+                            text: modelData
+                            font.bold: true
+                            color: Qt.darker(bar.fg, 1.5)
+                        }
+                    }
+
+                    Repeater {
+                        model: bar.calendarCells
+
+                        delegate: Rectangle {
+                            required property var modelData
+                            Layout.preferredWidth: modelData.week !== undefined ? 36 : 44
+                            Layout.preferredHeight: 30
+                            radius: 6
+                            color: "transparent"
+                            // Today is outlined, not filled
+                            border.width: modelData.today ? 1 : 0
+                            border.color: bar.accent
+
+                            BarText {
+                                anchors.centerIn: parent
+                                text: modelData.week ?? modelData.day
+                                font.pixelSize: modelData.week !== undefined ? 10 : 13
+                                font.bold: modelData.today ?? false
+                                color: modelData.week !== undefined ? Qt.darker(bar.fg, 1.9)
+                                    : !modelData.inMonth ? Qt.darker(bar.fg, 2.2)
+                                    : modelData.weekend ? Qt.darker(bar.fg, 1.45) : bar.fg
+                            }
+                        }
+                    }
+                }
+
+                // Month stepping
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Chevron {
+                        text: "󰅁"
+                        step: -1
+                    }
+
+                    Caption {
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                        text: Qt.formatDate(bar.calendarView, "MMMM yyyy").toUpperCase()
+                        font.pixelSize: 12
+                    }
+
+                    Chevron {
+                        text: "󰅂"
+                        step: 1
+                    }
+                }
+            }
+        }
+    }
+
+    // Clicking anywhere else closes the calendar (the bar is included so the clock can toggle it).
+    // Grabs start once their popup is actually shown: one started along with it misses the
+    // popup's surface, and the first click inside then counts as outside.
+    HyprlandFocusGrab {
+        windows: [calendarPanel, bar]
+        active: calendarPanel.backingWindowVisible
+        onCleared: bar.calendarOpen = false
     }
 
     // ---- Weather, right of the clock: current conditions from wttr.in (location by IP),
@@ -312,9 +589,7 @@ PanelWindow {
                 weatherProc.running = true;
                 return;
             }
-            bar.weatherOpen = !bar.weatherOpen;
-            if (bar.weatherOpen)
-                bar.notifications.historyOpen = false;
+            bar.toggleWeather();
         }
 
         BarText {
@@ -324,10 +599,35 @@ PanelWindow {
         }
     }
 
+    function toggleWeather() {
+        weatherOpen = !weatherOpen;
+        if (weatherOpen) {
+            notifications.historyOpen = false;
+            calendarOpen = false;
+        }
+    }
+
     component Caption: BarText {
         color: Qt.darker(bar.fg, 1.4)
         font.pixelSize: 10
         font.letterSpacing: 1
+    }
+
+    // Calendar month stepping
+    component Chevron: BarText {
+        id: chevron
+        property int step
+        font.pixelSize: 16
+        color: chevronArea.containsMouse ? bar.accent : Qt.darker(bar.fg, 1.4)
+
+        MouseArea {
+            id: chevronArea
+            anchors.fill: parent
+            anchors.margins: -6
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: bar.moveCalendar(chevron.step)
+        }
     }
 
     PopupWindow {
@@ -358,7 +658,7 @@ PanelWindow {
             border.width: 1
             radius: 10
             focus: true
-            Keys.onEscapePressed: bar.weatherOpen = false
+            Keys.onPressed: event => bar.panelKey(event)
 
             ColumnLayout {
                 id: weatherColumn
@@ -492,7 +792,7 @@ PanelWindow {
     // Clicking anywhere else closes the forecast (the bar is included so the widget can toggle it)
     HyprlandFocusGrab {
         windows: [weatherPanel, bar]
-        active: weatherPanel.visible
+        active: weatherPanel.backingWindowVisible
         onCleared: bar.weatherOpen = false
     }
 
@@ -609,7 +909,7 @@ PanelWindow {
             border.width: 1
             radius: 10
             focus: true
-            Keys.onEscapePressed: bar.notifications.historyOpen = false
+            Keys.onPressed: event => bar.panelKey(event)
 
             ColumnLayout {
                 id: historyColumn
@@ -686,7 +986,7 @@ PanelWindow {
     // Clicking anywhere else closes the history (the bar is included so the bell can toggle it)
     HyprlandFocusGrab {
         windows: [historyPanel, bar]
-        active: historyPanel.visible
+        active: historyPanel.backingWindowVisible
         onCleared: bar.notifications.historyOpen = false
     }
 
@@ -798,6 +1098,7 @@ PanelWindow {
                     bar.hideTooltip(this);
                     bar.notifications.historyOpen = !bar.notifications.historyOpen;
                     bar.weatherOpen = false;
+                    bar.calendarOpen = false;
                     return;
                 }
                 bar.notifications.dnd = !bar.notifications.dnd;
