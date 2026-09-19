@@ -292,6 +292,11 @@ hl.bind(mainMod .. " + ALT + comma",   hl.dsp.exec_cmd(notifications .. "invokeL
 hl.bind(mainMod .. " + CTRL + comma",  hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
 hl.bind(mainMod .. " + SHIFT + ALT + comma", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
 
+-- Bar dropdowns (quickshell): calendar as in Omarchy; weather is the dropdown here, not Omarchy's notification
+local bar = "quickshell ipc call bar "
+hl.bind(mainMod .. " + CTRL + ALT + D", hl.dsp.exec_cmd(bar .. "toggleCalendar"))
+hl.bind(mainMod .. " + CTRL + ALT + W", hl.dsp.exec_cmd(bar .. "toggleWeather"))
+
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
