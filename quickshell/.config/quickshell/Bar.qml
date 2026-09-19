@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, clock and weather in the middle, tray/network/CPU/RAM/battery on the right.
+// Top bar: workspaces on the left, clock and weather in the middle, tray/CPU/RAM/battery/network/notifications on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -742,6 +742,48 @@ PanelWindow {
             }
         }
 
+        BarText {
+            text: ` ${Math.round(bar.cpuUsage * 100)}%`
+            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
+        }
+
+        MouseArea {
+            implicitWidth: memText.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.memDetail) : bar.hideTooltip(this)
+
+            BarText {
+                id: memText
+                anchors.centerIn: parent
+                text: ` ${Math.round(bar.memUsage * 100)}%`
+                color: bar.memUsage >= 0.9 ? bar.urgent : bar.fg
+            }
+        }
+
+        BarText {
+            visible: bar.battery.isLaptopBattery
+            text: `${bar.batteryPercent}% ${bar.charging ? "󰂄" : ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"][Math.min(4, Math.floor(bar.batteryPercent / 20))]}`
+            color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.fg
+        }
+
+        MouseArea {
+            implicitWidth: netIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            onContainsMouseChanged: {
+                const n = bar.net;
+                const tip = n.type === "wifi" ? `${n.ssid || n.dev} (${n.signal}%)` : n.type === "ethernet" ? `${n.dev} ${n.ip}` : "Disconnected";
+                containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this);
+            }
+
+            BarText {
+                id: netIcon
+                anchors.centerIn: parent
+                text: bar.net.type === "wifi" ? ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"][Math.min(4, Math.floor(bar.net.signal / 20))] : bar.net.type === "ethernet" ? "󰈀" : "󰤮"
+            }
+        }
+
         // Bell: left click toggles do-not-disturb, right click opens the history
         MouseArea {
             id: bell
@@ -767,48 +809,6 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: bar.notifications.dnd ? "󰂛" : "󰂚"
             }
-        }
-
-        MouseArea {
-            implicitWidth: netIcon.implicitWidth
-            Layout.fillHeight: true
-            hoverEnabled: true
-            onContainsMouseChanged: {
-                const n = bar.net;
-                const tip = n.type === "wifi" ? `${n.ssid || n.dev} (${n.signal}%)` : n.type === "ethernet" ? `${n.dev} ${n.ip}` : "Disconnected";
-                containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this);
-            }
-
-            BarText {
-                id: netIcon
-                anchors.centerIn: parent
-                text: bar.net.type === "wifi" ? ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"][Math.min(4, Math.floor(bar.net.signal / 20))] : bar.net.type === "ethernet" ? "󰈀" : "󰤮"
-            }
-        }
-
-        BarText {
-            text: ` ${Math.round(bar.cpuUsage * 100)}%`
-            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
-        }
-
-        MouseArea {
-            implicitWidth: memText.implicitWidth
-            Layout.fillHeight: true
-            hoverEnabled: true
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.memDetail) : bar.hideTooltip(this)
-
-            BarText {
-                id: memText
-                anchors.centerIn: parent
-                text: ` ${Math.round(bar.memUsage * 100)}%`
-                color: bar.memUsage >= 0.9 ? bar.urgent : bar.fg
-            }
-        }
-
-        BarText {
-            visible: bar.battery.isLaptopBattery
-            text: `${bar.batteryPercent}% ${bar.charging ? "󰂄" : ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"][Math.min(4, Math.floor(bar.batteryPercent / 20))]}`
-            color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.fg
         }
     }
 }
