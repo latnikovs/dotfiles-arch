@@ -263,82 +263,91 @@ hl.device({
 
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
+-- Every bind gets a description: SUPER + K lists them (scripts/keybindings)
+local function bind(keys, description, dispatcher, opts)
+    opts = opts or {}
+    opts.description = description
+    return hl.bind(keys, dispatcher, opts)
+end
+
+bind(mainMod .. " + K", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings"))
+
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(terminal))
-hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
-local closeWindowBind = hl.bind(mainMod .. " + W", hl.dsp.window.close())
+bind(mainMod .. " + Q", "Terminal", hl.dsp.exec_cmd(terminal))
+bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
+local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.close())
 -- closeWindowBind:set_enabled(false)
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(browser))
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd(menu))
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen())
-hl.bind(mainMod .. " + CTRL + SPACE", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
+bind(mainMod .. " + M", "Exit Hyprland", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
+bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
+bind(mainMod .. " + V", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
+bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
+bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
+bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
+bind(mainMod .. " + CTRL + SPACE", "Next wallpaper", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
 
 -- Screenshots; SUPER + CTRL variants for keyboards without a Print key (e.g. Mac)
 local screenshot = "~/.config/hypr/scripts/screenshot"
-hl.bind("Print",                         hl.dsp.exec_cmd(screenshot .. " region"))
-hl.bind("SHIFT + Print",                 hl.dsp.exec_cmd(screenshot .. " output"))
-hl.bind(mainMod .. " + CTRL + S",         hl.dsp.exec_cmd(screenshot .. " region"))
-hl.bind(mainMod .. " + CTRL + SHIFT + S", hl.dsp.exec_cmd(screenshot .. " output"))
+bind("Print",                         "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
+bind("SHIFT + Print",                 "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
+bind(mainMod .. " + CTRL + S",         "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
+bind(mainMod .. " + CTRL + SHIFT + S", "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
 
 -- Notifications (quickshell), same keys as Omarchy
 local notifications = "quickshell ipc call notifications "
-hl.bind(mainMod .. " + comma",         hl.dsp.exec_cmd(notifications .. "dismissOne"))
-hl.bind(mainMod .. " + SHIFT + comma", hl.dsp.exec_cmd(notifications .. "dismissAll"))
-hl.bind(mainMod .. " + ALT + comma",   hl.dsp.exec_cmd(notifications .. "invokeLast"))
-hl.bind(mainMod .. " + CTRL + comma",  hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
-hl.bind(mainMod .. " + SHIFT + ALT + comma", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
+bind(mainMod .. " + comma",         "Dismiss notification", hl.dsp.exec_cmd(notifications .. "dismissOne"))
+bind(mainMod .. " + SHIFT + comma", "Dismiss all notifications", hl.dsp.exec_cmd(notifications .. "dismissAll"))
+bind(mainMod .. " + ALT + comma",   "Open last notification", hl.dsp.exec_cmd(notifications .. "invokeLast"))
+bind(mainMod .. " + CTRL + comma",  "Toggle do not disturb", hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
+bind(mainMod .. " + SHIFT + ALT + comma", "Notification history", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
 
 -- Bar dropdowns (quickshell): calendar as in Omarchy; weather is the dropdown here, not Omarchy's notification
 local bar = "quickshell ipc call bar "
-hl.bind(mainMod .. " + CTRL + ALT + D", hl.dsp.exec_cmd(bar .. "toggleCalendar"))
-hl.bind(mainMod .. " + CTRL + ALT + W", hl.dsp.exec_cmd(bar .. "toggleWeather"))
+bind(mainMod .. " + CTRL + ALT + D", "Calendar", hl.dsp.exec_cmd(bar .. "toggleCalendar"))
+bind(mainMod .. " + CTRL + ALT + W", "Weather", hl.dsp.exec_cmd(bar .. "toggleWeather"))
 
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
+bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
+bind(mainMod .. " + J", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Move focus with mainMod + arrow keys
-hl.bind(mainMod .. " + left",  hl.dsp.focus({ direction = "left" }))
-hl.bind(mainMod .. " + right", hl.dsp.focus({ direction = "right" }))
-hl.bind(mainMod .. " + up",    hl.dsp.focus({ direction = "up" }))
-hl.bind(mainMod .. " + down",  hl.dsp.focus({ direction = "down" }))
+bind(mainMod .. " + left",  "Focus window left", hl.dsp.focus({ direction = "left" }))
+bind(mainMod .. " + right", "Focus window right", hl.dsp.focus({ direction = "right" }))
+bind(mainMod .. " + up",    "Focus window up", hl.dsp.focus({ direction = "up" }))
+bind(mainMod .. " + down",  "Focus window down", hl.dsp.focus({ direction = "down" }))
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    hl.bind(mainMod .. " + " .. key,             hl.dsp.focus({ workspace = i}))
-    hl.bind(mainMod .. " + SHIFT + " .. key,     hl.dsp.window.move({ workspace = i }))
+    bind(mainMod .. " + " .. key,             "Go to workspace " .. i, hl.dsp.focus({ workspace = i}))
+    bind(mainMod .. " + SHIFT + " .. key,     "Move window to workspace " .. i, hl.dsp.window.move({ workspace = i }))
 end
 
 -- Example special workspace (scratchpad)
-hl.bind(mainMod .. " + S",         hl.dsp.workspace.toggle_special("magic"))
-hl.bind(mainMod .. " + SHIFT + S", hl.dsp.window.move({ workspace = "special:magic" }))
+bind(mainMod .. " + S",         "Toggle scratchpad", hl.dsp.workspace.toggle_special("magic"))
+bind(mainMod .. " + SHIFT + S", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:magic" }))
 
 -- Scroll through existing workspaces with mainMod + scroll
-hl.bind(mainMod .. " + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind(mainMod .. " + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+bind(mainMod .. " + mouse_down", "Next workspace", hl.dsp.focus({ workspace = "e+1" }))
+bind(mainMod .. " + mouse_up",   "Previous workspace", hl.dsp.focus({ workspace = "e-1" }))
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
-hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
-hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
+bind(mainMod .. " + mouse:272", "Move window", hl.dsp.window.drag(),   { mouse = true })
+bind(mainMod .. " + mouse:273", "Resize window", hl.dsp.window.resize(), { mouse = true })
 
 -- Laptop multimedia keys for volume and LCD brightness
-hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
-hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
-hl.bind("XF86AudioMute",        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
-hl.bind("XF86AudioMicMute",     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessUp",  hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
-hl.bind("XF86MonBrightnessDown",hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
+bind("XF86AudioRaiseVolume", "Volume up", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
+bind("XF86AudioLowerVolume", "Volume down", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
+bind("XF86AudioMute",        "Mute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
+bind("XF86AudioMicMute",     "Mute microphone", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
+bind("XF86MonBrightnessUp",  "Brightness up", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
+bind("XF86MonBrightnessDown","Brightness down", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
 
 -- Requires playerctl
-hl.bind("XF86AudioNext",  hl.dsp.exec_cmd("playerctl next"),       { locked = true })
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPlay",  hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
-hl.bind("XF86AudioPrev",  hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
+bind("XF86AudioNext",  "Next track", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
+bind("XF86AudioPause", "Play/pause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+bind("XF86AudioPlay",  "Play/pause", hl.dsp.exec_cmd("playerctl play-pause"), { locked = true })
+bind("XF86AudioPrev",  "Previous track", hl.dsp.exec_cmd("playerctl previous"),   { locked = true })
 
 
 --------------------------------

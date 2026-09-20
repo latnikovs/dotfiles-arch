@@ -5,7 +5,7 @@
 local kitty = hl.dsp.exec_cmd("env LIBGL_ALWAYS_SOFTWARE=1 kitty")
 for _, key in ipairs({ "SUPER + Q", "SUPER + RETURN" }) do
     hl.unbind(key)
-    hl.bind(key, kitty)
+    hl.bind(key, kitty, { description = "Terminal" })
 end
 
 -- UTM's virtual display defaults to 1280x800; 2560x1440 isn't advertised, so Hyprland generates a custom mode.

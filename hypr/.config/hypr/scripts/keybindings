@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Usage: keybindings   searchable list of keybindings (Hyprland binds with a description, then the bar's)
+set -euo pipefail
+
+pkill -x wofi && exit 0
+
+# Hyprland binds, as "SUPER + CTRL + S    Screenshot region", minus media keys (labelled on the
+# keyboard). Workspace binds collapse into one line per modifier ("SUPER + 1…0  Go to workspace"),
+# and the list keeps the config's order.
+hypr=$(hyprctl binds -j | jq -r '
+    def mods($mod): [[64, "SUPER"], [4, "CTRL"], [8, "ALT"], [1, "SHIFT"]]
+        | map(select(.[0] as $bit | $mod | . / $bit | floor % 2 == 1) | .[1]);
+    def pretty: {"comma": ",", "period": ".", "RETURN": "ENTER", "mouse_down": "SCROLL DOWN", "mouse_up": "SCROLL UP",
+                 "mouse:272": "LEFT DRAG", "mouse:273": "RIGHT DRAG"}[.] // ascii_upcase;
+    [.[] | select(.description != "" and (.key | startswith("XF86") | not))
+         | .modmask as $mod
+         | (.description | test("workspace [0-9]+$")) as $ws
+         | {keys: (mods($mod) + [if $ws then "1…0" else (.key | pretty) end] | join(" + ")),
+            description: (if $ws then .description | sub(" [0-9]+$"; "") else .description end)}]
+    | reduce .[] as $b ([]; if index([$b]) then . else . + [$b] end)
+    | .[] | "\(.keys)\t\(.description)"')
+
+# The bar's own mouse and keyboard actions (quickshell), which Hyprland doesn't know about
+bar="Click clock	Calendar
+Right-click clock	Show date
+Click weather	Weather details
+Middle-click weather	Refresh weather
+Click bell	Toggle do not disturb
+Right-click bell	Notification history
+h / l in calendar	Previous / next month
+k / j in calendar	Previous / next year
+Scroll in calendar	Previous / next month
+Enter in calendar	Back to today
+Esc in bar dropdowns	Close"
+
+printf '%s\n%s\n' "$hypr" "$bar" \
+    | awk -F'\t' '{ printf "%-28s %s\n", $1, $2 }' \
+    | wofi --dmenu --prompt "Keybindings" --width 900 --height 600 --cache-file /dev/null >/dev/null || true
