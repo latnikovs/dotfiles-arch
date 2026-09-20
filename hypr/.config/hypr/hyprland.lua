@@ -52,6 +52,9 @@ local menu        = "pkill -x wofi || wofi"
 hl.on("hyprland.start", function ()
     hl.exec_cmd("quickshell")
     hl.exec_cmd("~/.config/hypr/scripts/wallpaper init; hyprpaper")
+    -- Clipboard history for SUPER + CTRL + V (scripts/clipboard-history)
+    hl.exec_cmd("wl-paste --type text --watch cliphist store")
+    hl.exec_cmd("wl-paste --type image --watch cliphist store")
 end)
 
 
@@ -280,7 +283,7 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 bind(mainMod .. " + M", "Exit Hyprland", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
-bind(mainMod .. " + V", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
+bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
@@ -322,6 +325,38 @@ for i = 1, 10 do
     bind(mainMod .. " + " .. key,             "Go to workspace " .. i, hl.dsp.focus({ workspace = i}))
     bind(mainMod .. " + SHIFT + " .. key,     "Move window to workspace " .. i, hl.dsp.window.move({ workspace = i }))
 end
+
+-- Universal clipboard, as in Omarchy: SUPER (Cmd on the Mac) + C/V/X/A send the app's own
+-- shortcut, CTRL + SHIFT + C/V in terminals (tagged below) so CTRL + C still interrupts.
+-- Sent as separate down/up key states: send_shortcut can leave the key stuck repeating.
+local function sendShortcut(mods, key)
+    return function()
+        hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "down" }))
+        hl.timer(function()
+            hl.dispatch(hl.dsp.send_key_state({ mods = mods, key = key, state = "up" }))
+        end, { timeout = 50, type = "oneshot" })
+    end
+end
+
+local function activeIsTerminal()
+    local window = hl.get_active_window()
+    for _, tag in ipairs(window and window.tags or {}) do
+        if tag:gsub("%*$", "") == "terminal" then return true end  -- dynamic tags end in "*"
+    end
+    return false
+end
+
+local function clipboardShortcut(key)
+    return function()
+        sendShortcut(activeIsTerminal() and "CTRL SHIFT" or "CTRL", key)()
+    end
+end
+
+bind(mainMod .. " + C",        "Copy", clipboardShortcut("C"))
+bind(mainMod .. " + V",        "Paste", clipboardShortcut("V"))
+bind(mainMod .. " + X",        "Cut", sendShortcut("CTRL", "X"))
+bind(mainMod .. " + A",        "Select all", sendShortcut("CTRL", "A"))
+bind(mainMod .. " + CTRL + V", "Clipboard history", hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard-history"))
 
 -- Scratchpad: a drop-down console seeded with Claude Code (qconsole.lua), same keys as Omarchy
 bind(mainMod .. " + S",             "Toggle scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
@@ -392,6 +427,14 @@ hl.window_rule({
 --     no_anim = true,
 -- })
 -- overlayLayerRule:set_enabled(false)
+
+-- Terminals (kitty, and kitty under our own classes like org.dotfiles.agent), for the clipboard binds
+hl.window_rule({
+    name  = "tag-terminals",
+    match = { class = "(kitty|org\\.dotfiles\\..*)" },
+
+    tag   = "+terminal",
+})
 
 -- Hyprland-run windowrule
 hl.window_rule({

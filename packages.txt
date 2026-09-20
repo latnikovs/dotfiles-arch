@@ -10,6 +10,7 @@ git-delta
 grim
 slurp
 wl-clipboard
+cliphist
 hyprpicker
 jq
 quickshell

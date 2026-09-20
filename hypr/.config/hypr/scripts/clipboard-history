@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Usage: clipboard-history   pick from the clipboard history (cliphist) and paste it
+set -euo pipefail
+
+pkill -x wofi && exit 0
+
+entry=$(cliphist list | wofi --dmenu --prompt "Clipboard" --width 900 --height 600 --cache-file /dev/null) || exit 0
+cliphist decode <<<"$entry" | wl-copy
+
+# Paste into the window that had focus: SHIFT + Insert pastes in both GUI apps and kitty
+# (mapped in kitty.conf), so terminals need no special case.
+key() { hyprctl dispatch "hl.dsp.send_key_state({ mods = 'SHIFT', key = 'Insert', state = '$1' })" >/dev/null; }
+sleep 0.15
+key down
+sleep 0.05
+key up
