@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Usage: system menu|suspend|logout|reboot|shutdown   power actions, after Omarchy's omarchy-system-*
+set -euo pipefail
+
+# Close every window so apps (Chromium) shut down cleanly instead of being killed
+close_all() {
+    hyprctl clients -j | jq -r '.[].address' | while read -r addr; do
+        hyprctl dispatch "hl.dsp.window.close({ window = 'address:$addr' })" >/dev/null
+    done
+    sleep 1
+}
+
+# Scheduled in the systemd user manager, so closing the window this was run from can't cancel it
+power() {
+    systemd-run --user --collect --quiet --on-active=2s --timer-property=AccuracySec=100ms \
+        systemctl "$1" --no-wall
+    notify-send -a system -u low "$2"
+    close_all
+}
+
+case ${1:-menu} in
+    menu)
+        pkill -x wofi && exit 0
+        choice=$(printf '%s\n' "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown" \
+            | wofi --dmenu --prompt "System" --width 300 --height 230 --cache-file /dev/null) || exit 0
+        exec "$0" "$(awk '{ print tolower($2) }' <<<"$choice")"
+        ;;
+    suspend)  systemctl suspend ;;
+    logout)
+        setsid -f bash -c "sleep 2; hyprctl dispatch 'hl.dsp.exit()'" </dev/null >/dev/null 2>&1
+        notify-send -a system -u low "Logging out"
+        close_all
+        ;;
+    reboot)   power reboot "Rebooting" ;;
+    shutdown) power poweroff "Shutting down" ;;
+    *)
+        echo "Usage: system menu|suspend|logout|reboot|shutdown" >&2
+        exit 1
+        ;;
+esac
