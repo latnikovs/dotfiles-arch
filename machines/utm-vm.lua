@@ -1,8 +1,11 @@
 -- Per-machine overrides for the UTM VM. Installed as ~/.config/hypr/local.lua by: ./install.sh utm-vm
 
 -- virgl here only exposes GLES, and kitty needs desktop OpenGL 3.1,
--- so run kitty with Mesa's software renderer.
-local kitty = hl.dsp.exec_cmd("env LIBGL_ALWAYS_SOFTWARE=1 kitty")
+-- so run kitty with Mesa's software renderer. Scripts launching a terminal (scripts/agent)
+-- pick it up from DOTFILES_TERMINAL.
+local kittyCmd = "env LIBGL_ALWAYS_SOFTWARE=1 kitty"
+hl.env("DOTFILES_TERMINAL", kittyCmd)
+local kitty = hl.dsp.exec_cmd(kittyCmd)
 for _, key in ipairs({ "SUPER + Q", "SUPER + RETURN" }) do
     hl.unbind(key)
     hl.bind(key, kitty, { description = "Terminal" })

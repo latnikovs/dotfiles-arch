@@ -323,9 +323,11 @@ for i = 1, 10 do
     bind(mainMod .. " + SHIFT + " .. key,     "Move window to workspace " .. i, hl.dsp.window.move({ workspace = i }))
 end
 
--- Example special workspace (scratchpad)
-bind(mainMod .. " + S",         "Toggle scratchpad", hl.dsp.workspace.toggle_special("magic"))
-bind(mainMod .. " + SHIFT + S", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:magic" }))
+-- Scratchpad: a drop-down console seeded with Claude Code (qconsole.lua), same keys as Omarchy
+bind(mainMod .. " + S",             "Toggle scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
+bind(mainMod .. " + ALT + S",       "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
+bind(mainMod .. " + grave",         "Toggle scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
+bind(mainMod .. " + SHIFT + grave", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
 
 -- Scroll through existing workspaces with mainMod + scroll
 bind(mainMod .. " + mouse_down", "Next workspace", hl.dsp.focus({ workspace = "e+1" }))
@@ -401,13 +403,19 @@ hl.window_rule({
 })
 
 
+local configDir = (os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/hypr"
+
+-- The scratchpad as a Quake console (SUPER + S)
+dofile(configDir .. "/qconsole.lua")
+
+
 ---------------------------
 ---- PER-MACHINE LOCAL ----
 ---------------------------
 
 -- Untracked overrides (monitors, scale, input, etc.) in ~/.config/hypr/local.lua.
 -- Loaded last so anything set there wins. Skipped silently if the file doesn't exist.
-local localConfig = (os.getenv("XDG_CONFIG_HOME") or (os.getenv("HOME") .. "/.config")) .. "/hypr/local.lua"
+local localConfig = configDir .. "/local.lua"
 local f = io.open(localConfig, "r")
 if f then
     f:close()

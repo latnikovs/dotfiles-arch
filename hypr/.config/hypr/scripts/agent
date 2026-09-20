@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Usage: agent   Claude Code in a terminal, started in ~/Work (seeds the SUPER + S scratchpad)
+set -euo pipefail
+
+# Claude won't remember trust for $HOME, so sessions start in ~/Work (as in Omarchy)
+mkdir -p "$HOME/Work"
+cd "$HOME/Work"
+
+# DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
+# so it can carry "env VAR=… kitty". A fixed class lets window rules single the agent out.
+exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.agent claude --permission-mode auto
