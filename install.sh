@@ -25,6 +25,20 @@ ya pkg install
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
 
+# Keyring: unlocked with the tty login password, and re-encrypted when passwd
+# changes it. PAM keeps one stack per type, so appending lands each line last in
+# its stack; optional means a keyring failure never blocks a login.
+pam_add() {
+    grep -qxF "$2" "$1" || echo "$2" | sudo tee -a "$1" >/dev/null
+}
+pam_add /etc/pam.d/login  "auth       optional     pam_gnome_keyring.so"
+pam_add /etc/pam.d/login  "session    optional     pam_gnome_keyring.so auto_start"
+pam_add /etc/pam.d/passwd "password   optional     pam_gnome_keyring.so"
+
+# SSH agent that asks for key passphrases graphically and can remember them in
+# the keyring. .bash_profile points SSH_AUTH_SOCK at it.
+systemctl --user enable --now gcr-ssh-agent.socket
+
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
     dst=$HOME/.config/hypr/local.lua

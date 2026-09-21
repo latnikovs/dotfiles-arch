@@ -10,6 +10,13 @@ alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 export PATH="$HOME/.local/bin:$PATH"
 
+# Untracked secrets (API keys etc.) as KEY=value lines, exported. Keep it 0600.
+if [[ -f ~/.config/secrets.env ]]; then
+    set -a
+    . ~/.config/secrets.env
+    set +a
+fi
+
 alias vim='nvim'
 export MANPAGER='nvim +Man!'
 
