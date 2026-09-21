@@ -4,11 +4,13 @@
 [init]
 	defaultBranch = main
 [core]
-	pager = delta
+	pager = $HOME/.config/delta/delta.sh
 [interactive]
-	diffFilter = delta --color-only
+	diffFilter = $HOME/.config/delta/delta.sh --color-only
 [delta]
 	navigate = true
 	line-numbers = true
 [merge]
 	conflictStyle = zdiff3
+[diff]
+	colorMoved = default

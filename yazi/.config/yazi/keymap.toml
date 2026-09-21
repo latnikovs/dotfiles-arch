@@ -1,0 +1,21 @@
+# Only the deviations from yazi's defaults; prepend_keymap merges with them
+# rather than replacing, so everything not named here keeps working.
+
+# Ctrl-d / Ctrl-u scroll the PREVIEW, matching the muscle memory from tmux
+# copy-mode, lazygit and vim. Yazi binds them to `arrow ±50%` by default, which
+# moves the cursor through the file list instead — that is still on Shift-PageUp
+# / Shift-PageDown for half a page, and Ctrl-b / Ctrl-f for a whole one.
+#
+# A seek unit is a TENTH of the preview pane, not a line: the previewer computes
+# `units * area.h / 10` (see code.lua upstream), so 10 is exactly one page and
+# stays one page when the window is resized. Yazi's own J / K are `seek ±5`,
+# i.e. half a page, so these sit alongside them rather than duplicating them.
+[[mgr.prepend_keymap]]
+on = "<C-d>"
+run = "seek 10"
+desc = "Seek down a page in the preview"
+
+[[mgr.prepend_keymap]]
+on = "<C-u>"
+run = "seek -10"
+desc = "Seek up a page in the preview"

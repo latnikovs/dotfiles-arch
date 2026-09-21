@@ -1,0 +1,8 @@
+git:
+  # lazygit ignores git's core.pager and renders diffs itself unless told to
+  # page. Route diffs through the same appearance-aware delta wrapper as the CLI
+  # so lazygit's diff pane matches the active Catppuccin flavor. --paging=never
+  # stops delta from launching its own pager inside lazygit's pane.
+  diffRenderers:
+    - colorArg: always
+      command: $HOME/.config/delta/delta.sh --paging=never

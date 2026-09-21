@@ -1,0 +1,11 @@
+# Global markdownlint rules, symlinked to ~/.markdownlint-cli2.yaml by
+# bootstrap/install.sh and passed to markdownlint-cli2 explicitly by
+# editors/nvim/lua/plugins/markdown.lua.
+config:
+  # MD013 caps line length at 80. That is a code rule applied to prose: it flags
+  # ordinary sentences as defects, and reflowing to satisfy it makes diffs worse
+  # because editing one word rewraps the whole paragraph.
+  MD013: false
+  # MD033 (no-inline-html) fires on the <div align="center"> block most READMEs
+  # open with. Uncomment if that noise is not worth it either.
+  # MD033: false

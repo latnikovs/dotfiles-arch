@@ -1,0 +1,21 @@
+[mgr]
+ratio          = [1, 3, 4]
+sort_by        = "natural"
+sort_dir_first = true
+linemode       = "size"
+show_hidden    = false
+show_symlink   = true
+
+[preview]
+# An upper bound in pixels, not a display size: yazi renders at
+# min(pane size, these), and only ever scales down.
+#
+# Raising these to the pane width (~2560 on this 5K screen) does make images
+# fill the preview, but it resizes ~6x more pixels through the image crate's
+# non-SIMD path and adds a couple of seconds per image. Tried it; a small
+# picture beats the lag. Keep these modest.
+#
+# Run `yazi --clear-cache` after changing them, or the old thumbnails are
+# served from disk and nothing appears to change.
+max_width  = 1000
+max_height = 1000

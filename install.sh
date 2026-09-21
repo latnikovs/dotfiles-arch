@@ -12,6 +12,19 @@ for pkg in */; do
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
+# tmux plugins: tpm itself, then the plugins tmux.conf lists
+if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
+    git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
+fi
+"$HOME/.tmux/plugins/tpm/bin/install_plugins"
+
+# yazi flavors pinned in package.toml
+ya pkg install
+
+# Docker daemon, usable without sudo (group applies from the next login)
+sudo systemctl enable --now docker.service
+id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
+
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
     dst=$HOME/.config/hypr/local.lua
