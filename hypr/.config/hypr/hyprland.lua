@@ -32,7 +32,7 @@ local terminal    = "kitty"
 local fileManager = "dolphin"
 local browser     = "chromium"
 local menu        = "pkill -x wofi || wofi"
-local passwords   = "keepassxc"
+local passwords   = "special:passwords"
 
 
 -------------------
@@ -56,6 +56,8 @@ hl.on("hyprland.start", function ()
     -- Clipboard history for SUPER + CTRL + V (scripts/clipboard-history)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
+    -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
+    hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
 end)
 
 
@@ -285,7 +287,7 @@ bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/syste
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
-bind(mainMod .. " + SHIFT + SLASH", "Passwords", hl.dsp.exec_cmd(passwords))
+bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", hl.dsp.workspace.toggle_special("passwords"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
@@ -453,6 +455,14 @@ hl.window_rule({
     float           = true,
     center          = true,
     no_screen_share = true,
+})
+
+-- KeePassXC lives on its own special workspace (SUPER + SHIFT + /); opened empty,
+-- because it was closed, the workspace starts it again. Only launches are pinned
+-- there, so dialogs raised from the browser (unlock) appear where you are.
+hl.workspace_rule({
+    workspace        = passwords,
+    on_created_empty = "keepassxc",
 })
 
 -- Size only the main window; its dialogs (unlock, browser access) keep their own

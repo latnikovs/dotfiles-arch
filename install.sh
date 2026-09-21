@@ -68,6 +68,9 @@ fi
 # KeePassXC-Browser, installed into Chromium from the Web Store on next start
 sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
     <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
+# KeePassXC is the password manager, so Chromium stops offering to save its own
+sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
+    <<<'{ "PasswordManagerEnabled": false }'
 
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
