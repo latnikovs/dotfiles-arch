@@ -465,10 +465,11 @@ hl.workspace_rule({
     on_created_empty = "keepassxc",
 })
 
--- Size only the main window; its dialogs (unlock, browser access) keep their own
+-- Size only the main window; its dialogs (unlock, browser access) keep their own.
+-- It opens as "KeePassXC", or "<file>.kdbx [Locked] - KeePassXC" once a database is remembered.
 hl.window_rule({
     name  = "size-keepassxc",
-    match = { class = "^KeePassXC$", initial_title = "^KeePassXC$" },
+    match = { class = "^KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
 
     size  = { 1200, 800 },
 })
