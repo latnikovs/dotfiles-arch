@@ -39,3 +39,4 @@ docker-buildx
 gnome-keyring
 gcr-4
 libsecret
+keepassxc

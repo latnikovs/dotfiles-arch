@@ -32,6 +32,7 @@ local terminal    = "kitty"
 local fileManager = "dolphin"
 local browser     = "chromium"
 local menu        = "pkill -x wofi || wofi"
+local passwords   = "keepassxc"
 
 
 -------------------
@@ -284,6 +285,7 @@ bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/syste
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
+bind(mainMod .. " + SHIFT + SLASH", "Passwords", hl.dsp.exec_cmd(passwords))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
@@ -441,6 +443,15 @@ hl.window_rule({
     match = { class = "(kitty|org\\.dotfiles\\..*)" },
 
     tag   = "+terminal",
+})
+
+-- Password manager floats and stays out of screen shares, as in Omarchy
+hl.window_rule({
+    name  = "float-keepassxc",
+    match = { class = "^KeePassXC$" },
+
+    float           = true,
+    no_screen_share = true,
 })
 
 -- Hyprland-run windowrule

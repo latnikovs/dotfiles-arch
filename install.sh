@@ -8,7 +8,7 @@ sudo pacman -S --needed - < <(grep -vE '^\s*(#|$)' packages.txt)
 
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
@@ -38,6 +38,36 @@ pam_add /etc/pam.d/passwd "password   optional     pam_gnome_keyring.so"
 # SSH agent that asks for key passphrases graphically and can remember them in
 # the keyring. .bash_profile points SSH_AUTH_SOCK at it.
 systemctl --user enable --now gcr-ssh-agent.socket
+
+# KeePassXC rewrites its settings and native messaging files in place, so they
+# are seeded rather than stowed. The ini turns on browser integration and the
+# SSH agent, and leaves Secret Service to gnome-keyring.
+kpxc_ini=$HOME/.config/keepassxc/keepassxc.ini
+if [[ ! -e $kpxc_ini ]]; then
+    mkdir -p "${kpxc_ini%/*}"
+    cp keepassxc/keepassxc.ini "$kpxc_ini"
+fi
+# Chromium connects to KeePassXC only while this manifest exists; KeePassXC
+# refreshes it on every start.
+kpxc_host=$HOME/.config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json
+if [[ ! -e $kpxc_host ]]; then
+    mkdir -p "${kpxc_host%/*}"
+    cat >"$kpxc_host" <<'JSON'
+{
+    "allowed_origins": [
+        "chrome-extension://pdffhmdngciaglkoonimfcmckehcpafo/",
+        "chrome-extension://oboonakemofpalcgghocfoadofidjkkk/"
+    ],
+    "description": "KeePassXC integration with native messaging support",
+    "name": "org.keepassxc.keepassxc_browser",
+    "path": "/usr/bin/keepassxc-proxy",
+    "type": "stdio"
+}
+JSON
+fi
+# KeePassXC-Browser, installed into Chromium from the Web Store on next start
+sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
+    <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
 
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
