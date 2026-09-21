@@ -18,3 +18,6 @@ hl.monitor({
     position = "auto",
     scale    = 1,
 })
+
+-- macOS swallows Cmd + Esc before it reaches the VM, so open the system menu on SUPER + SHIFT + M too.
+hl.bind("SUPER + SHIFT + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"), { description = "System menu" })
