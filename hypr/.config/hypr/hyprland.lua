@@ -451,7 +451,16 @@ hl.window_rule({
     match = { class = "^KeePassXC$" },
 
     float           = true,
+    center          = true,
     no_screen_share = true,
+})
+
+-- Size only the main window; its dialogs (unlock, browser access) keep their own
+hl.window_rule({
+    name  = "size-keepassxc",
+    match = { class = "^KeePassXC$", initial_title = "^KeePassXC$" },
+
+    size  = { 1200, 800 },
 })
 
 -- Hyprland-run windowrule
