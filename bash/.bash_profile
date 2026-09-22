@@ -2,6 +2,11 @@
 # ~/.bash_profile
 #
 
+# mise shims for everything that isn't an interactive shell, including Hyprland
+# and the apps it launches (IDEs find java/go/node here); .bashrc's mise activate
+# takes over in terminals.
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
 [[ -f ~/.bashrc ]] && . ~/.bashrc
 
 # gcr-ssh-agent (enabled by install.sh); an agent forwarded over SSH wins

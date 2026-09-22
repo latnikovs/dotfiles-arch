@@ -22,8 +22,6 @@ neovim
 ripgrep
 fd
 fzf
-nodejs
-npm
 tree-sitter-cli
 gcc
 make
@@ -37,6 +35,9 @@ eza
 docker
 docker-compose
 docker-buildx
+github-cli
+# psql/pg_dump only; the server runs in Docker (postgres:18)
+postgresql
 gnome-keyring
 gcr-4
 libsecret

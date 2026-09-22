@@ -18,6 +18,21 @@ if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
 fi
 "$HOME/.tmux/plugins/tpm/bin/install_plugins"
 
+# mise: dev tools from ~/.config/mise/config.toml (Node, Go, Java, …). Arch Linux
+# ARM has no mise package, so there it comes from mise's own installer.
+export PATH="$HOME/.local/bin:$PATH"
+if ! command -v mise >/dev/null; then
+    if pacman -Si mise &>/dev/null; then
+        sudo pacman -S --needed mise
+    else
+        curl -fsSL https://mise.run | sh
+    fi
+fi
+mise install
+
+# Claude Code: Anthropic's native installer, which keeps it updated itself
+command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
+
 # Docker daemon, usable without sudo (group applies from the next login)
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"

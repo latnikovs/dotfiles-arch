@@ -41,6 +41,9 @@ td() {
     fi
 }
 
+# mise: puts the tool versions for the current directory on PATH at each prompt
+command -v mise >/dev/null && eval "$(mise activate bash)"
+
 command -v direnv >/dev/null && eval "$(direnv hook bash)"
 
 # zoxide last: its prompt hook must see the final PATH. Defines z and zi.

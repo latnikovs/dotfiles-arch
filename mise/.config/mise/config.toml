@@ -1,0 +1,13 @@
+# Global dev tools; a project's own mise.toml (or .nvmrc, .terraform-version, …)
+# overrides these inside it. install.sh runs `mise install` for this list.
+[tools]
+node = "lts"
+go = "latest"
+# Temurin: jdk.java.net's plain openjdk-25 build never gets security updates
+java = "temurin-25"
+terraform = "latest"
+gcloud = "latest"
+
+[settings]
+# mise up must not delete the version a running process is executing from
+upgrade.auto_prune = false
