@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: system menu|suspend|logout|reboot|shutdown   power actions, after Omarchy's omarchy-system-*
+# Usage: system menu|lock|suspend|logout|reboot|shutdown   power actions, after Omarchy's omarchy-system-*
 set -euo pipefail
 
 # Close every window so apps (Chromium) shut down cleanly instead of being killed
@@ -21,10 +21,11 @@ power() {
 case ${1:-menu} in
     menu)
         pkill -x wofi && exit 0
-        choice=$(printf '%s\n' "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown" \
-            | wofi --dmenu --prompt "System" --width 300 --height 230 --cache-file /dev/null) || exit 0
+        choice=$(printf '%s\n' "󰌾  Lock" "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown" \
+            | wofi --dmenu --prompt "System" --width 300 --height 270 --cache-file /dev/null) || exit 0
         exec "$0" "$(awk '{ print tolower($2) }' <<<"$choice")"
         ;;
+    lock)     exec ~/.config/hypr/scripts/lock ;;
     suspend)  systemctl suspend ;;
     logout)
         setsid -f bash -c "sleep 2; hyprctl dispatch 'hl.dsp.exit()'" </dev/null >/dev/null 2>&1
@@ -34,7 +35,7 @@ case ${1:-menu} in
     reboot)   power reboot "Rebooting" ;;
     shutdown) power poweroff "Shutting down" ;;
     *)
-        echo "Usage: system menu|suspend|logout|reboot|shutdown" >&2
+        echo "Usage: system menu|lock|suspend|logout|reboot|shutdown" >&2
         exit 1
         ;;
 esac

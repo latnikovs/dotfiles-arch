@@ -56,6 +56,8 @@ hl.on("hyprland.start", function ()
     -- Clipboard history for SUPER + CTRL + V (scripts/clipboard-history)
     hl.exec_cmd("wl-paste --type text --watch cliphist store")
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
+    -- Locks after 5 idle minutes and before suspend (hypridle.conf)
+    hl.exec_cmd("hypridle")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
 end)
@@ -219,6 +221,8 @@ hl.config({
     misc = {
         force_default_wallpaper = 0,     -- Set to 0 or 1 to disable the anime mascot wallpapers
         disable_hyprland_logo   = true,  -- If true disables the random hyprland logo / anime girl background. :(
+        -- If hyprlock crashes the screen stays locked; this lets a new one take over (scripts/lock now)
+        allow_session_lock_restore = true,
     },
 })
 
@@ -300,6 +304,7 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 -- closeWindowBind:set_enabled(false)
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/system logout"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
+bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
 -- File manager (Nautilus), same keys as Omarchy
 bind(mainMod .. " + SHIFT + F",       "File manager", hl.dsp.exec_cmd(fileManager))

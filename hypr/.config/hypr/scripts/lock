@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Usage: lock       lock the session through logind, so hypridle and KeePassXC hear about it
+#        lock now   show hyprlock (hypridle's lock_cmd)
+set -euo pipefail
+
+if [[ ${1:-} != now ]]; then
+    # Without hypridle nothing would answer logind, so lock directly
+    pidof hypridle >/dev/null && exec loginctl lock-session
+fi
+
+pidof hyprlock >/dev/null && exit 0
+
+# Type the password on the first layout (EN), then give the window back the layout it had
+layout=$(hyprctl devices -j | jq '.keyboards[] | select(.main) | .active_layout_index')
+hyprctl switchxkblayout all 0 >/dev/null
+hyprlock || true
+hyprctl switchxkblayout all "${layout:-0}" >/dev/null
