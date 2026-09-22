@@ -231,8 +231,10 @@ hl.config({
     input = {
         -- English, Latvian, Russian; CTRL + ALT + SPACE cycles them, and Quickshell remembers
         -- the layout per window (Keyboard.qml). Binds always use the first layout.
+        -- Latvian "apostrophe", as on macOS: ' then a letter types ā č ē ģ ī ķ ļ ņ š ū ž,
+        -- ' then space (or ' twice) types '.
         kb_layout  = "us,lv,ru",
-        kb_variant = "",
+        kb_variant = ",apostrophe,",
         kb_model   = "",
         kb_options = "",
         kb_rules   = "",
