@@ -44,13 +44,23 @@ PanelWindow {
     // ---- Keys for the dropdowns. Hyprland may give keyboard focus to the bar rather than the
     //      open popup, so both hand their keys here.
 
-    // Esc closes; in the calendar Left/Right (h/l) step months, Up/Down (k/j) years, Enter goes back to today
+    // Esc closes; in the calendar Left/Right (h/l) step months, Up/Down (k/j) years, Enter goes back to today;
+    // in the layout selector Up/Down (k/j) move and Enter picks
     function panelKey(event) {
         const k = event.key;
         if (k === Qt.Key_Escape) {
             calendarOpen = false;
             weatherOpen = false;
+            layoutOpen = false;
             notifications.historyOpen = false;
+        } else if (layoutOpen) {
+            const n = keyboard.layouts.length;
+            if ([Qt.Key_Up, Qt.Key_K, Qt.Key_Down, Qt.Key_J].includes(k))
+                layoutCursor = (layoutCursor + ([Qt.Key_Up, Qt.Key_K].includes(k) ? n - 1 : 1)) % n;
+            else if (k === Qt.Key_Return || k === Qt.Key_Enter)
+                selectLayout(layoutCursor);
+            else
+                return;
         } else if (!calendarOpen) {
             return;
         } else if ([Qt.Key_Left, Qt.Key_H, Qt.Key_Right, Qt.Key_L].includes(k)) {
@@ -263,6 +273,7 @@ PanelWindow {
         if (calendarOpen) {
             calendarView = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
             weatherOpen = false;
+            layoutOpen = false;
             notifications.historyOpen = false;
         }
     }
@@ -605,6 +616,7 @@ PanelWindow {
         if (weatherOpen) {
             notifications.historyOpen = false;
             calendarOpen = false;
+            layoutOpen = false;
         }
     }
 
@@ -991,6 +1003,116 @@ PanelWindow {
         onCleared: bar.notifications.historyOpen = false
     }
 
+    // ---- Keyboard layout selector, dropping down from the layout indicator
+
+    property bool layoutOpen: false
+    property int layoutCursor: 0 // row highlighted for the keyboard
+
+    function toggleLayouts() {
+        layoutOpen = !layoutOpen;
+        if (layoutOpen) {
+            layoutCursor = keyboard.index;
+            calendarOpen = false;
+            weatherOpen = false;
+            notifications.historyOpen = false;
+        }
+    }
+
+    function selectLayout(i) {
+        keyboard.select(i);
+        layoutOpen = false;
+    }
+
+    PopupWindow {
+        id: layoutPanel
+        visible: bar.layoutOpen
+        color: "transparent"
+        implicitWidth: layoutColumn.implicitWidth + 12
+        implicitHeight: layoutColumn.implicitHeight + 18
+
+        // Centered under the indicator
+        anchor {
+            id: layoutAnchor
+            window: bar
+            adjustment: PopupAdjustment.Slide
+            rect.width: 1
+            rect.height: 1
+            edges: Edges.Top | Edges.Left
+            gravity: Edges.Bottom | Edges.Right
+            onAnchoring: {
+                const p = bar.contentItem.mapFromItem(layoutButton, layoutButton.width / 2 - layoutPanel.implicitWidth / 2, 0);
+                layoutAnchor.rect.x = Math.round(p.x);
+                layoutAnchor.rect.y = bar.height;
+            }
+        }
+
+        Rectangle {
+            anchors {
+                fill: parent
+                topMargin: 6
+            }
+            color: bar.bg
+            border.color: bar.muted
+            border.width: 1
+            radius: 10
+            focus: true
+            Keys.onPressed: event => bar.panelKey(event)
+
+            ColumnLayout {
+                id: layoutColumn
+                anchors {
+                    fill: parent
+                    margins: 6
+                }
+                spacing: 2
+
+                Repeater {
+                    model: bar.keyboard.layouts.length
+
+                    delegate: Rectangle {
+                        id: layoutRow
+                        required property int index
+                        readonly property bool current: index === bar.keyboard.index
+
+                        Layout.fillWidth: true
+                        implicitWidth: layoutRowText.implicitWidth + 24
+                        implicitHeight: layoutRowText.implicitHeight + 10
+                        radius: 6
+                        color: layoutRowArea.containsMouse || index === bar.layoutCursor ? bar.muted : "transparent"
+
+                        BarText {
+                            id: layoutRowText
+                            anchors {
+                                left: parent.left
+                                leftMargin: 12
+                                verticalCenter: parent.verticalCenter
+                            }
+                            text: `${bar.keyboard.codeOf(layoutRow.index)}  ${bar.keyboard.nameOf(layoutRow.index)}`
+                            color: layoutRow.current ? bar.accent : bar.fg
+                            font.bold: layoutRow.current
+                        }
+
+                        MouseArea {
+                            id: layoutRowArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onContainsMouseChanged: if (containsMouse) bar.layoutCursor = layoutRow.index
+                            onClicked: bar.selectLayout(layoutRow.index)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Clicking anywhere else closes the selector
+    HyprlandFocusGrab {
+        windows: [layoutPanel, bar]
+        active: layoutPanel.backingWindowVisible
+        onCleared: bar.layoutOpen = false
+    }
+
     // ---- Right side
 
     readonly property var battery: UPower.displayDevice
@@ -1043,14 +1165,22 @@ PanelWindow {
             }
         }
 
-        // Keyboard layout: click (or CTRL + ALT + SPACE) for the next one
+        // Keyboard layout: left click opens the selector, right click (or CTRL + ALT + SPACE) picks the next one
         MouseArea {
+            id: layoutButton
             implicitWidth: layoutText.implicitWidth
             Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.keyboard.name) : bar.hideTooltip(this)
-            onClicked: bar.keyboard.next()
+            onContainsMouseChanged: containsMouse && !bar.layoutOpen ? bar.showTooltip(this, bar.keyboard.name) : bar.hideTooltip(this)
+            onClicked: mouse => {
+                bar.hideTooltip(this);
+                if (mouse.button === Qt.RightButton)
+                    bar.keyboard.next();
+                else
+                    bar.toggleLayouts();
+            }
 
             BarText {
                 id: layoutText
@@ -1101,7 +1231,7 @@ PanelWindow {
             }
         }
 
-        // Bell: left click toggles do-not-disturb, right click opens the history
+        // Bell: left click opens the history, right click toggles do-not-disturb
         MouseArea {
             id: bell
             implicitWidth: dndIcon.implicitWidth
@@ -1111,11 +1241,12 @@ PanelWindow {
             cursorShape: Qt.PointingHandCursor
             onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.notifications.dnd ? "Notifications silenced" : "Notifications on") : bar.hideTooltip(this)
             onClicked: mouse => {
-                if (mouse.button === Qt.RightButton) {
+                if (mouse.button === Qt.LeftButton) {
                     bar.hideTooltip(this);
                     bar.notifications.historyOpen = !bar.notifications.historyOpen;
                     bar.weatherOpen = false;
                     bar.calendarOpen = false;
+                    bar.layoutOpen = false;
                     return;
                 }
                 bar.notifications.dnd = !bar.notifications.dnd;

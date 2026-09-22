@@ -12,7 +12,15 @@ Scope {
     property var layouts: [] // xkb codes from kb_layout, e.g. ["us", "lv", "ru"]
     property int index: 0
     property string name: "" // e.g. "Latvian"
-    readonly property string code: ({ us: "EN" })[layouts[index]] ?? (layouts[index] ?? "").toUpperCase()
+    readonly property string code: codeOf(index)
+
+    function codeOf(i: int): string {
+        return ({ us: "EN" })[layouts[i]] ?? (layouts[i] ?? "").toUpperCase();
+    }
+
+    function nameOf(i: int): string {
+        return ({ us: "English", lv: "Latvian", ru: "Russian" })[layouts[i]] ?? codeOf(i);
+    }
 
     property string activeWindow: ""
     property var windowLayouts: ({}) // window address -> layout index
@@ -21,10 +29,13 @@ Scope {
         Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", "next"]);
     }
 
+    function select(i: int): void {
+        if (i !== index)
+            Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", String(i)]);
+    }
+
     function restore(address: string): void {
-        const wanted = windowLayouts[address] ?? 0;
-        if (wanted !== index)
-            Quickshell.execDetached(["hyprctl", "switchxkblayout", "all", String(wanted)]);
+        select(windowLayouts[address] ?? 0);
     }
 
     // The activelayout event only names the layout, so read the index from the main keyboard.

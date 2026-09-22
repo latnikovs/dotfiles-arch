@@ -25,12 +25,15 @@ bar="Click clock	Calendar
 Right-click clock	Show date
 Click weather	Weather details
 Middle-click weather	Refresh weather
-Click bell	Toggle do not disturb
-Right-click bell	Notification history
+Click layout	Choose keyboard layout
+Right-click layout	Next keyboard layout
+Click bell	Notification history
+Right-click bell	Toggle do not disturb
 h / l in calendar	Previous / next month
 k / j in calendar	Previous / next year
 Scroll in calendar	Previous / next month
 Enter in calendar	Back to today
+k / j, Enter in layouts	Move / pick layout
 Esc in bar dropdowns	Close"
 
 printf '%s\n%s\n' "$hypr" "$bar" \
