@@ -229,7 +229,9 @@ hl.config({
 
 hl.config({
     input = {
-        kb_layout  = "us",
+        -- English, Latvian, Russian; CTRL + ALT + SPACE cycles them, and Quickshell remembers
+        -- the layout per window (Keyboard.qml). Binds always use the first layout.
+        kb_layout  = "us,lv,ru",
         kb_variant = "",
         kb_model   = "",
         kb_options = "",
@@ -306,6 +308,7 @@ bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
 bind(mainMod .. " + CTRL + SPACE", "Next wallpaper", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
+bind("CTRL + ALT + SPACE", "Next keyboard layout", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"))
 
 -- Screenshots; SUPER + CTRL variants for keyboards without a Print key (e.g. Mac)
 local screenshot = "~/.config/hypr/scripts/screenshot"

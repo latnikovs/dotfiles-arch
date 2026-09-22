@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/CPU/RAM/battery/network/notifications on the right.
+// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/network/notifications on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -21,6 +21,7 @@ PanelWindow {
     readonly property color accent: "#88c0d0"
 
     required property Notifications notifications
+    required property Keyboard keyboard
 
     anchors {
         top: true
@@ -1039,6 +1040,22 @@ PanelWindow {
                         implicitSize: 12
                     }
                 }
+            }
+        }
+
+        // Keyboard layout: click (or CTRL + ALT + SPACE) for the next one
+        MouseArea {
+            implicitWidth: layoutText.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.keyboard.name) : bar.hideTooltip(this)
+            onClicked: bar.keyboard.next()
+
+            BarText {
+                id: layoutText
+                anchors.centerIn: parent
+                text: bar.keyboard.code
             }
         }
 

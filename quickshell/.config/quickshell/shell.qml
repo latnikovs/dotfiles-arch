@@ -20,11 +20,16 @@ ShellRoot {
             required property ShellScreen modelData
             screen: modelData
             notifications: notificationService
+            keyboard: keyboardService
         }
     }
 
     Notifications {
         id: notificationService
+    }
+
+    Keyboard {
+        id: keyboardService
     }
 
     // Bar dropdowns on the focused monitor: `quickshell ipc call bar <function>`
