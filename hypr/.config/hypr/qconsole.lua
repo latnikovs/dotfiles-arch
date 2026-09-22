@@ -136,8 +136,3 @@ hl.on("window.open", recount)
 hl.on("window.destroy", recount)
 hl.on("window.move_to_workspace", recount)
 hl.on("window.update_rules", recount)
-
--- The style names the edge the offset is measured from: "slide top" drops it down,
--- "slide bottom" retracts it back up
-hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = 3, bezier = "easeOutQuint",   style = "slide top" })
-hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2, bezier = "easeInOutCubic", style = "slide bottom" })

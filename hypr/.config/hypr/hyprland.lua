@@ -276,6 +276,17 @@ local function bind(keys, description, dispatcher, opts)
     return hl.bind(keys, dispatcher, opts)
 end
 
+-- Every special workspace shares one animation, and it's read as the toggle starts,
+-- so each toggle sets its own first. For slides the style names the edge the offset
+-- is measured from: "slide top" drops in from above, "slide bottom" retracts back up.
+local function toggleSpecial(name, show, hide)
+    return function()
+        hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = 3, bezier = "easeOutQuint",   style = show })
+        hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2, bezier = "easeInOutCubic", style = hide })
+        hl.dispatch(hl.dsp.workspace.toggle_special(name))
+    end
+end
+
 bind(mainMod .. " + K", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
@@ -287,7 +298,7 @@ bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/syste
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
-bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", hl.dsp.workspace.toggle_special("passwords"))
+bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
@@ -370,9 +381,9 @@ bind(mainMod .. " + A",        "Select all", sendShortcut("CTRL", "A"))
 bind(mainMod .. " + CTRL + V", "Clipboard history", hl.dsp.exec_cmd("~/.config/hypr/scripts/clipboard-history"))
 
 -- Scratchpad: a drop-down console seeded with Claude Code (qconsole.lua), same keys as Omarchy
-bind(mainMod .. " + S",             "Toggle scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
+bind(mainMod .. " + S",             "Toggle scratchpad", toggleSpecial("scratchpad", "slide top", "slide bottom"))
 bind(mainMod .. " + ALT + S",       "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
-bind(mainMod .. " + grave",         "Toggle scratchpad", hl.dsp.workspace.toggle_special("scratchpad"))
+bind(mainMod .. " + grave",         "Toggle scratchpad", toggleSpecial("scratchpad", "slide top", "slide bottom"))
 bind(mainMod .. " + SHIFT + grave", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
 
 -- Scroll through existing workspaces with mainMod + scroll
@@ -464,6 +475,14 @@ hl.workspace_rule({
     workspace        = passwords,
     on_created_empty = "keepassxc",
 })
+
+-- Toggling a special workspace leaves focus behind, so typing would go to the
+-- window underneath. A freshly relaunched KeePassXC takes focus as it maps.
+hl.on("workspace.special_active", function(ws)
+    if ws and ws.name == passwords then
+        hl.dispatch(hl.dsp.focus({ window = "class:^KeePassXC$" }))
+    end
+end)
 
 -- Size only the main window; its dialogs (unlock, browser access) keep their own.
 -- It opens as "KeePassXC", or "<file>.kdbx [Locked] - KeePassXC" once a database is remembered.
