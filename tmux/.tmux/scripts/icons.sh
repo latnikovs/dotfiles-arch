@@ -32,7 +32,6 @@ tmux set -g @ico_node $'\U000f0399'     # md-nodejs
 tmux set -g @ico_python $'\U000f0320'   # md-language-python
 tmux set -g @ico_docker $'\U000f0868'   # md-docker
 tmux set -g @ico_ssh $'\U000f0318'      # md-lan-connect
-tmux set -g @ico_folder $'\U000f024b'   # md-folder
 tmux set -g @ico_java $'\U000f0176'     # md-coffee
 tmux set -g @ico_shell $'\U000f018d'    # md-console
 # Not a robot: md-robot is an android head, and the sparkle is what reads as

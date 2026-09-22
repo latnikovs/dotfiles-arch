@@ -18,9 +18,6 @@ if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
 fi
 "$HOME/.tmux/plugins/tpm/bin/install_plugins"
 
-# yazi flavors pinned in package.toml
-ya pkg install
-
 # Docker daemon, usable without sudo (group applies from the next login)
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"

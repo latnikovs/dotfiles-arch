@@ -41,16 +41,6 @@ td() {
     fi
 }
 
-# y: yazi that cd's to where you navigated on exit (q keeps it, Q doesn't)
-y() {
-    local tmp cwd
-    tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-    command yazi "$@" --cwd-file="$tmp"
-    IFS= read -r -d '' cwd < "$tmp"
-    [[ -n $cwd && $cwd != "$PWD" && -d $cwd ]] && builtin cd -- "$cwd"
-    command rm -f -- "$tmp"
-}
-
 command -v direnv >/dev/null && eval "$(direnv hook bash)"
 
 # zoxide last: its prompt hook must see the final PATH. Defines z and zi.

@@ -32,7 +32,6 @@ zoxide
 direnv
 bat
 eza
-yazi
 docker
 docker-compose
 docker-buildx
