@@ -51,3 +51,7 @@ gvfs-nfs
 ffmpegthumbnailer
 xdg-desktop-portal-gtk
 xdg-utils
+libreoffice-fresh
+# LibreOffice spell checking (no Latvian package; use the LibreOffice extension)
+hunspell-en_us
+hunspell-ru
