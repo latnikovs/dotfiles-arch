@@ -72,6 +72,11 @@ sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
 
+# Dark GTK apps, as in Omarchy: libadwaita (Nautilus) reads color-scheme through
+# xdg-desktop-portal-gtk, older GTK 3 apps the theme name
+gsettings set org.gnome.desktop.interface color-scheme prefer-dark
+gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark
+
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
     dst=$HOME/.config/hypr/local.lua
