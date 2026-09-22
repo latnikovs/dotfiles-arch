@@ -29,7 +29,7 @@ hl.monitor({
 
 -- Set programs that you use
 local terminal    = "kitty"
-local fileManager = "dolphin"
+local fileManager = "~/.config/hypr/scripts/files"
 local browser     = "chromium"
 local menu        = "pkill -x wofi || wofi"
 local passwords   = "special:passwords"
@@ -296,8 +296,10 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 -- closeWindowBind:set_enabled(false)
 bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/system logout"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
-bind(mainMod .. " + E", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
+-- File manager (Nautilus), same keys as Omarchy
+bind(mainMod .. " + SHIFT + F",       "File manager", hl.dsp.exec_cmd(fileManager))
+bind(mainMod .. " + ALT + SHIFT + F", "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
@@ -491,6 +493,28 @@ hl.window_rule({
     match = { class = "^KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
 
     size  = { 1200, 800 },
+})
+
+-- Nautilus, as in Omarchy: Space previews (sushi) float, as do the GTK portal's
+-- pickers and prompts whatever the asking app titled them, and Nautilus' own dialogs
+hl.window_rule({
+    name  = "float-file-previews",
+    match = { class = "^(org\\.gnome\\.NautilusPreviewer|xdg-desktop-portal-gtk)$" },
+
+    float  = true,
+    center = true,
+    size   = { 875, 600 },
+})
+
+hl.window_rule({
+    name  = "float-file-dialogs",
+    match = {
+        class = "^org\\.gnome\\.Nautilus$",
+        title = "^(Open.*Files?|Open [Ff]older.*|Save.*Files?|Save.*As|Save|All Files|.*wants to (open|save).*|[Cc]hoose.*)$",
+    },
+
+    float  = true,
+    center = true,
 })
 
 -- Hyprland-run windowrule

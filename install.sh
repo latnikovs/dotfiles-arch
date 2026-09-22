@@ -69,6 +69,9 @@ sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcggh
 sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
     <<<'{ "PasswordManagerEnabled": false }'
 
+# Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
+xdg-mime default org.gnome.Nautilus.desktop inode/directory
+
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua
     dst=$HOME/.config/hypr/local.lua

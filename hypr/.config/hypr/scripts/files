@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Usage: files [cwd]   open Nautilus; with cwd, in the focused terminal's directory (as Omarchy)
+set -euo pipefail
+
+# Directory of the focused terminal, or $HOME. kitty forks the shell (or whatever it
+# runs) next to kitten helpers, so the newest child that isn't a kitten is the one
+# in the window; for a tmux client, tmux knows the pane's directory.
+terminal_cwd() {
+    local window pid child newest="" exe cwd=""
+    window=$(hyprctl activewindow -j)
+    if jq -e '.tags | map(sub("\\*$"; "")) | index("terminal")' <<<"$window" >/dev/null; then
+        pid=$(jq -r .pid <<<"$window")
+        for child in $(cat /proc/"$pid"/task/*/children 2>/dev/null); do
+            [[ $(readlink /proc/"$child"/exe) == */kitten ]] && continue
+            (( child > ${newest:-0} )) && newest=$child
+        done
+    fi
+    if [[ -n $newest ]]; then
+        exe=$(readlink /proc/"$newest"/exe)
+        if [[ ${exe##*/} == tmux ]]; then
+            cwd=$(tmux list-clients -F '#{client_pid} #{pane_current_path}' 2>/dev/null |
+                awk -v pid="$newest" '$1 == pid { sub(/^[^ ]+ /, ""); print; exit }')
+        else
+            cwd=$(readlink /proc/"$newest"/cwd)
+        fi
+    fi
+    [[ -d $cwd ]] && echo "$cwd" || echo "$HOME"
+}
+
+case ${1:-} in
+    cwd) exec nautilus --new-window "$(terminal_cwd)" ;;
+    *)   exec nautilus --new-window ;;
+esac

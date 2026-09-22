@@ -39,3 +39,12 @@ gnome-keyring
 gcr-4
 libsecret
 keepassxc
+nautilus
+sushi
+gvfs
+gvfs-mtp
+gvfs-smb
+gvfs-nfs
+ffmpegthumbnailer
+xdg-desktop-portal-gtk
+xdg-utils
