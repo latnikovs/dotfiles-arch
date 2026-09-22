@@ -1,0 +1,53 @@
+/* Nord for libadwaita (GTK 4) apps such as Nautilus, over the dark scheme
+   install.sh selects. Translucent like kitty (background_opacity 0.9), with
+   Hyprland's blur behind.
+
+   Named colors, not the newer --window-bg-color style variables: libadwaita
+   derives those from these, and setting the variables here leaves them invalid
+   (transparent window, black text). Nautilus' file area is painted by the view
+   color alone, so that's where the translucency goes. */
+
+@define-color nord0 #2e3440;
+@define-color nord1 #3b4252;
+@define-color nord2 #434c5e;
+@define-color nord4 #d8dee9;
+@define-color nord6 #eceff4;
+
+@define-color window_bg_color alpha(@nord0, 0.9);
+@define-color window_fg_color @nord4;
+@define-color view_bg_color alpha(@nord0, 0.9);
+@define-color view_fg_color @nord4;
+@define-color headerbar_bg_color alpha(@nord0, 0.9);
+@define-color headerbar_fg_color @nord6;
+@define-color headerbar_backdrop_color alpha(@nord0, 0.9);
+@define-color sidebar_bg_color alpha(@nord1, 0.9);
+@define-color sidebar_fg_color @nord4;
+@define-color sidebar_backdrop_color alpha(@nord1, 0.9);
+@define-color secondary_sidebar_bg_color alpha(@nord1, 0.9);
+@define-color secondary_sidebar_fg_color @nord4;
+@define-color secondary_sidebar_backdrop_color alpha(@nord1, 0.9);
+@define-color card_bg_color alpha(@nord2, 0.6);
+@define-color card_fg_color @nord4;
+@define-color popover_bg_color @nord1;
+@define-color popover_fg_color @nord4;
+@define-color dialog_bg_color @nord0;
+@define-color dialog_fg_color @nord4;
+@define-color thumbnail_bg_color @nord1;
+@define-color thumbnail_fg_color @nord4;
+
+/* Frost accents, as the Hyprland border */
+@define-color accent_bg_color #5e81ac;         /* nord10 */
+@define-color accent_fg_color @nord6;
+@define-color accent_color #88c0d0;            /* nord8 */
+@define-color destructive_bg_color #bf616a;    /* nord11 */
+@define-color destructive_fg_color @nord6;
+@define-color destructive_color #bf616a;
+@define-color success_bg_color #a3be8c;        /* nord14 */
+@define-color success_fg_color @nord0;
+@define-color success_color #a3be8c;
+@define-color warning_bg_color #ebcb8b;        /* nord13 */
+@define-color warning_fg_color @nord0;
+@define-color warning_color #ebcb8b;
+@define-color error_bg_color #bf616a;
+@define-color error_fg_color @nord6;
+@define-color error_color #bf616a;
