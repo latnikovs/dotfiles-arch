@@ -1,0 +1,10 @@
+# Satty: screenshot annotation (screenshot script, imv's Ctrl+E)
+[general]
+# Enter copies and saves, then quits; Esc quits without saving
+actions-on-enter = ["save-to-clipboard", "save-to-file"]
+actions-on-escape = ["exit"]
+early-exit = ["all"]
+copy-command = "wl-copy"
+output-filename = "~/Pictures/Screenshots/screenshot-%Y%m%d-%H%M%S.png"
+initial-tool = "arrow"
+resize = { mode = "smart" }

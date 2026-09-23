@@ -1,28 +1,47 @@
 #!/usr/bin/env bash
-# Usage: screenshot [region|output]
-#   region  drag a region or click a window (default)
-#   output  capture the focused monitor
+# Usage: screenshot [annotate|region|output]
+#   annotate  drag a region or click a window, then mark it up in Satty (default)
+#   region    drag a region or click a window
+#   output    capture the focused monitor
 # Saves to ~/Pictures/Screenshots, links it as latest.png and copies it to the clipboard.
+# In Satty, Enter does the same (Esc discards).
 set -euo pipefail
 
 dir=${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots
 file=$dir/screenshot-$(date +%Y%m%d-%H%M%S).png
 mkdir -p "$dir"
 
-case ${1:-region} in
-    region)
+# Prints the geometry of a dragged region or clicked window; fails on Escape.
+select_region() {
+    # Offer the visible windows as click targets; dragging still selects a region.
+    local ws
+    ws=$(hyprctl -j monitors | jq -c '[.[].activeWorkspace.id]')
+    hyprctl -j clients \
+        | jq -r --argjson ws "$ws" '.[] | select(.workspace.id as $w | $ws | index($w))
+            | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' \
+        | slurp
+}
+
+mode=${1:-annotate}
+case $mode in
+    annotate | region)
         # Freeze the screen so menus and hover states survive the selection.
         hyprpicker -r -z & freeze=$!
         trap 'kill $freeze 2>/dev/null || true' EXIT
         sleep 0.1
 
-        # Offer the visible windows as click targets; dragging still selects a region.
-        ws=$(hyprctl -j monitors | jq -c '[.[].activeWorkspace.id]')
-        geom=$(hyprctl -j clients \
-            | jq -r --argjson ws "$ws" '.[] | select(.workspace.id as $w | $ws | index($w))
-                | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' \
-            | slurp) || exit 0 # Escape cancels
-        grim -g "$geom" "$file"
+        geom=$(select_region) || exit 0 # Escape cancels
+        if [[ $mode == region ]]; then
+            grim -g "$geom" "$file"
+        else
+            raw=$(mktemp --suffix=.png)
+            trap 'kill $freeze 2>/dev/null || true; rm -f "$raw"' EXIT
+            grim -g "$geom" "$raw"
+            kill $freeze 2>/dev/null || true
+            # Enter writes $file; Esc leaves nothing behind
+            satty --filename "$raw" --output-filename "$file" --disable-notifications || true
+            [[ -f $file ]] || exit 0
+        fi
         ;;
     output)
         grim -o "$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')" "$file"

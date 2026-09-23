@@ -1,0 +1,14 @@
+# Extra keys, as in Omarchy (arrows/h/l browse the folder, +/- zoom, f fullscreen, q quits)
+[binds]
+
+# Trash the current image and quit (recoverable from Trash)
+<Ctrl+x> = exec gio trash -- "$imv_current_file"; quit
+
+# Trash the current image and move to the next one
+<Ctrl+Shift+X> = exec gio trash -- "$imv_current_file"; close
+
+# Rotate the image file itself by 90 degrees
+<Ctrl+r> = exec mogrify -rotate 90 "$imv_current_file"
+
+# Annotate in Satty and quit; Enter saves <name>-edited.png next to the original
+<Ctrl+e> = exec satty --filename "$imv_current_file" --output-filename "${imv_current_file%.*}-edited.png" & ; quit

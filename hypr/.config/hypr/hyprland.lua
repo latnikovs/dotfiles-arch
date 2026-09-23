@@ -319,9 +319,11 @@ bind("CTRL + ALT + SPACE", "Next keyboard layout", hl.dsp.exec_cmd("hyprctl swit
 
 -- Screenshots; SUPER + CTRL variants for keyboards without a Print key (e.g. Mac)
 local screenshot = "~/.config/hypr/scripts/screenshot"
-bind("Print",                         "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
+bind("Print",                         "Screenshot region, annotate", hl.dsp.exec_cmd(screenshot .. " annotate"))
+bind("ALT + Print",                   "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
 bind("SHIFT + Print",                 "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
-bind(mainMod .. " + CTRL + S",         "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
+bind(mainMod .. " + CTRL + S",         "Screenshot region, annotate", hl.dsp.exec_cmd(screenshot .. " annotate"))
+bind(mainMod .. " + CTRL + ALT + S",   "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
 bind(mainMod .. " + CTRL + SHIFT + S", "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
 
 -- Notifications (quickshell), same keys as Omarchy
@@ -505,16 +507,25 @@ hl.window_rule({
     size  = { 1200, 800 },
 })
 
--- Nautilus, as in Omarchy: Space previews (sushi) and the PDF viewer float, as do
--- the GTK portal's pickers and prompts whatever the asking app titled them, and
--- Nautilus' own dialogs
+-- Nautilus, as in Omarchy: Space previews (sushi), the PDF and image viewers float,
+-- as do the GTK portal's pickers and prompts whatever the asking app titled them,
+-- and Nautilus' own dialogs
 hl.window_rule({
     name  = "float-file-previews",
-    match = { class = "^(org\\.gnome\\.NautilusPreviewer|org\\.gnome\\.Papers|xdg-desktop-portal-gtk)$" },
+    match = { class = "^(org\\.gnome\\.NautilusPreviewer|org\\.gnome\\.Papers|imv|xdg-desktop-portal-gtk)$" },
 
     float  = true,
     center = true,
     size   = { 875, 600 },
+})
+
+-- Satty (screenshot annotation) sizes itself to the image
+hl.window_rule({
+    name  = "float-satty",
+    match = { class = "^com\\.gabm\\.satty$" },
+
+    float  = true,
+    center = true,
 })
 
 hl.window_rule({

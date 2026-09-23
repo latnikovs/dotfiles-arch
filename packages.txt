@@ -45,6 +45,9 @@ keepassxc
 nautilus
 sushi
 papers
+imv
+imagemagick
+satty
 gvfs
 gvfs-mtp
 gvfs-smb
