@@ -86,6 +86,8 @@ sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
 
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
+# PDFs open in Papers (GNOME's GTK 4 viewer, so it takes the Nord gtk.css)
+xdg-mime default org.gnome.Papers.desktop application/pdf
 
 # Dark GTK apps, as in Omarchy: libadwaita (Nautilus) reads color-scheme through
 # xdg-desktop-portal-gtk, older GTK 3 apps the theme name
