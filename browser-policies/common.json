@@ -1,0 +1,28 @@
+{
+    "GenAiDefaultSettings": 2,
+    "AIModeSettings": 1,
+    "GeminiSettings": 1,
+    "HelpMeWriteSettings": 2,
+    "TabCompareSettings": 2,
+    "HistorySearchSettings": 2,
+    "DevToolsGenAiSettings": 2,
+    "LensOverlaySettings": 1,
+    "GenAILocalFoundationalModelSettings": 1,
+    "BuiltInAIAPIsEnabled": false,
+
+    "MetricsReportingEnabled": false,
+    "UrlKeyedAnonymizedDataCollectionEnabled": false,
+    "DomainReliabilityAllowed": false,
+    "FeedbackSurveysEnabled": false,
+    "PrivacySandboxAdTopicsEnabled": false,
+    "PrivacySandboxSiteEnabledAdsEnabled": false,
+    "PrivacySandboxAdMeasurementEnabled": false,
+    "PrivacySandboxPromptEnabled": false,
+
+    "PromotionsEnabled": false,
+    "PromotionalTabsEnabled": false,
+    "ShoppingListEnabled": false,
+    "BackgroundModeEnabled": false,
+
+    "PasswordManagerEnabled": false
+}

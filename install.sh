@@ -8,7 +8,7 @@ sudo pacman -S --needed - < <(grep -vE '^\s*(#|$)' packages.txt)
 
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines || $pkg == keepassxc ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
@@ -97,27 +97,17 @@ done
 # KeePassXC-Browser, installed into Chromium from the Web Store on next start
 sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
     <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
-# KeePassXC is the password manager, so Chromium stops offering to save its own;
-# and it stops asking to be the default browser
-sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
-    <<<'{ "PasswordManagerEnabled": false, "DefaultBrowserSettingEnabled": false }'
-# Brave Origin: the same, and KeePassXC-Browser and Vimium installed from the
-# Web Store (removable only by changing this policy)
-sudo install -Dm644 /dev/stdin /etc/brave/policies/managed/dotfiles.json <<'JSON'
-{
-    "PasswordManagerEnabled": false,
-    "ExtensionSettings": {
-        "oboonakemofpalcgghocfoadofidjkkk": {
-            "installation_mode": "normal_installed",
-            "update_url": "https://clients2.google.com/service/update2/crx"
-        },
-        "dbepggeogbaibhgnhhndojpepiihcmeb": {
-            "installation_mode": "normal_installed",
-            "update_url": "https://clients2.google.com/service/update2/crx"
-        }
-    }
-}
-JSON
+# Browser policies (browser-policies/), merged by the browser from its managed dir.
+# common.json, for both: Google's AI features off (Gemini, AI Mode, Lens, Help me
+# write, the on-device model), no telemetry or Privacy Sandbox ad tracking, no
+# promotions, and no password manager of their own since KeePassXC is it.
+# chromium.json: it stops asking to be the default browser.
+# brave.json: KeePassXC-Browser and Vimium from the Web Store (removable only here).
+for browser in chromium:/etc/chromium/policies/managed brave:/etc/brave/policies/managed; do
+    dir=${browser#*:}
+    sudo install -Dm644 browser-policies/common.json "$dir/dotfiles-common.json"
+    sudo install -Dm644 "browser-policies/${browser%%:*}.json" "$dir/dotfiles.json"
+done
 
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
