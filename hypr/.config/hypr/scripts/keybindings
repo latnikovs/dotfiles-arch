@@ -27,6 +27,13 @@ Click weather	Weather details
 Middle-click weather	Refresh weather
 Click layout	Choose keyboard layout
 Right-click layout	Next keyboard layout
+Click volume	Audio mixer
+Right-click volume	Mute
+Scroll on volume	Volume up / down
+Click microphone	Audio mixer (shown while recording)
+Click Bluetooth	Bluetooth devices
+Right-click Bluetooth	Bluetooth on / off
+Click network	Network
 Click bell	Notification history
 Right-click bell	Toggle do not disturb
 h / l in calendar	Previous / next month
@@ -34,6 +41,7 @@ k / j in calendar	Previous / next year
 Scroll in calendar	Previous / next month
 Enter in calendar	Back to today
 k / j, Enter in layouts	Move / pick layout
+Ctrl + V in Wi-Fi password	Paste
 Esc in bar dropdowns	Close"
 
 printf '%s\n%s\n' "$hypr" "$bar" \

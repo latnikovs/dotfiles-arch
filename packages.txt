@@ -15,6 +15,18 @@ hyprpicker
 jq
 quickshell
 libnotify
+# Audio: PipeWire's session manager (wpctl, default devices, the bar's mixer)
+# and the PulseAudio and ALSA front ends apps play through
+wireplumber
+pipewire-pulse
+pipewire-alsa
+# Network: NetworkManager, which the bar's network dropdown drives (it replaces
+# systemd-networkd); the connection editor covers VPNs, static IPs, enterprise Wi-Fi
+networkmanager
+nm-connection-editor
+# Bluetooth: BlueZ for the bar's Bluetooth dropdown, bluetoothctl for PIN pairing
+bluez
+bluez-utils
 hyprlock
 hypridle
 upower

@@ -306,9 +306,10 @@ bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/syste
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
--- File manager (Nautilus), same keys as Omarchy
-bind(mainMod .. " + SHIFT + F",       "File manager", hl.dsp.exec_cmd(fileManager))
-bind(mainMod .. " + ALT + SHIFT + F", "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
+-- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
+-- terminal's directory (home for any other window), the Alt one always opens home.
+bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
+bind(mainMod .. " + ALT + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
@@ -334,10 +335,13 @@ bind(mainMod .. " + ALT + comma",   "Open last notification", hl.dsp.exec_cmd(no
 bind(mainMod .. " + CTRL + comma",  "Toggle do not disturb", hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
 bind(mainMod .. " + SHIFT + ALT + comma", "Notification history", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
 
--- Bar dropdowns (quickshell): calendar as in Omarchy; weather is the dropdown here, not Omarchy's notification
+-- Bar dropdowns (quickshell): calendar, audio, Wi-Fi and Bluetooth on Omarchy's keys; weather is the dropdown here, not Omarchy's notification
 local bar = "quickshell ipc call bar "
 bind(mainMod .. " + CTRL + ALT + D", "Calendar", hl.dsp.exec_cmd(bar .. "toggleCalendar"))
 bind(mainMod .. " + CTRL + ALT + W", "Weather", hl.dsp.exec_cmd(bar .. "toggleWeather"))
+bind(mainMod .. " + CTRL + A",       "Audio", hl.dsp.exec_cmd(bar .. "toggleAudio"))
+bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNetwork"))
+bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
 
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
 bind(mainMod .. " + J", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only

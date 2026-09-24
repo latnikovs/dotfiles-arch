@@ -33,6 +33,12 @@ mise install
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 
+# Audio: WirePlumber and the PulseAudio socket, in the user session
+systemctl --user enable --now wireplumber.service pipewire-pulse.socket
+
+# Bluetooth daemon; the bar hides its icon on machines without an adapter
+sudo systemctl enable --now bluetooth.service
+
 # Docker daemon, usable without sudo (group applies from the next login)
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
@@ -105,4 +111,13 @@ if [[ -n ${1:-} ]]; then
     else
         cp "$src" "$dst"
     fi
+fi
+
+# NetworkManager takes over from systemd-networkd (the bar's network dropdown needs it).
+# Last, since the switch drops the connection for a few seconds. networkd comes with
+# sockets that restart it, so they all stop in one go (stopping only the service fails).
+if ! systemctl is-enabled --quiet NetworkManager.service; then
+    sudo systemctl disable systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service
+    sudo systemctl stop 'systemd-networkd*'
+    sudo systemctl enable --now NetworkManager.service
 fi

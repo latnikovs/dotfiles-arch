@@ -43,5 +43,17 @@ ShellRoot {
         function toggleWeather(): void {
             root.focusedBar()?.toggleWeather();
         }
+
+        function toggleAudio(): void {
+            root.focusedBar()?.toggleAudio();
+        }
+
+        function toggleNetwork(): void {
+            root.focusedBar()?.toggleNetwork();
+        }
+
+        function toggleBluetooth(): void {
+            root.focusedBar()?.toggleBluetooth();
+        }
     }
 }

@@ -1,9 +1,13 @@
-// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/network/notifications on the right.
+// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/
+// microphone in use/volume/Bluetooth/network/notifications on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Bluetooth
 import Quickshell.Hyprland
 import Quickshell.Io
+import Quickshell.Networking
+import Quickshell.Services.Pipewire
 import Quickshell.Services.SystemTray
 import Quickshell.Services.UPower
 import Quickshell.Wayland
@@ -34,25 +38,19 @@ PanelWindow {
     WlrLayershell.namespace: "bar"
     WlrLayershell.layer: WlrLayer.Top
 
-    component BarText: Text {
-        color: "#d8dee9"
-        font.family: "JetBrainsMono Nerd Font"
-        font.pixelSize: 12
-        verticalAlignment: Text.AlignVCenter
-    }
-
     // ---- Keys for the dropdowns. Hyprland may give keyboard focus to the bar rather than the
     //      open popup, so both hand their keys here.
 
     // Esc closes; in the calendar Left/Right (h/l) step months, Up/Down (k/j) years, Enter goes back to today;
-    // in the layout selector Up/Down (k/j) move and Enter picks
+    // in the layout selector Up/Down (k/j) move and Enter picks; a Wi-Fi password prompt takes every key
     function panelKey(event) {
         const k = event.key;
+        if (networkPanel.open && networkPanel.handleKey(event)) {
+            event.accepted = true;
+            return;
+        }
         if (k === Qt.Key_Escape) {
-            calendarOpen = false;
-            weatherOpen = false;
-            layoutOpen = false;
-            notifications.historyOpen = false;
+            closePanels();
         } else if (layoutOpen) {
             const n = keyboard.layouts.length;
             if ([Qt.Key_Up, Qt.Key_K, Qt.Key_Down, Qt.Key_J].includes(k))
@@ -78,6 +76,36 @@ PanelWindow {
     Item {
         focus: true
         Keys.onPressed: event => bar.panelKey(event)
+    }
+
+    // One dropdown at a time
+    function closePanels() {
+        calendarOpen = false;
+        weatherOpen = false;
+        layoutOpen = false;
+        notifications.historyOpen = false;
+        audioPanel.open = false;
+        networkPanel.open = false;
+        bluetoothPanel.open = false;
+    }
+
+    function toggleDropdown(panel) {
+        const open = !panel.open;
+        closePanels();
+        panel.open = open;
+    }
+
+    function toggleAudio() {
+        toggleDropdown(audioPanel);
+    }
+
+    function toggleNetwork() {
+        toggleDropdown(networkPanel);
+    }
+
+    function toggleBluetooth() {
+        if (btAdapter)
+            toggleDropdown(bluetoothPanel);
     }
 
     // ---- Tooltip, shared by every module
@@ -269,13 +297,11 @@ PanelWindow {
     }
 
     function toggleCalendar() {
-        calendarOpen = !calendarOpen;
-        if (calendarOpen) {
+        const open = !calendarOpen;
+        closePanels();
+        calendarOpen = open;
+        if (open)
             calendarView = new Date(clock.date.getFullYear(), clock.date.getMonth(), 1);
-            weatherOpen = false;
-            layoutOpen = false;
-            notifications.historyOpen = false;
-        }
     }
 
     function moveCalendar(months) {
@@ -612,18 +638,9 @@ PanelWindow {
     }
 
     function toggleWeather() {
-        weatherOpen = !weatherOpen;
-        if (weatherOpen) {
-            notifications.historyOpen = false;
-            calendarOpen = false;
-            layoutOpen = false;
-        }
-    }
-
-    component Caption: BarText {
-        color: Qt.darker(bar.fg, 1.4)
-        font.pixelSize: 10
-        font.letterSpacing: 1
+        const open = !weatherOpen;
+        closePanels();
+        weatherOpen = open;
     }
 
     // Calendar month stepping
@@ -809,30 +826,61 @@ PanelWindow {
         onCleared: bar.weatherOpen = false
     }
 
-    // ---- Network, polled every 5s
+    // ---- Audio (PipeWire): the default output's volume, and apps recording
 
-    property var net: ({ type: "disconnected" })
+    readonly property PwNode sink: Pipewire.defaultAudioSink
+    // Capture streams: an app has a microphone (or another source) open
+    readonly property var recorders: Pipewire.nodes.values.filter(n => n.type === PwNodeType.AudioInStream)
 
-    Process {
-        id: netProc
-        command: [Quickshell.shellDir + "/scripts/network-status"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    bar.net = JSON.parse(text);
-                } catch (e) {
-                    bar.net = { type: "disconnected" };
-                }
-            }
-        }
+    function volumeIcon(node) {
+        const audio = node?.audio;
+        if (!audio || audio.muted)
+            return "󰝟";
+        return audio.volume >= 0.67 ? "󰕾" : audio.volume >= 0.34 ? "󰖀" : "󰕿";
     }
 
-    Timer {
-        interval: 5000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: netProc.running = true
+    function setVolume(v) {
+        if (sink?.audio)
+            sink.audio.volume = Math.max(0, Math.min(1, v));
+    }
+
+    // Volume, mute and stream properties are only valid on bound nodes
+    PwObjectTracker {
+        objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource, ...bar.recorders]
+    }
+
+    AudioPanel {
+        id: audioPanel
+        bar: bar
+        button: volumeButton
+    }
+
+    // ---- Network (NetworkManager): wired when plugged in, else the Wi-Fi network
+
+    readonly property var netDevices: Networking.devices.values
+    readonly property var wiredUp: netDevices.find(d => d.type === DeviceType.Wired && d.connected) ?? null
+    readonly property var wifiDevice: netDevices.find(d => d.type === DeviceType.Wifi) ?? null
+    readonly property var wifiNetwork: wifiDevice?.networks.values.find(n => n.connected) ?? null
+
+    function wifiIcon(strength) {
+        return ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"][Math.min(4, Math.floor(strength * 5))];
+    }
+
+    NetworkPanel {
+        id: networkPanel
+        bar: bar
+        button: netButton
+    }
+
+    // ---- Bluetooth (BlueZ), hidden without an adapter
+
+    readonly property var btAdapter: Bluetooth.defaultAdapter
+    readonly property var btConnected: btAdapter?.devices.values.filter(d => d.connected) ?? []
+
+    BluetoothPanel {
+        id: bluetoothPanel
+        bar: bar
+        button: btButton
     }
 
     // ---- CPU usage from /proc/stat, polled every 5s
@@ -1009,13 +1057,11 @@ PanelWindow {
     property int layoutCursor: 0 // row highlighted for the keyboard
 
     function toggleLayouts() {
-        layoutOpen = !layoutOpen;
-        if (layoutOpen) {
+        const open = !layoutOpen;
+        closePanels();
+        layoutOpen = open;
+        if (open)
             layoutCursor = keyboard.index;
-            calendarOpen = false;
-            weatherOpen = false;
-            notifications.historyOpen = false;
-        }
     }
 
     function selectLayout(i) {
@@ -1214,20 +1260,119 @@ PanelWindow {
             color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.fg
         }
 
+        // Microphone in use: shown only while an app records, crossed out if the input is muted
         MouseArea {
+            readonly property bool micMuted: Pipewire.defaultAudioSource?.audio?.muted ?? false
+            readonly property string tip: {
+                const apps = [...new Set(bar.recorders.map(n => n.properties["application.name"] || n.name))];
+                return `${micMuted ? "Muted, but recorded by" : "Recording"}: ${apps.join(", ")}`;
+            }
+
+            visible: bar.recorders.length > 0
+            implicitWidth: micIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.toggleAudio();
+            }
+
+            BarText {
+                id: micIcon
+                anchors.centerIn: parent
+                text: parent.micMuted ? "󰍭" : "󰍬"
+                color: parent.micMuted ? bar.muted : bar.urgent
+            }
+        }
+
+        // Volume: left click opens the mixer, right click mutes, scroll changes the volume
+        MouseArea {
+            id: volumeButton
+            readonly property string tip: bar.sink?.audio
+                ? `${bar.sink.description || bar.sink.name}: ${bar.sink.audio.muted ? "muted" : Math.round(bar.sink.audio.volume * 100) + "%"}`
+                : "No output device"
+
+            implicitWidth: volumeIcon.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !audioPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !audioPanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    if (bar.sink?.audio)
+                        bar.sink.audio.muted = !bar.sink.audio.muted;
+                    return;
+                }
+                bar.hideTooltip(this);
+                bar.toggleAudio();
+            }
+            onWheel: wheel => bar.setVolume((bar.sink?.audio?.volume ?? 0) + (wheel.angleDelta.y > 0 ? 0.05 : -0.05))
+
+            BarText {
+                id: volumeIcon
+                anchors.centerIn: parent
+                text: bar.volumeIcon(bar.sink)
+            }
+        }
+
+        // Bluetooth: left click opens the device list, right click turns it on or off
+        MouseArea {
+            id: btButton
+            readonly property string tip: !bar.btAdapter?.enabled ? "Bluetooth off"
+                : bar.btConnected.length > 0 ? bar.btConnected.map(d => d.name).join(", ") : "Bluetooth on"
+
+            visible: bar.btAdapter !== null
+            implicitWidth: btIcon.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !bluetoothPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !bluetoothPanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    bar.btAdapter.enabled = !bar.btAdapter.enabled;
+                    return;
+                }
+                bar.hideTooltip(this);
+                bar.toggleBluetooth();
+            }
+
+            BarText {
+                id: btIcon
+                anchors.centerIn: parent
+                text: !bar.btAdapter?.enabled ? "󰂲" : bar.btConnected.length > 0 ? "󰂱" : "󰂯"
+                color: bar.btAdapter?.enabled ? bar.fg : bar.muted
+            }
+        }
+
+        // Network: left click opens Wi-Fi and wired connections
+        MouseArea {
+            id: netButton
+            readonly property string tip: bar.wiredUp ? `Ethernet · ${bar.wiredUp.name}`
+                : bar.wifiNetwork ? `${bar.wifiNetwork.name} (${Math.round(bar.wifiNetwork.signalStrength * 100)}%)`
+                : "Disconnected"
+
             implicitWidth: netIcon.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
-            onContainsMouseChanged: {
-                const n = bar.net;
-                const tip = n.type === "wifi" ? `${n.ssid || n.dev} (${n.signal}%)` : n.type === "ethernet" ? `${n.dev} ${n.ip}` : "Disconnected";
-                containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this);
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !networkPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.toggleNetwork();
             }
 
             BarText {
                 id: netIcon
                 anchors.centerIn: parent
-                text: bar.net.type === "wifi" ? ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"][Math.min(4, Math.floor(bar.net.signal / 20))] : bar.net.type === "ethernet" ? "󰈀" : "󰤮"
+                text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
+                color: bar.wiredUp || bar.wifiNetwork ? bar.fg : bar.muted
             }
         }
 
@@ -1243,10 +1388,9 @@ PanelWindow {
             onClicked: mouse => {
                 if (mouse.button === Qt.LeftButton) {
                     bar.hideTooltip(this);
-                    bar.notifications.historyOpen = !bar.notifications.historyOpen;
-                    bar.weatherOpen = false;
-                    bar.calendarOpen = false;
-                    bar.layoutOpen = false;
+                    const open = !bar.notifications.historyOpen;
+                    bar.closePanels();
+                    bar.notifications.historyOpen = open;
                     return;
                 }
                 bar.notifications.dnd = !bar.notifications.dnd;
