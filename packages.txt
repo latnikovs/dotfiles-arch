@@ -20,6 +20,9 @@ libnotify
 wireplumber
 pipewire-pulse
 pipewire-alsa
+# Media and brightness keys (hyprland.lua)
+playerctl
+brightnessctl
 # Network: NetworkManager, which the bar's network dropdown drives (it replaces
 # systemd-networkd); the connection editor covers VPNs, static IPs, enterprise Wi-Fi
 networkmanager
