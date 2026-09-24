@@ -97,9 +97,10 @@ done
 # KeePassXC-Browser, installed into Chromium from the Web Store on next start
 sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
     <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
-# KeePassXC is the password manager, so Chromium stops offering to save its own
+# KeePassXC is the password manager, so Chromium stops offering to save its own;
+# and it stops asking to be the default browser
 sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
-    <<<'{ "PasswordManagerEnabled": false }'
+    <<<'{ "PasswordManagerEnabled": false, "DefaultBrowserSettingEnabled": false }'
 # Brave Origin: the same, and KeePassXC-Browser and Vimium installed from the
 # Web Store (removable only by changing this policy)
 sudo install -Dm644 /dev/stdin /etc/brave/policies/managed/dotfiles.json <<'JSON'
