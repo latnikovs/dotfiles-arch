@@ -102,7 +102,8 @@ sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcggh
 # write, the on-device model), no telemetry or Privacy Sandbox ad tracking, no
 # promotions, and no password manager of their own since KeePassXC is it.
 # chromium.json: it stops asking to be the default browser.
-# brave.json: KeePassXC-Browser and Vimium from the Web Store (removable only here).
+# brave.json: the same, and KeePassXC-Browser and Vimium from the Web Store
+# (removable only here).
 for browser in chromium:/etc/chromium/policies/managed brave:/etc/brave/policies/managed; do
     dir=${browser#*:}
     sudo install -Dm644 browser-policies/common.json "$dir/dotfiles-common.json"
