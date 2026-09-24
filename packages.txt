@@ -54,6 +54,8 @@ gvfs-smb
 gvfs-nfs
 ffmpegthumbnailer
 xdg-desktop-portal-gtk
+# Adwaita-dark for GTK 3 apps (Sushi, the portal file pickers); gtk-3.0/gtk.css adds Nord
+gnome-themes-extra
 xdg-utils
 libreoffice-fresh
 # LibreOffice spell checking (no Latvian package; use the LibreOffice extension)

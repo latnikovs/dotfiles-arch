@@ -1,0 +1,49 @@
+/* Nord for GTK 3 apps (Sushi's Space previews), over the Adwaita-dark theme
+   install.sh selects; matches gtk-4.0/gtk.css. Adwaita for GTK 3 draws from
+   these named colors, but paints header bars from its own, so they get rules. */
+
+@define-color nord0 #2e3440;
+@define-color nord1 #3b4252;
+@define-color nord2 #434c5e;
+@define-color nord3 #4c566a;
+@define-color nord4 #d8dee9;
+@define-color nord6 #eceff4;
+
+@define-color theme_bg_color alpha(@nord0, 0.9);
+@define-color theme_fg_color @nord4;
+@define-color theme_base_color alpha(@nord0, 0.9);
+@define-color theme_text_color @nord4;
+@define-color theme_unfocused_bg_color alpha(@nord0, 0.9);
+@define-color theme_unfocused_fg_color @nord4;
+@define-color theme_unfocused_base_color alpha(@nord0, 0.9);
+@define-color theme_unfocused_text_color @nord4;
+@define-color theme_selected_bg_color #5e81ac;  /* nord10 */
+@define-color theme_selected_fg_color @nord6;
+@define-color theme_unfocused_selected_bg_color #5e81ac;
+@define-color theme_unfocused_selected_fg_color @nord6;
+@define-color borders @nord2;
+@define-color unfocused_borders @nord2;
+
+headerbar,
+headerbar:backdrop,
+.titlebar,
+.titlebar:backdrop {
+    background: @nord0;
+    color: @nord6;
+    border-color: @nord2;
+    box-shadow: none;
+}
+
+headerbar button,
+.titlebar button {
+    background: @nord1;
+    color: @nord6;
+    border-color: @nord2;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+headerbar button:hover,
+.titlebar button:hover {
+    background: @nord2;
+}
