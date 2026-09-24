@@ -507,22 +507,21 @@ hl.window_rule({
     size  = { 1200, 800 },
 })
 
--- Nautilus, as in Omarchy: Space previews (sushi) and the PDF viewer float,
--- as do the GTK portal's pickers and prompts whatever the asking app titled them,
--- and Nautilus' own dialogs
+-- Nautilus, as in Omarchy: the PDF viewer floats, as do the GTK portal's pickers
+-- and prompts whatever the asking app titled them, and Nautilus' own dialogs
 hl.window_rule({
     name  = "float-file-previews",
-    match = { class = "^(org\\.gnome\\.NautilusPreviewer|org\\.gnome\\.Papers|xdg-desktop-portal-gtk)$" },
+    match = { class = "^(org\\.gnome\\.Papers|xdg-desktop-portal-gtk)$" },
 
     float  = true,
     center = true,
     size   = { 875, 600 },
 })
 
--- The image viewer floats too, but large: most of the monitor
+-- Space previews (sushi) and the image viewer float too, but large: most of the monitor
 hl.window_rule({
-    name  = "float-imv",
-    match = { class = "^imv$" },
+    name  = "float-large-previews",
+    match = { class = "^(org\\.gnome\\.NautilusPreviewer|imv)$" },
 
     float  = true,
     center = true,
