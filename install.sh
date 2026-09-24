@@ -30,6 +30,16 @@ if ! command -v mise >/dev/null; then
 fi
 mise install
 
+# yay, for what only the AUR has, as in Omarchy; built by hand the first time
+if ! command -v yay >/dev/null; then
+    yay_build=$(mktemp -d)
+    git clone https://aur.archlinux.org/yay-bin.git "$yay_build"
+    (cd "$yay_build" && makepkg -si --noconfirm)
+    rm -rf "$yay_build"
+fi
+# Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
+yay -S --needed --noconfirm brave-origin-bin
+
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 
@@ -65,10 +75,11 @@ if [[ ! -e $kpxc_ini ]]; then
     mkdir -p "${kpxc_ini%/*}"
     cp keepassxc/keepassxc.ini "$kpxc_ini"
 fi
-# Chromium connects to KeePassXC only while this manifest exists; KeePassXC
-# refreshes it on every start.
-kpxc_host=$HOME/.config/chromium/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json
-if [[ ! -e $kpxc_host ]]; then
+# Chromium and Brave Origin connect to KeePassXC only while this manifest
+# exists; KeePassXC refreshes Chromium's on every start.
+for profile in chromium BraveSoftware/Brave-Origin; do
+    kpxc_host=$HOME/.config/$profile/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json
+    [[ -e $kpxc_host ]] && continue
     mkdir -p "${kpxc_host%/*}"
     cat >"$kpxc_host" <<'JSON'
 {
@@ -82,13 +93,30 @@ if [[ ! -e $kpxc_host ]]; then
     "type": "stdio"
 }
 JSON
-fi
+done
 # KeePassXC-Browser, installed into Chromium from the Web Store on next start
 sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
     <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
 # KeePassXC is the password manager, so Chromium stops offering to save its own
 sudo install -Dm644 /dev/stdin /etc/chromium/policies/managed/dotfiles.json \
     <<<'{ "PasswordManagerEnabled": false }'
+# Brave Origin: the same, and KeePassXC-Browser and Vimium installed from the
+# Web Store (removable only by changing this policy)
+sudo install -Dm644 /dev/stdin /etc/brave/policies/managed/dotfiles.json <<'JSON'
+{
+    "PasswordManagerEnabled": false,
+    "ExtensionSettings": {
+        "oboonakemofpalcgghocfoadofidjkkk": {
+            "installation_mode": "normal_installed",
+            "update_url": "https://clients2.google.com/service/update2/crx"
+        },
+        "dbepggeogbaibhgnhhndojpepiihcmeb": {
+            "installation_mode": "normal_installed",
+            "update_url": "https://clients2.google.com/service/update2/crx"
+        }
+    }
+}
+JSON
 
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory

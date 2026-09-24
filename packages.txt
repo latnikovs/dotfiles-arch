@@ -5,6 +5,8 @@ wofi
 ttf-jetbrains-mono-nerd
 hyprpaper
 chromium
+# makepkg, for AUR packages (yay, Brave Origin) in install.sh
+base-devel
 less
 git-delta
 grim

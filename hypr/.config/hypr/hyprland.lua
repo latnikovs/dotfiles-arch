@@ -306,6 +306,7 @@ bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/syste
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
+bind(mainMod .. " + SHIFT + B", "Brave Origin", hl.dsp.exec_cmd("brave-origin"))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
 -- terminal's directory (home for any other window), the Alt one always opens home.
 bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
