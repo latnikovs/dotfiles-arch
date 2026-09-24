@@ -507,16 +507,26 @@ hl.window_rule({
     size  = { 1200, 800 },
 })
 
--- Nautilus, as in Omarchy: Space previews (sushi), the PDF and image viewers float,
+-- Nautilus, as in Omarchy: Space previews (sushi) and the PDF viewer float,
 -- as do the GTK portal's pickers and prompts whatever the asking app titled them,
 -- and Nautilus' own dialogs
 hl.window_rule({
     name  = "float-file-previews",
-    match = { class = "^(org\\.gnome\\.NautilusPreviewer|org\\.gnome\\.Papers|imv|xdg-desktop-portal-gtk)$" },
+    match = { class = "^(org\\.gnome\\.NautilusPreviewer|org\\.gnome\\.Papers|xdg-desktop-portal-gtk)$" },
 
     float  = true,
     center = true,
     size   = { 875, 600 },
+})
+
+-- The image viewer floats too, but large: most of the monitor
+hl.window_rule({
+    name  = "float-imv",
+    match = { class = "^imv$" },
+
+    float  = true,
+    center = true,
+    size   = "monitor_w*0.7 monitor_h*0.8",
 })
 
 -- Satty (screenshot annotation) sizes itself to the image
