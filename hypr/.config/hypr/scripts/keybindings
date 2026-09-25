@@ -10,7 +10,7 @@ pkill -x wofi && exit 0
 hypr=$(hyprctl binds -j | jq -r '
     def mods($mod): [[64, "SUPER"], [4, "CTRL"], [8, "ALT"], [1, "SHIFT"]]
         | map(select(.[0] as $bit | $mod | . / $bit | floor % 2 == 1) | .[1]);
-    def pretty: {"comma": ",", "period": ".", "RETURN": "ENTER", "mouse_down": "SCROLL DOWN", "mouse_up": "SCROLL UP",
+    def pretty: {"comma": ",", "period": ".", "SLASH": "/", "RETURN": "ENTER", "mouse_down": "SCROLL DOWN", "mouse_up": "SCROLL UP",
                  "mouse:272": "LEFT DRAG", "mouse:273": "RIGHT DRAG"}[.] // ascii_upcase;
     [.[] | select(.description != "" and (.key | startswith("XF86") | not))
          | .modmask as $mod

@@ -277,7 +277,7 @@ hl.device({
 
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
--- Every bind gets a description: SUPER + K lists them (scripts/keybindings)
+-- Every bind gets a description: SUPER + / lists them (scripts/keybindings)
 local function bind(keys, description, dispatcher, opts)
     opts = opts or {}
     opts.description = description
@@ -295,7 +295,7 @@ local function toggleSpecial(name, show, hide)
     end
 end
 
-bind(mainMod .. " + K", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings"))
+bind(mainMod .. " + SLASH", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 bind(mainMod .. " + Q", "Terminal", hl.dsp.exec_cmd(terminal))
@@ -345,19 +345,27 @@ bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNe
 bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
 
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
-bind(mainMod .. " + J", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
+bind(mainMod .. " + E", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
 
--- Move focus with mainMod + arrow keys
+-- Move focus with mainMod + arrow keys or vim keys
 bind(mainMod .. " + left",  "Focus window left", hl.dsp.focus({ direction = "left" }))
 bind(mainMod .. " + right", "Focus window right", hl.dsp.focus({ direction = "right" }))
 bind(mainMod .. " + up",    "Focus window up", hl.dsp.focus({ direction = "up" }))
 bind(mainMod .. " + down",  "Focus window down", hl.dsp.focus({ direction = "down" }))
+bind(mainMod .. " + H", "Focus window left", hl.dsp.focus({ direction = "left" }))
+bind(mainMod .. " + L", "Focus window right", hl.dsp.focus({ direction = "right" }))
+bind(mainMod .. " + K", "Focus window up", hl.dsp.focus({ direction = "up" }))
+bind(mainMod .. " + J", "Focus window down", hl.dsp.focus({ direction = "down" }))
 
--- Swap window with its neighbour with mainMod + SHIFT + arrow keys
+-- Swap window with its neighbour with mainMod + SHIFT + arrow keys or vim keys
 bind(mainMod .. " + SHIFT + left",  "Swap window left", hl.dsp.window.swap({ direction = "left" }))
 bind(mainMod .. " + SHIFT + right", "Swap window right", hl.dsp.window.swap({ direction = "right" }))
 bind(mainMod .. " + SHIFT + up",    "Swap window up", hl.dsp.window.swap({ direction = "up" }))
 bind(mainMod .. " + SHIFT + down",  "Swap window down", hl.dsp.window.swap({ direction = "down" }))
+bind(mainMod .. " + SHIFT + H", "Swap window left", hl.dsp.window.swap({ direction = "left" }))
+bind(mainMod .. " + SHIFT + L", "Swap window right", hl.dsp.window.swap({ direction = "right" }))
+bind(mainMod .. " + SHIFT + K", "Swap window up", hl.dsp.window.swap({ direction = "up" }))
+bind(mainMod .. " + SHIFT + J", "Swap window down", hl.dsp.window.swap({ direction = "down" }))
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
