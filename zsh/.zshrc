@@ -74,6 +74,15 @@ td() {
     fi
 }
 
+# ssh as xterm-256color: remote hosts (macOS among them) often lack kitty's and
+# tmux's terminfo, and their line editor then draws the prompt as garbage
+ssh() {
+    case $TERM in
+        xterm-kitty|tmux-256color) TERM=xterm-256color command ssh "$@" ;;
+        *) command ssh "$@" ;;
+    esac
+}
+
 # mise: puts the tool versions for the current directory on PATH at each prompt
 (( $+commands[mise] )) && eval "$(mise activate zsh)"
 
