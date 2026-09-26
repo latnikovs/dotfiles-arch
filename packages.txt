@@ -32,6 +32,8 @@ nm-connection-editor
 # Bluetooth: BlueZ for the bar's Bluetooth dropdown, bluetoothctl for PIN pairing
 bluez
 bluez-utils
+# Tailscale VPN; the bar's Tailscale dropdown drives it
+tailscale
 hyprlock
 hypridle
 upower

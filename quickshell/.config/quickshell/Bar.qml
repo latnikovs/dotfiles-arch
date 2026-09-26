@@ -1,5 +1,5 @@
 // Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/
-// microphone in use/volume/Bluetooth/network/notifications on the right.
+// microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -26,6 +26,7 @@ PanelWindow {
 
     required property Notifications notifications
     required property Keyboard keyboard
+    required property Tailscale tailscale
 
     anchors {
         top: true
@@ -87,6 +88,7 @@ PanelWindow {
         audioPanel.open = false;
         networkPanel.open = false;
         bluetoothPanel.open = false;
+        tailscalePanel.open = false;
     }
 
     function toggleDropdown(panel) {
@@ -106,6 +108,11 @@ PanelWindow {
     function toggleBluetooth() {
         if (btAdapter)
             toggleDropdown(bluetoothPanel);
+    }
+
+    function toggleTailscale() {
+        if (tailscale.available)
+            toggleDropdown(tailscalePanel);
     }
 
     // ---- Tooltip, shared by every module
@@ -883,6 +890,15 @@ PanelWindow {
         button: btButton
     }
 
+    // ---- Tailscale, hidden without tailscaled
+
+    TailscalePanel {
+        id: tailscalePanel
+        bar: bar
+        button: tsButton
+        tailscale: bar.tailscale
+    }
+
     // ---- CPU usage from /proc/stat, polled every 5s
 
     property real cpuUsage: 0
@@ -1348,6 +1364,40 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: !bar.btAdapter?.enabled ? "󰂲" : bar.btConnected.length > 0 ? "󰂱" : "󰂯"
                 color: bar.btAdapter?.enabled ? bar.fg : bar.muted
+            }
+        }
+
+        // Tailscale: left click opens the devices, right click connects or disconnects
+        MouseArea {
+            id: tsButton
+            readonly property var ts: bar.tailscale
+            readonly property string tip: ts.running
+                ? `Tailscale · ${ts.ipv4Of(ts.self)}` + (ts.exitNode ? ` · exit node ${ts.nameOf(ts.exitNode)}` : "")
+                : ts.backendState === "NeedsLogin" ? "Tailscale logged out" : "Tailscale off"
+
+            visible: ts.available
+            implicitWidth: tsIcon.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !tailscalePanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !tailscalePanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    if (ts.running || ts.backendState === "Stopped")
+                        ts.setRunning(!ts.running);
+                    return;
+                }
+                bar.hideTooltip(this);
+                bar.toggleTailscale();
+            }
+
+            BarText {
+                id: tsIcon
+                anchors.centerIn: parent
+                text: "󰖂"
+                color: !parent.ts.running ? bar.muted : parent.ts.exitNode ? bar.accent : bar.fg
             }
         }
 

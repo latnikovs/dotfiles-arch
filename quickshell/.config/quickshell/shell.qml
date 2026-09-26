@@ -21,6 +21,7 @@ ShellRoot {
             screen: modelData
             notifications: notificationService
             keyboard: keyboardService
+            tailscale: tailscaleService
         }
     }
 
@@ -30,6 +31,10 @@ ShellRoot {
 
     Keyboard {
         id: keyboardService
+    }
+
+    Tailscale {
+        id: tailscaleService
     }
 
     // Bar dropdowns on the focused monitor: `quickshell ipc call bar <function>`
@@ -54,6 +59,10 @@ ShellRoot {
 
         function toggleBluetooth(): void {
             root.focusedBar()?.toggleBluetooth();
+        }
+
+        function toggleTailscale(): void {
+            root.focusedBar()?.toggleTailscale();
         }
     }
 }

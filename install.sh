@@ -52,6 +52,14 @@ systemctl --user enable --now wireplumber.service pipewire-pulse.socket
 # Bluetooth daemon; the bar hides its icon on machines without an adapter
 sudo systemctl enable --now bluetooth.service
 
+# Tailscale daemon, with the user as its operator so the bar can connect, disconnect
+# and pick exit nodes without sudo (the setting waits until tailscaled is listening)
+sudo systemctl enable --now tailscaled.service
+for _ in {1..10}; do
+    sudo tailscale set --operator="$USER" 2>/dev/null && break
+    sleep 1
+done
+
 # Docker daemon, usable without sudo (group applies from the next login)
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"

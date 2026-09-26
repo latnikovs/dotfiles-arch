@@ -343,6 +343,7 @@ bind(mainMod .. " + CTRL + ALT + W", "Weather", hl.dsp.exec_cmd(bar .. "toggleWe
 bind(mainMod .. " + CTRL + A",       "Audio", hl.dsp.exec_cmd(bar .. "toggleAudio"))
 bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNetwork"))
 bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
+bind(mainMod .. " + CTRL + T",       "Tailscale", hl.dsp.exec_cmd(bar .. "toggleTailscale"))
 
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
 bind(mainMod .. " + backslash", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only

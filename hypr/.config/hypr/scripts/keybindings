@@ -33,6 +33,8 @@ Scroll on volume	Volume up / down
 Click microphone	Audio mixer (shown while recording)
 Click Bluetooth	Bluetooth devices
 Right-click Bluetooth	Bluetooth on / off
+Click Tailscale	Tailscale devices
+Right-click Tailscale	Tailscale on / off
 Click network	Network
 Click bell	Notification history
 Right-click bell	Toggle do not disturb
