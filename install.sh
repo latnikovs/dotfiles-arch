@@ -12,8 +12,7 @@ for pkg in */; do
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
-# zsh as the login shell (zsh/.zprofile starts Hyprland); bash/ stays stowed as
-# a fallback. chsh asks for the password.
+# zsh as the login shell (zsh/.zprofile starts Hyprland); chsh asks for the password
 [[ $(getent passwd "$USER" | cut -d: -f7) == /usr/bin/zsh ]] || chsh -s /usr/bin/zsh
 
 # tmux plugins: tpm itself, then the plugins tmux.conf lists
@@ -68,7 +67,7 @@ pam_add /etc/pam.d/login  "session    optional     pam_gnome_keyring.so auto_sta
 pam_add /etc/pam.d/passwd "password   optional     pam_gnome_keyring.so"
 
 # SSH agent that asks for key passphrases graphically and can remember them in
-# the keyring. .bash_profile points SSH_AUTH_SOCK at it.
+# the keyring. .zprofile points SSH_AUTH_SOCK at it.
 systemctl --user enable --now gcr-ssh-agent.socket
 
 # KeePassXC rewrites its settings and native messaging files in place, so they
