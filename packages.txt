@@ -35,6 +35,11 @@ bluez-utils
 hyprlock
 hypridle
 upower
+# Login shell (install.sh switches to it); plugins from the repos, no framework
+zsh
+zsh-completions
+zsh-autosuggestions
+zsh-syntax-highlighting
 neovim
 ripgrep
 fd

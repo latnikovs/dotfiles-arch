@@ -12,6 +12,10 @@ for pkg in */; do
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
+# zsh as the login shell (zsh/.zprofile starts Hyprland); bash/ stays stowed as
+# a fallback. chsh asks for the password.
+[[ $(getent passwd "$USER" | cut -d: -f7) == /usr/bin/zsh ]] || chsh -s /usr/bin/zsh
+
 # tmux plugins: tpm itself, then the plugins tmux.conf lists
 if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
     git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
