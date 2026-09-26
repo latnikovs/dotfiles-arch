@@ -345,7 +345,7 @@ bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNe
 bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
 
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
-bind(mainMod .. " + E", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
+bind(mainMod .. " + backslash", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
 
 -- Move focus with mainMod + arrow keys or vim keys
 bind(mainMod .. " + left",  "Focus window left", hl.dsp.focus({ direction = "left" }))
