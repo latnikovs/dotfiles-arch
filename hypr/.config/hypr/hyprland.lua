@@ -33,6 +33,7 @@ local fileManager = "~/.config/hypr/scripts/files"
 local browser     = "chromium"
 local menu        = "pkill -x wofi || wofi"
 local passwords   = "special:passwords"
+local music       = "special:music"
 
 
 -------------------
@@ -302,7 +303,6 @@ bind(mainMod .. " + Q", "Terminal", hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.close())
 -- closeWindowBind:set_enabled(false)
-bind(mainMod .. " + M", "Log out", hl.dsp.exec_cmd("~/.config/hypr/scripts/system logout"))
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
@@ -312,6 +312,7 @@ bind(mainMod .. " + SHIFT + B", "Brave Origin", hl.dsp.exec_cmd("brave-origin"))
 bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
 bind(mainMod .. " + ALT + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
+bind(mainMod .. " + SHIFT + M", "Toggle music", toggleSpecial("music", "fade", "fade"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
@@ -505,10 +506,15 @@ hl.workspace_rule({
 })
 
 -- Toggling a special workspace leaves focus behind, so typing would go to the
--- window underneath. A freshly relaunched KeePassXC takes focus as it maps.
+-- window underneath. A freshly relaunched app takes focus as it maps.
+local specialApps = {
+    [passwords] = "class:^KeePassXC$",
+    [music]     = "class:^org\\.dotfiles\\.music$",
+}
 hl.on("workspace.special_active", function(ws)
-    if ws and ws.name == passwords then
-        hl.dispatch(hl.dsp.focus({ window = "class:^KeePassXC$" }))
+    local window = ws and specialApps[ws.name]
+    if window then
+        hl.dispatch(hl.dsp.focus({ window = window }))
     end
 end)
 
@@ -519,6 +525,22 @@ hl.window_rule({
     match = { class = "^KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
 
     size  = { 1200, 800 },
+})
+
+-- The music player (cliamp, scripts/music) works the same way on SUPER + SHIFT + M:
+-- a floating window on its own special workspace, started again when it was quit.
+hl.workspace_rule({
+    workspace        = music,
+    on_created_empty = "~/.config/hypr/scripts/music",
+})
+
+hl.window_rule({
+    name  = "float-music",
+    match = { class = "^org\\.dotfiles\\.music$" },
+
+    float  = true,
+    center = true,
+    size   = "monitor_w*0.6 monitor_h*0.7",
 })
 
 -- Nautilus, as in Omarchy: the PDF viewer floats, as do the GTK portal's pickers

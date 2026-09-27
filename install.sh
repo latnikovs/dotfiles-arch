@@ -42,6 +42,8 @@ if ! command -v yay >/dev/null; then
 fi
 # Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
 yay -S --needed --noconfirm brave-origin-bin
+# cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
+yay -S --needed --noconfirm cliamp-bin
 
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
