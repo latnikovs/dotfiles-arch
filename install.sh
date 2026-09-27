@@ -7,6 +7,13 @@ cd "$(dirname "$(readlink -f "$0")")"
 
 sudo pacman -S --needed - < <(grep -vE '^\s*(#|$)' packages.txt)
 
+# Hardware-specific packages, only on machines that have the hardware.
+# AMD CPU: microcode updates, loaded early by mkinitcpio's microcode hook.
+grep -q '^vendor_id.*AuthenticAMD' /proc/cpuinfo && sudo pacman -S --needed amd-ucode
+# AMD GPU, integrated or a card (PCI vendor 0x1002): Mesa's OpenGL and video
+# decoding, and its Vulkan driver
+grep -qx 0x1002 /sys/class/drm/card*/device/vendor 2>/dev/null && sudo pacman -S --needed mesa vulkan-radeon
+
 for pkg in */; do
     pkg=${pkg%/}
     [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies ]] && continue
