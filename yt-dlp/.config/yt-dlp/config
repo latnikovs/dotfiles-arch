@@ -1,0 +1,3 @@
+# YouTube serves some videos (cliamp gets HTTP 403) only once a JavaScript
+# challenge is solved; yt-dlp looks for deno by default, node comes from mise
+--js-runtimes node

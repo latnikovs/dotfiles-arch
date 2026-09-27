@@ -1,0 +1,6 @@
+# Per-machine mise tools for the UTM VM. Installed as ~/.config/mise/conf.d/machine.toml by: ./install.sh utm-vm
+
+[tools]
+# Arch Linux ARM's yt-dlp lags months behind and YouTube then refuses it (HTTP 403 in
+# cliamp); the upstream aarch64 build comes first on PATH through the mise shims.
+"github:yt-dlp/yt-dlp" = "latest"

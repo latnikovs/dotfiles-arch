@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage: ./install.sh [machine]
 #   machine: name of a file in machines/ (without .lua) to install as ~/.config/hypr/local.lua
+#            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml)
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
@@ -30,6 +31,10 @@ if ! command -v mise >/dev/null; then
     else
         curl -fsSL https://mise.run | sh
     fi
+fi
+if [[ -n ${1:-} && -f machines/$1.mise.toml ]]; then
+    mkdir -p "$HOME/.config/mise/conf.d"
+    cp "machines/$1.mise.toml" "$HOME/.config/mise/conf.d/machine.toml"
 fi
 mise install
 
