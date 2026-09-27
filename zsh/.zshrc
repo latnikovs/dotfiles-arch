@@ -74,13 +74,14 @@ td() {
     fi
 }
 
-# ssh as xterm-256color: remote hosts (macOS among them) often lack kitty's and
-# tmux's terminfo, and their line editor then draws the prompt as garbage
+# ssh sends the locale, as macOS' ssh does (its sshd accepts LANG and LC_*): without
+# it the shell there runs in the C locale and miscounts the prompt's Unicode
+# characters. From kitty or tmux it goes as xterm-256color, since remote hosts
+# (macOS among them) often lack their terminfo. Either way the prompt draws as garbage.
 ssh() {
-    case $TERM in
-        xterm-kitty|tmux-256color) TERM=xterm-256color command ssh "$@" ;;
-        *) command ssh "$@" ;;
-    esac
+    local term=$TERM
+    [[ $term == (xterm-kitty|tmux-256color) ]] && term=xterm-256color
+    TERM=$term command ssh -o SendEnv=LANG -o 'SendEnv=LC_*' "$@"
 }
 
 # mise: puts the tool versions for the current directory on PATH at each prompt
