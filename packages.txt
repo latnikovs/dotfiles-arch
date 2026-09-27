@@ -3,6 +3,8 @@ kitty
 stow
 wofi
 ttf-jetbrains-mono-nerd
+# Colour emoji; the Nerd Font has none, so without it 🔧 and co. draw as boxes
+noto-fonts-emoji
 hyprpaper
 chromium
 # makepkg, for AUR packages (yay, Brave Origin) in install.sh
