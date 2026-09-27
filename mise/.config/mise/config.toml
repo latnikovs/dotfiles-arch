@@ -2,6 +2,7 @@
 # overrides these inside it. install.sh runs `mise install` for this list.
 [tools]
 node = "lts"
+pnpm = "latest"
 go = "latest"
 # Temurin: jdk.java.net's plain openjdk-25 build never gets security updates
 java = "temurin-25"

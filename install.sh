@@ -29,7 +29,7 @@ if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
 fi
 "$HOME/.tmux/plugins/tpm/bin/install_plugins"
 
-# mise: dev tools from ~/.config/mise/config.toml (Node, Go, Java, …). Arch Linux
+# mise: dev tools from ~/.config/mise/config.toml (Node, pnpm, Go, Java, …). Arch Linux
 # ARM has no mise package, so there it comes from mise's own installer.
 export PATH="$HOME/.local/bin:$PATH"
 if ! command -v mise >/dev/null; then
