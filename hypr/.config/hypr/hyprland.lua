@@ -34,6 +34,10 @@ local browser     = "chromium"
 local menu        = "pkill -x wofi || wofi"
 local passwords   = "special:passwords"
 local music       = "special:music"
+local mail        = "special:mail"
+local teams       = "special:teams"
+-- Teams as a Chromium app window; Microsoft has no Linux client
+local teamsApp    = browser .. " --app=https://teams.microsoft.com/"
 
 
 -------------------
@@ -61,6 +65,9 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("hypridle")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
+    -- Mail and Teams only notify while running, so they start hidden too
+    hl.exec_cmd("[workspace " .. mail .. " silent] thunderbird")
+    hl.exec_cmd(teamsApp)
 end)
 
 
@@ -313,6 +320,8 @@ bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(file
 bind(mainMod .. " + ALT + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManager))
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + SHIFT + M", "Toggle music", toggleSpecial("music", "fade", "fade"))
+bind(mainMod .. " + M", "Toggle mail", toggleSpecial("mail", "fade", "fade"))
+bind(mainMod .. " + Y", "Toggle Teams", toggleSpecial("teams", "fade", "fade"))
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
@@ -510,6 +519,8 @@ hl.workspace_rule({
 local specialApps = {
     [passwords] = "class:^KeePassXC$",
     [music]     = "class:^org\\.dotfiles\\.music$",
+    [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
+    [teams]     = "class:^chrome-teams\\..*$",
 }
 hl.on("workspace.special_active", function(ws)
     local window = ws and specialApps[ws.name]
@@ -541,6 +552,28 @@ hl.window_rule({
     float  = true,
     center = true,
     size   = "monitor_w*0.6 monitor_h*0.7",
+})
+
+-- Mail (Thunderbird, SUPER + M) and Teams (SUPER + Y) get special workspaces too,
+-- tiled full size. Thunderbird's launches are pinned there, so a compose window
+-- opened from a mailto: link appears where you are.
+hl.workspace_rule({
+    workspace        = mail,
+    on_created_empty = "thunderbird",
+})
+
+-- A Chromium launch hands the window to a browser that's already running, so
+-- Teams is pinned by its app window class (chrome-<host>__<path>-<profile>) instead.
+hl.workspace_rule({
+    workspace        = teams,
+    on_created_empty = teamsApp,
+})
+
+hl.window_rule({
+    name  = "teams-workspace",
+    match = { class = "^chrome-teams\\..*$" },
+
+    workspace = teams .. " silent",
 })
 
 -- Nautilus, as in Omarchy: the PDF viewer floats, as do the GTK portal's pickers

@@ -68,6 +68,8 @@ gnome-keyring
 gcr-4
 libsecret
 keepassxc
+# Mail and calendar (Gmail, iCloud); SUPER + M
+thunderbird
 nautilus
 sushi
 papers
@@ -80,6 +82,8 @@ gvfs-smb
 gvfs-nfs
 ffmpegthumbnailer
 xdg-desktop-portal-gtk
+# Screen sharing (Teams, browsers) and the screenshot portal on Hyprland
+xdg-desktop-portal-hyprland
 # Adwaita-dark for GTK 3 apps (Sushi, the portal file pickers); gtk-3.0/gtk.css adds Nord
 gnome-themes-extra
 xdg-utils
