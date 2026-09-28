@@ -1,5 +1,5 @@
 // Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/
-// microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right.
+// microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -27,6 +27,7 @@ PanelWindow {
     required property Notifications notifications
     required property Keyboard keyboard
     required property Tailscale tailscale
+    required property Messaging messaging
 
     anchors {
         top: true
@@ -644,6 +645,66 @@ PanelWindow {
         }
     }
 
+    // ---- Mail and Teams, right of the weather (of the clock while there's no weather)
+
+    RowLayout {
+        anchors {
+            left: weatherButton.visible ? weatherButton.right : clockArea.right
+            leftMargin: 12
+            top: parent.top
+            bottom: parent.bottom
+        }
+        spacing: 12
+
+        // Mail: left click shows or hides Thunderbird (SUPER + M); highlighted on new mail
+        MouseArea {
+            readonly property string tip: bar.messaging.mailNew ? "Mail · new messages" : "Mail"
+
+            implicitWidth: mailIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.messaging.show("mail", true);
+            }
+
+            BarText {
+                id: mailIcon
+                anchors.centerIn: parent
+                text: bar.messaging.mailNew ? "󰇮" : "󰇰"
+                color: bar.messaging.mailNew ? bar.warning : bar.fg
+            }
+        }
+
+        // Teams: left click shows or hides it (SUPER + Y); unread count from its window title
+        MouseArea {
+            readonly property int unread: bar.messaging.teamsUnread
+            readonly property bool alert: unread > 0 || bar.messaging.teamsNew
+            readonly property string tip: unread > 0 ? `Teams · ${unread} unread` : bar.messaging.teamsNew ? "Teams · new messages" : "Teams"
+
+            implicitWidth: teamsIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.messaging.show("teams", true);
+            }
+
+            BarText {
+                id: teamsIcon
+                anchors.centerIn: parent
+                text: parent.unread > 0 ? `󰊻 ${parent.unread}` : "󰊻"
+                color: parent.alert ? bar.warning : bar.fg
+            }
+        }
+    }
+
     function toggleWeather() {
         const open = !weatherOpen;
         closePanels();
@@ -1052,7 +1113,10 @@ PanelWindow {
                         appIcon: modelData.appIcon
                         urgency: modelData.urgency
                         time: bar.historyTime(modelData.time)
-                        onActivated: bar.notifications.forget(modelData.key)
+                        onActivated: {
+                            bar.messaging.reveal(modelData);
+                            bar.notifications.forget(modelData.key);
+                        }
                         onCloseRequested: bar.notifications.forget(modelData.key)
                     }
                 }

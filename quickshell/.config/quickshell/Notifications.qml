@@ -21,6 +21,8 @@ Scope {
     readonly property int maxLife: 30000
 
     property bool dnd: false
+    // Marks new mail and Teams messages, and brings their app up when a notification is clicked
+    required property Messaging messaging
 
     // History: the last 30 notifications that left the screen (expired or dismissed) or
     // arrived while silenced, newest first. Kept in memory, so it starts empty after a restart.
@@ -86,7 +88,9 @@ Scope {
     }
 
     // Left click runs the sender's default action (e.g. focus the chat), otherwise just closes.
+    // Mail and Teams live on hidden special workspaces, which that can't bring up by itself.
     function activate(n) {
+        messaging.reveal(n);
         for (let i = 0; i < n.actions.length; i++) {
             if (n.actions[i].identifier === "default") {
                 n.actions[i].invoke();
@@ -105,6 +109,7 @@ Scope {
         onNotification: n => {
             // Silenced notifications are dropped, except critical ones and our own status toasts
             let entry = root.snapshot(n);
+            root.messaging.noticed(n);
             if (root.dnd && n.urgency !== NotificationUrgency.Critical && n.appName !== "notifications") {
                 root.remember(entry);
                 return;

@@ -22,11 +22,17 @@ ShellRoot {
             notifications: notificationService
             keyboard: keyboardService
             tailscale: tailscaleService
+            messaging: messagingService
         }
     }
 
     Notifications {
         id: notificationService
+        messaging: messagingService
+    }
+
+    Messaging {
+        id: messagingService
     }
 
     Keyboard {

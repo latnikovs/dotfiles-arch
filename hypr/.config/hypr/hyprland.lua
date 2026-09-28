@@ -322,6 +322,18 @@ bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords
 bind(mainMod .. " + SHIFT + M", "Toggle music", toggleSpecial("music", "fade", "fade"))
 bind(mainMod .. " + M", "Toggle mail", toggleSpecial("mail", "fade", "fade"))
 bind(mainMod .. " + Y", "Toggle Teams", toggleSpecial("teams", "fade", "fade"))
+
+-- For Quickshell's mail and Teams buttons and notification clicks, through
+-- `hyprctl eval 'showSpecial("mail")'`: brings the workspace up, or with toggle
+-- also hides it when it's already showing.
+function showSpecial(name, toggle)
+    local active = hl.get_active_special_workspace()
+    if active and active.name == "special:" .. name and not toggle then
+        return
+    end
+    toggleSpecial(name, "fade", "fade")()
+end
+
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
