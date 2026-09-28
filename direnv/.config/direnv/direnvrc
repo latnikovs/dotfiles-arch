@@ -1,0 +1,26 @@
+# Functions available in every .envrc (direnv runs them with bash).
+
+# kp VAR ENTRY [ATTRIBUTE]
+# Exports VAR as an attribute (Password by default) of a KeePassXC entry, e.g.
+#   kp DB projects/ordering/local/database_url
+#   kp DB_USER projects/ordering/local/database_url UserName
+# Asks for the master password once per .envrc load, however many kp lines it has.
+# The password lives in an unexported variable, so direnv never adds it to the
+# shell's environment. KEEPASSXC_DB points at another database.
+kp() {
+    local var=$1 entry=$2 attr=${3:-Password}
+    local db=${KEEPASSXC_DB:-$HOME/Documents/my-passwords.kdbx}
+    local value
+    if [[ -z ${__kp_password-} ]]; then
+        read -rs -p "KeePassXC password for ${db/#$HOME/\~}: " __kp_password </dev/tty || return 1
+        echo >&2
+    fi
+    if ! value=$(printf '%s\n' "$__kp_password" | keepassxc-cli show -q -s -a "$attr" "$db" "$entry"); then
+        # A wrong password looks the same as a missing entry (-q hides the reason),
+        # so forget it and let the next kp line ask again.
+        unset __kp_password
+        log_error "kp: could not read $attr of $entry (wrong password, or no such entry)"
+        return 1
+    fi
+    export "$var=$value"
+}
