@@ -87,3 +87,5 @@ libreoffice-fresh
 # LibreOffice spell checking (no Latvian package; use the LibreOffice extension)
 hunspell-en_us
 hunspell-ru
+# Swap in compressed RAM (install.sh writes its config)
+zram-generator

@@ -74,6 +74,23 @@ for _ in {1..10}; do
     sleep 1
 done
 
+# Swap: zram, compressed in RAM, half its size. The sysctls are the usual ones for
+# swap this fast: swap before dropping file cache, one page at a time.
+sudo install -Dm644 /dev/stdin /etc/systemd/zram-generator.conf <<'INI'
+[zram0]
+zram-size = ram / 2
+compression-algorithm = zstd
+INI
+sudo install -Dm644 /dev/stdin /etc/sysctl.d/99-zram.conf <<'INI'
+vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
+INI
+sudo sysctl -q --load /etc/sysctl.d/99-zram.conf
+sudo systemctl daemon-reload
+sudo systemctl start systemd-zram-setup@zram0.service
+
 # Docker daemon, usable without sudo (group applies from the next login)
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
