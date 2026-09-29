@@ -21,7 +21,7 @@ Rectangle {
     signal activated
     signal closeRequested
 
-    // Nord, matching the bar, wofi and Hyprland borders
+    // Nord, matching the bar, fuzzel and Hyprland borders
     readonly property color fg: "#eceff4"
     readonly property color bodyColor: "#d8dee9"
     readonly property color dim: "#7b88a1"

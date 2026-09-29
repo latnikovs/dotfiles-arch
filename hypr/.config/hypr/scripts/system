@@ -20,9 +20,9 @@ power() {
 
 case ${1:-menu} in
     menu)
-        pkill -x wofi && exit 0
+        pkill -x fuzzel && exit 0
         choice=$(printf '%s\n' "󰌾  Lock" "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown" \
-            | wofi --dmenu --prompt "System" --width 300 --height 270 --cache-file /dev/null) || exit 0
+            | fuzzel --dmenu --prompt "󰐥   " --placeholder System --width 18 --lines 5) || exit 0
         exec "$0" "$(awk '{ print tolower($2) }' <<<"$choice")"
         ;;
     lock)     exec ~/.config/hypr/scripts/lock ;;

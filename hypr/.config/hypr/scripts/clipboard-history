@@ -2,9 +2,10 @@
 # Usage: clipboard-history   pick from the clipboard history (cliphist) and paste it
 set -euo pipefail
 
-pkill -x wofi && exit 0
+pkill -x fuzzel && exit 0
 
-entry=$(cliphist list | wofi --dmenu --prompt "Clipboard" --width 900 --height 600 --cache-file /dev/null) || exit 0
+entry=$(cliphist list \
+    | fuzzel --dmenu --with-nth 2 --prompt "󰅌   " --placeholder Clipboard --width 70 --lines 12) || exit 0
 cliphist decode <<<"$entry" | wl-copy
 
 # Paste into the window that had focus: SHIFT + Insert pastes in both GUI apps and kitty

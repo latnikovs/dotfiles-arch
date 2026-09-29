@@ -16,7 +16,7 @@ import Quickshell.Widgets
 PanelWindow {
     id: bar
 
-    // Nord, matching the notification cards, wofi and Hyprland borders
+    // Nord, matching the notification cards, fuzzel and Hyprland borders
     readonly property color bg: "#2e3440"
     readonly property color fg: "#d8dee9"
     readonly property color muted: "#4c566a"

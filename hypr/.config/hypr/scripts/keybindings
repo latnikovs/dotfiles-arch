@@ -2,7 +2,7 @@
 # Usage: keybindings   searchable list of keybindings (Hyprland binds with a description, then the bar's)
 set -euo pipefail
 
-pkill -x wofi && exit 0
+pkill -x fuzzel && exit 0
 
 # Hyprland binds, as "SUPER + CTRL + S    Screenshot region", minus media keys (labelled on the
 # keyboard). Workspace binds collapse into one line per modifier ("SUPER + 1…0  Go to workspace"),
@@ -52,4 +52,5 @@ Esc in bar dropdowns	Close"
 
 printf '%s\n%s\n' "$hypr" "$bar" \
     | awk -F'\t' '{ printf "%-28s %s\n", $1, $2 }' \
-    | wofi --dmenu --prompt "Keybindings" --width 900 --height 600 --cache-file /dev/null >/dev/null || true
+    | fuzzel --dmenu --font "JetBrainsMono Nerd Font:size=11" --prompt "󰌌   " --placeholder Keybindings \
+        --width 80 --lines 15 >/dev/null || true

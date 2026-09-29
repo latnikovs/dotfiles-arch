@@ -163,6 +163,10 @@ xdg-mime default imv.desktop image/png image/jpeg image/gif image/webp image/bmp
 # xdg-desktop-portal-gtk, older GTK 3 apps the theme name
 gsettings set org.gnome.desktop.interface color-scheme prefer-dark
 gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark
+# Papirus icons everywhere (GTK apps, the fuzzel launcher), folders in Nord blue-grey
+gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
+yay -S --needed --noconfirm papirus-folders
+sudo papirus-folders -C nordic --theme Papirus-Dark
 
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua

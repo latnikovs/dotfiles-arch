@@ -1,8 +1,11 @@
 hyprland
 kitty
 stow
-wofi
+fuzzel
 ttf-jetbrains-mono-nerd
+# UI font for the launcher (fuzzel), and one icon theme so app icons match
+noto-fonts
+papirus-icon-theme
 # Colour emoji; the Nerd Font has none, so without it 🔧 and co. draw as boxes
 noto-fonts-emoji
 hyprpaper

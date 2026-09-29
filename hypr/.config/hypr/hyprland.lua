@@ -31,7 +31,7 @@ hl.monitor({
 local terminal    = "kitty"
 local fileManager = "~/.config/hypr/scripts/files"
 local browser     = "chromium"
-local menu        = "pkill -x wofi || wofi"
+local menu        = "pkill -x fuzzel || fuzzel"
 local passwords   = "special:passwords"
 local music       = "special:music"
 local mail        = "special:mail"
@@ -563,6 +563,16 @@ hl.window_rule({
 --     no_anim = true,
 -- })
 -- overlayLayerRule:set_enabled(false)
+
+-- The launcher and dmenus (fuzzel) are slightly see-through; blur what's behind
+-- them, but not the fully transparent corners outside the rounded border
+hl.layer_rule({
+    name  = "blur-launcher",
+    match = { namespace = "^launcher$" },
+
+    blur         = true,
+    ignore_alpha = 0.5,
+})
 
 -- Terminals (kitty, and kitty under our own classes like org.dotfiles.agent), for the clipboard binds
 hl.window_rule({
