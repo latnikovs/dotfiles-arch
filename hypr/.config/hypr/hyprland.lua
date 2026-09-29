@@ -345,6 +345,12 @@ function toggleTeamsCall()
         hl.dispatch(hl.dsp.window.move({ workspace = teams, follow = false, window = target }))
         return
     end
+    -- Close Teams' workspace if it's showing: emptied, it would stay open over
+    -- everything, dimming the other windows and taking the clicks
+    local active = hl.get_active_special_workspace()
+    if active and active.name == teams then
+        toggleSpecial("teams", "fade", "fade")()
+    end
     -- Sizes in layout coordinates, so scaled monitors come out the same; below the bar (26px)
     local monitor = hl.get_active_monitor()
     local gap = 6
