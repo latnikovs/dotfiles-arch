@@ -370,11 +370,22 @@ end
 -- For Quickshell's mail and Teams buttons and notification clicks, through
 -- `hyprctl eval 'showSpecial("mail")'`: brings the workspace up, or with toggle
 -- also hides it when it's already showing. In call mode Teams has left its
--- workspace (which would start a second Teams), so it's focused instead.
+-- workspace (which would start a second Teams), so focus goes to it instead, and
+-- from it back to the window you came from.
+local beforeTeams = nil
+
 function showSpecial(name, toggle)
     local call = name == "teams" and teamsInCall()
     if call then
-        hl.dispatch(hl.dsp.focus({ window = "address:" .. call.address }))
+        local current = hl.get_active_window()
+        if current and current.address == call.address then
+            if beforeTeams and hl.get_window("address:" .. beforeTeams) then
+                hl.dispatch(hl.dsp.focus({ window = "address:" .. beforeTeams }))
+            end
+        else
+            beforeTeams = current and current.address or nil
+            hl.dispatch(hl.dsp.focus({ window = "address:" .. call.address }))
+        end
         return
     end
     local active = hl.get_active_special_workspace()
@@ -384,7 +395,7 @@ function showSpecial(name, toggle)
     toggleSpecial(name, "fade", "fade")()
 end
 
-bind(mainMod .. " + Y", "Toggle Teams", function() showSpecial("teams", true) end)
+bind(mainMod .. " + Y", "Toggle Teams (in call mode: focus it / go back)", function() showSpecial("teams", true) end)
 bind(mainMod .. " + SHIFT + Y", "Teams call mode (pinned, top right)", toggleTeamsCall)
 
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
