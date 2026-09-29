@@ -95,6 +95,24 @@ sudo systemctl start systemd-zram-setup@zram0.service
 sudo systemctl enable --now docker.service
 id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
 
+# Firewall: nothing comes in except over Tailscale (the tailnet is trusted, so the
+# Mac can reach this machine), everything goes out. Docker publishes container
+# ports around ufw, so ufw-docker puts them behind it too: localhost still reaches
+# them, other machines only after `sudo ufw-docker allow <container> <port>`.
+yay -S --needed --noconfirm ufw-docker
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow in on tailscale0
+sudo ufw --force enable
+sudo systemctl enable ufw.service
+sudo ufw-docker install
+sudo ufw reload
+
+# Weekly upkeep: paccache keeps the last three versions of each package, fstrim
+# tells the SSD which blocks are free, fwupd refreshes the firmware list (updates
+# themselves stay manual: fwupdmgr update)
+sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
+
 # Keyring: unlocked with the tty login password, and re-encrypted when passwd
 # changes it. PAM keeps one stack per type, so appending lands each line last in
 # its stack; optional means a keyring failure never blocks a login.

@@ -96,3 +96,9 @@ hunspell-en_us
 hunspell-ru
 # Swap in compressed RAM (install.sh writes its config)
 zram-generator
+# paccache and its weekly timer, which trims the package cache
+pacman-contrib
+# Firmware updates (BIOS, SSD, peripherals) from LVFS: fwupdmgr refresh && fwupdmgr update
+fwupd
+# Firewall; ufw-docker (AUR, install.sh) keeps Docker's published ports behind it
+ufw

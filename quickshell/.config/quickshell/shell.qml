@@ -43,6 +43,8 @@ ShellRoot {
         id: tailscaleService
     }
 
+    Polkit {}
+
     // Bar dropdowns on the focused monitor: `quickshell ipc call bar <function>`
     IpcHandler {
         target: "bar"
