@@ -38,6 +38,7 @@ Right-click Tailscale	Tailscale on / off
 Click network	Network
 Click mail	Show / hide mail (new mail highlights it)
 Click Teams	Show / hide Teams (shows the unread count)
+Right-click Teams	Teams call mode (pinned, top right)
 Click a mail or Teams notification	Open the app
 Click bell	Notification history
 Right-click bell	Toggle do not disturb

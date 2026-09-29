@@ -52,6 +52,11 @@ Scope {
             Quickshell.execDetached(["hyprctl", "eval", `showSpecial("${app}", ${toggle})`]);
     }
 
+    // Teams call mode: a small pinned window in the top right corner (SUPER + SHIFT + Y)
+    function toggleTeamsCall(): void {
+        Quickshell.execDetached(["hyprctl", "eval", "toggleTeamsCall()"]);
+    }
+
     // For a notification click: bring its app up
     function reveal(n): void {
         show(appOf(n), false);

@@ -321,18 +321,65 @@ bind(mainMod .. " + ALT + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManage
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + SHIFT + M", "Toggle music", toggleSpecial("music", "fade", "fade"))
 bind(mainMod .. " + M", "Toggle mail", toggleSpecial("mail", "fade", "fade"))
-bind(mainMod .. " + Y", "Toggle Teams", toggleSpecial("teams", "fade", "fade"))
+
+-- Teams call mode (SUPER + SHIFT + Y): Teams leaves its special workspace for a small
+-- floating window in the top right corner, pinned so it stays in view on every workspace
+-- while you share another window. Pressed again, it goes back. Global for Quickshell
+-- (right click on the bar's Teams icon): `hyprctl eval 'toggleTeamsCall()'`.
+local teamsWindow = "class:^chrome-teams\\..*$"
+
+local function teamsInCall()
+    local window = hl.get_window(teamsWindow)
+    return window and window.pinned and window or nil
+end
+
+function toggleTeamsCall()
+    local window = hl.get_window(teamsWindow)
+    if not window then
+        return
+    end
+    local target = "address:" .. window.address
+    if window.pinned then
+        hl.dispatch(hl.dsp.window.pin({ action = "disable", window = target }))
+        hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
+        hl.dispatch(hl.dsp.window.move({ workspace = teams, follow = false, window = target }))
+        return
+    end
+    -- Sizes in layout coordinates, so scaled monitors come out the same; below the bar (26px)
+    local monitor = hl.get_active_monitor()
+    local gap = 6
+    local width = math.floor(monitor.width / monitor.scale * 0.3)
+    local height = math.floor(width * 0.65)
+    hl.dispatch(hl.dsp.window.move({ workspace = hl.get_active_workspace().id, follow = false, window = target }))
+    hl.dispatch(hl.dsp.window.float({ action = "enable", window = target }))
+    hl.dispatch(hl.dsp.window.resize({ x = width, y = height, window = target }))
+    hl.dispatch(hl.dsp.window.move({
+        x = monitor.x + math.floor(monitor.width / monitor.scale) - width - gap,
+        y = monitor.y + 26 + gap,
+        window = target,
+    }))
+    hl.dispatch(hl.dsp.window.pin({ action = "enable", window = target }))
+end
 
 -- For Quickshell's mail and Teams buttons and notification clicks, through
 -- `hyprctl eval 'showSpecial("mail")'`: brings the workspace up, or with toggle
--- also hides it when it's already showing.
+-- also hides it when it's already showing. In call mode Teams has left its
+-- workspace (which would start a second Teams), so it's focused instead.
 function showSpecial(name, toggle)
+    local call = name == "teams" and teamsInCall()
+    if call then
+        hl.dispatch(hl.dsp.focus({ window = "address:" .. call.address }))
+        return
+    end
     local active = hl.get_active_special_workspace()
     if active and active.name == "special:" .. name and not toggle then
         return
     end
     toggleSpecial(name, "fade", "fade")()
 end
+
+bind(mainMod .. " + Y", "Toggle Teams", function() showSpecial("teams", true) end)
+bind(mainMod .. " + SHIFT + Y", "Teams call mode (pinned, top right)", toggleTeamsCall)
 
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
@@ -532,7 +579,7 @@ local specialApps = {
     [passwords] = "class:^KeePassXC$",
     [music]     = "class:^org\\.dotfiles\\.music$",
     [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
-    [teams]     = "class:^chrome-teams\\..*$",
+    [teams]     = teamsWindow,
 }
 hl.on("workspace.special_active", function(ws)
     local window = ws and specialApps[ws.name]

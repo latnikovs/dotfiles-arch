@@ -679,7 +679,8 @@ PanelWindow {
             }
         }
 
-        // Teams: left click shows or hides it (SUPER + Y); unread count from its window title
+        // Teams: left click shows or hides it (SUPER + Y), right click toggles call mode
+        // (SUPER + SHIFT + Y); unread count from its window title
         MouseArea {
             readonly property int unread: bar.messaging.teamsUnread
             readonly property bool alert: unread > 0 || bar.messaging.teamsNew
@@ -691,9 +692,13 @@ PanelWindow {
             cursorShape: Qt.PointingHandCursor
             onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
             onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
-            onClicked: {
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            onClicked: mouse => {
                 bar.hideTooltip(this);
-                bar.messaging.show("teams", true);
+                if (mouse.button === Qt.RightButton)
+                    bar.messaging.toggleTeamsCall();
+                else
+                    bar.messaging.show("teams", true);
             }
 
             BarText {
