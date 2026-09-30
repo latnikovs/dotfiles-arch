@@ -83,6 +83,8 @@ fi
 yay -S --needed --noconfirm brave-origin-bin
 # cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
 yay -S --needed --noconfirm cliamp-bin
+# herdr: terminal workspace manager for supervising several coding agents at once
+yay -S --needed --noconfirm herdr-bin
 
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
