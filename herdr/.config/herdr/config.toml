@@ -14,3 +14,9 @@ navigate_pane_down = "ctrl+j"
 
 # Agent picker: j/k to select, Enter to jump; prefix+a added as an "agents" alias
 goto = ["prefix+g", "prefix+a"]
+
+[ui]
+status_indicators = "symbols"
+
+[ui.toast]
+delivery = "off"
