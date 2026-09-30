@@ -7,15 +7,10 @@
 local config = vim.fn.expand("~/.markdownlint-cli2.yaml")
 
 return {
-  -- <leader>cp (browser preview). LazyVim builds it with mkdp#util#install,
-  -- which downloads a prebuilt x86_64 server binary; that fails on aarch64 and
-  -- leaves the server without its dependencies (MODULE_NOT_FOUND on preview).
-  -- Installing them with node instead works on any architecture; node comes
-  -- from mise's global tools.
-  {
-    "iamcco/markdown-preview.nvim",
-    build = "cd app && npx --yes yarn install",
-  },
+  -- The markdown extra's browser preview (<leader>cp) is unmaintained, and its
+  -- build step fetches an x86_64-only server. render-markdown.nvim
+  -- (<leader>um) renders in the buffer instead.
+  { "iamcco/markdown-preview.nvim", enabled = false },
   {
     "mfussenegger/nvim-lint",
     opts = {
