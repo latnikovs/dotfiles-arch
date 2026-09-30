@@ -3,8 +3,28 @@
 #   machine: name of a file in machines/ (without .lua) to install as ~/.config/hypr/local.lua
 #            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml,
 #            and machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua)
+#
+# On a fresh Arch install, straight from GitHub (add `-s -- <machine>` after bash for a machine):
+#   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
 set -euo pipefail
-cd "$(dirname "$(readlink -f "$0")")"
+
+# Piped into bash there is no script file: install git, clone the repo to ~/dotfiles
+# (or update it) and run its copy of this script. That copy reads from the terminal,
+# not from the pipe, so prompts get answers from the keyboard.
+if [[ ! -f ${BASH_SOURCE[0]:-} ]]; then
+    sudo pacman -S --needed --noconfirm git
+    if [[ -d $HOME/dotfiles/.git ]]; then
+        git -C "$HOME/dotfiles" pull --ff-only
+    else
+        git clone https://github.com/latnikovs/dotfiles-arch.git "$HOME/dotfiles"
+    fi
+    exec "$HOME/dotfiles/install.sh" "$@" </dev/tty
+fi
+
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
+# Everything below also goes to ~/install.log, for when something fails
+exec > >(tee "$HOME/install.log") 2>&1
 
 sudo pacman -S --needed - < <(grep -vE '^\s*(#|$)' packages.txt)
 

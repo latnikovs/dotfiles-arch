@@ -23,27 +23,28 @@ Install Arch with `archinstall`. The choices that matter here:
 - A user account in the `wheel` group with `sudo`. No desktop profile
   is needed.
 
-### 2. Clone and run
+### 2. Run the installer
 
 Log in on the console, then:
 
 ```sh
-sudo pacman -S --needed git
-git clone https://github.com/latnikovs/dotfiles-arch.git ~/dotfiles
-cd ~/dotfiles
-./install.sh 2>&1 | tee ~/install.log
+curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
 ```
+
+It installs git, clones this repo to `~/dotfiles` and carries on from there.
+Everything it prints also goes to `~/install.log`.
 
 The script asks for your password a few times (`sudo`, `chsh`). It stops at
 the first error. Most of it can safely be run again, so fix the problem and
-rerun it. It ends by switching to NetworkManager, which drops the connection
-for a few seconds.
+rerun it, either the same way or as `~/dotfiles/install.sh`. It ends by
+switching to NetworkManager, which drops the connection for a few seconds.
 
 Then reboot. You should get the login screen (or, with an encrypted disk,
 land straight in Hyprland).
 
-The UTM virtual machine I use for testing installs with `./install.sh utm-vm`
-instead, which adds `machines/utm-vm.*` (see below).
+The UTM virtual machine I use for testing installs with
+`~/dotfiles/install.sh utm-vm` (or `… | bash -s -- utm-vm`), which adds
+`machines/utm-vm.*` (see below).
 
 ### 3. By hand, afterwards
 
