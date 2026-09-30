@@ -63,6 +63,8 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("wl-paste --type image --watch cliphist store")
     -- Locks after 5 idle minutes and before suspend (hypridle.conf)
     hl.exec_cmd("hypridle")
+    -- Night light on a schedule (hyprsunset.conf); SUPER + CTRL + N toggles it
+    hl.exec_cmd("hyprsunset")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail and Teams only notify while running, so they start hidden too
@@ -312,6 +314,7 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 -- closeWindowBind:set_enabled(false)
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
+bind(mainMod .. " + CTRL + N", "Toggle night light", hl.dsp.exec_cmd("~/.config/hypr/scripts/nightlight"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
 bind(mainMod .. " + SHIFT + B", "Brave Origin", hl.dsp.exec_cmd("brave-origin"))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused

@@ -41,6 +41,8 @@ bluez-utils
 tailscale
 hyprlock
 hypridle
+# Night light (hyprsunset.conf, SUPER + CTRL + N)
+hyprsunset
 upower
 # Login shell (install.sh switches to it); plugins from the repos, no framework
 zsh
