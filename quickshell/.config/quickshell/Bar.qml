@@ -714,8 +714,10 @@ PanelWindow {
         }
         spacing: 18
 
-        // Mail: left click shows or hides Thunderbird (SUPER + M); highlighted on new mail
+        // Mail: left click shows or hides Thunderbird (SUPER + M); highlighted on new mail,
+        // dim (like the idle reminder icon) until hovered otherwise
         MouseArea {
+            id: mailButton
             readonly property string tip: bar.messaging.mailNew ? "Mail · new messages" : "Mail"
 
             implicitWidth: mailIcon.implicitWidth
@@ -733,12 +735,12 @@ PanelWindow {
                 id: mailIcon
                 anchors.centerIn: parent
                 text: bar.messaging.mailNew ? "󰇮" : "󰇰"
-                color: bar.messaging.mailNew ? bar.warning : bar.fg
+                color: bar.messaging.mailNew ? bar.warning : mailButton.containsMouse ? bar.fg : Theme.dim
             }
         }
 
         // Teams: left click shows or hides it (SUPER + Y), right click toggles call mode
-        // (SUPER + SHIFT + Y); unread count from its window title
+        // (SUPER + SHIFT + Y); unread count from its window title. Highlighted or dim, as mail.
         MouseArea {
             readonly property int unread: bar.messaging.teamsUnread
             readonly property bool alert: unread > 0 || bar.messaging.teamsNew
@@ -763,7 +765,7 @@ PanelWindow {
                 id: teamsIcon
                 anchors.centerIn: parent
                 text: parent.unread > 0 ? `󰊻 ${parent.unread}` : "󰊻"
-                color: parent.alert ? bar.warning : bar.fg
+                color: parent.alert ? bar.warning : parent.containsMouse ? bar.fg : Theme.dim
             }
         }
     }
