@@ -358,7 +358,7 @@ PanelWindow {
             BarText {
                 id: dndToggleText
                 anchors.centerIn: parent
-                text: "󰂛"
+                text: "󰍶"
                 color: bar.notifications.dnd || parent.containsMouse ? bar.fg : Theme.dim
             }
         }
