@@ -197,11 +197,41 @@ if [[ -n ${1:-} ]]; then
     fi
 fi
 
-# NetworkManager takes over from systemd-networkd (the bar's network dropdown needs it).
-# Last, since the switch drops the connection for a few seconds. networkd comes with
-# sockets that restart it, so they all stop in one go (stopping only the service fails).
+# NetworkManager takes over from systemd-networkd and iwd (the bar's network dropdown
+# needs it). Last, since the switch drops the connection for a few seconds.
 if ! systemctl is-enabled --quiet NetworkManager.service; then
+    # Wi-Fi networks iwd saved (archinstall's Wi-Fi option) become NetworkManager
+    # connections first, so a machine on Wi-Fi comes back online. iwd names each file
+    # after the SSID, or =<hex of the SSID> when it has other characters.
+    while IFS= read -r -d '' -u 3 file; do
+        name=${file##*/}
+        name=${name%.*}
+        ssid=$name
+        [[ $name == =* ]] && ssid=$(printf '%b' "$(sed 's/../\\x&/g' <<<"${name#=}")")
+        security=()
+        if [[ $file == *.psk ]]; then
+            psk=$(sudo sed -n 's/^Passphrase=//p' "$file")
+            [[ -n $psk ]] || psk=$(sudo sed -n 's/^PreSharedKey=//p' "$file")
+            [[ -n $psk ]] || continue
+            security=(wifi-sec.key-mgmt wpa-psk wifi-sec.psk "$psk")
+        fi
+        nm_file="/etc/NetworkManager/system-connections/iwd-$name.nmconnection"
+        sudo test -e "$nm_file" && continue
+        nmcli --offline connection add type wifi con-name "$ssid" ssid "$ssid" "${security[@]}" |
+            sudo install -Dm600 /dev/stdin "$nm_file"
+    done 3< <(sudo find /var/lib/iwd -maxdepth 1 \( -name '*.psk' -o -name '*.open' \) -print0 2>/dev/null)
+
+    # networkd comes with sockets that restart it, so they all stop in one go
+    # (stopping only the service fails)
     sudo systemctl disable systemd-networkd.service systemd-networkd.socket systemd-networkd-wait-online.service
     sudo systemctl stop 'systemd-networkd*'
+    # iwd and NetworkManager's wpa_supplicant can't share the Wi-Fi card
+    if [[ -e /usr/lib/systemd/system/iwd.service ]]; then
+        sudo systemctl disable --now iwd.service
+    fi
     sudo systemctl enable --now NetworkManager.service
+    if ! nm-online -q -t 30; then
+        echo "No network after the switch to NetworkManager; connect with nmtui" \
+            "(enterprise and WPA3-only Wi-Fi aren't carried over from iwd)" >&2
+    fi
 fi
