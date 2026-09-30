@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: notes   nvim on today's note in ~/notes (seeds the SUPER + N notes workspace)
+# Usage: notes   nvim on today's note in ~/notes (SUPER + N)
 set -euo pipefail
 
 # DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
