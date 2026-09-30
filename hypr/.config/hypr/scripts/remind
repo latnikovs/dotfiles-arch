@@ -13,8 +13,10 @@
 set -euo pipefail
 
 state=${XDG_STATE_HOME:-$HOME/.local/state}/reminders.json
-# By path: the notification cards (Quickshell) don't look icons up in the Papirus theme
-icon=/usr/share/icons/Papirus/64x64/apps/alarm-clock.svg
+# Nord alarm clock in the notification cards' accent, light or dark like the rest (scripts/theme)
+icon=$HOME/.config/hypr/icons/alarm-dark.svg
+[[ $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) == *light* ]] &&
+    icon=$HOME/.config/hypr/icons/alarm-light.svg
 
 # Rewrites the list with a jq filter, one writer at a time. In place rather than renamed over,
 # so the bar's file watch keeps following it.
