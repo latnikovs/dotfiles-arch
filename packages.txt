@@ -65,9 +65,11 @@ zoxide
 direnv
 bat
 eza
+# Docker, run rootless (install.sh); slirp4netns is its recommended network driver
 docker
 docker-compose
 docker-buildx
+slirp4netns
 github-cli
 # psql/pg_dump only; the server runs in Docker (postgres:18)
 postgresql
@@ -111,5 +113,5 @@ zram-generator
 pacman-contrib
 # Firmware updates (BIOS, SSD, peripherals) from LVFS: fwupdmgr refresh && fwupdmgr update
 fwupd
-# Firewall; ufw-docker (AUR, install.sh) keeps Docker's published ports behind it
+# Firewall (install.sh: nothing comes in except over Tailscale)
 ufw

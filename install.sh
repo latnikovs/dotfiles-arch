@@ -118,21 +118,35 @@ sudo sysctl -q --load /etc/sysctl.d/99-zram.conf
 sudo systemctl daemon-reload
 sudo systemctl start systemd-zram-setup@zram0.service
 
-# Docker daemon, usable without sudo (group applies from the next login)
-sudo systemctl enable --now docker.service
-id -nG | grep -qw docker || sudo usermod -aG docker "$USER"
+# Docker, rootless: the daemon is a user service, so containers can do no more than
+# you can. (The docker group would hand out root without a password.) Published
+# ports are ordinary user processes, which the firewall below covers like any other.
+# .zprofile points DOCKER_HOST (and Testcontainers) at the user daemon's socket.
+yay -S --needed --noconfirm docker-rootless-extras
+# User namespace ids for the containers (useradd normally adds these)
+if ! grep -q "^$USER:" /etc/subuid; then
+    sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 "$USER"
+fi
+# Lets containers take CPU, memory and I/O limits (docker run --memory …)
+sudo install -Dm644 /dev/stdin /etc/systemd/system/user@.service.d/delegate.conf <<'INI'
+[Service]
+Delegate=cpu cpuset io memory pids
+INI
+sudo systemctl daemon-reload
+# The system-wide daemon and the docker group, from before rootless
+sudo systemctl disable --now docker.service docker.socket
+if getent group docker | cut -d: -f4 | tr , '\n' | grep -qx "$USER"; then
+    sudo gpasswd -d "$USER" docker
+fi
+systemctl --user enable --now docker.socket
 
 # Firewall: nothing comes in except over Tailscale (the tailnet is trusted, so the
-# Mac can reach this machine), everything goes out. Docker publishes container
-# ports around ufw, so ufw-docker puts them behind it too: localhost still reaches
-# them, other machines only after `sudo ufw-docker allow <container> <port>`.
-yay -S --needed --noconfirm ufw-docker
+# Mac can reach this machine), everything goes out
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow in on tailscale0
 sudo ufw --force enable
 sudo systemctl enable ufw.service
-sudo ufw-docker install
 sudo ufw reload
 
 # SSH server, reachable only over Tailscale (the firewall above): keys only, no
