@@ -1,6 +1,10 @@
-/* Nord for GTK 3 apps (Sushi's Space previews), over the Adwaita-dark theme
-   install.sh selects; matches gtk-4.0/gtk.css. Adwaita for GTK 3 draws from
-   these named colors, but paints header bars from its own, so they get rules. */
+/* Nord, the dark GTK 3 theme (Sushi's Space previews, the portal file pickers):
+   GTK's built-in Adwaita dark with the colors of gtk-4.0/gtk.css. GTK 3 has no
+   light/dark media query, so scripts/theme switches between this theme and
+   Nord-Light. Adwaita for GTK 3 draws from these named colors, but paints header
+   bars from its own, so they get rules. */
+
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained-dark.css");
 
 @define-color nord0 #2e3440;
 @define-color nord1 #3b4252;

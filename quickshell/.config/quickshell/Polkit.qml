@@ -9,13 +9,13 @@ import Quickshell.Wayland
 Scope {
     id: root
 
-    // Nord, matching the bar, notifications and hyprlock
-    readonly property color bg: "#2e3440"
-    readonly property color fg: "#eceff4"
-    readonly property color dim: "#7b88a1"
-    readonly property color accent: "#88c0d0"
-    readonly property color urgent: "#bf616a"
-    readonly property string fontFamily: "JetBrainsMono Nerd Font"
+    // Nord, light or dark (Theme.qml), matching the bar and notifications
+    readonly property color bg: Theme.bg
+    readonly property color fg: Theme.bright
+    readonly property color dim: Theme.dim
+    readonly property color accent: Theme.accent
+    readonly property color urgent: Theme.urgent
+    readonly property string fontFamily: Theme.fontFamily
 
     readonly property var flow: agent.flow
     property bool submitted: false
@@ -140,9 +140,9 @@ Scope {
                     width: parent.width
                     height: 38
                     radius: 6
-                    color: "#3b4252"
+                    color: Theme.surface
                     border.width: 1
-                    border.color: password.activeFocus ? root.accent : "#4c566a"
+                    border.color: password.activeFocus ? root.accent : Theme.muted
 
                     TextInput {
                         id: password

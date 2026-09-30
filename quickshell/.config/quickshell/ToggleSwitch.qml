@@ -15,7 +15,7 @@ MouseArea {
     Rectangle {
         anchors.fill: parent
         radius: height / 2
-        color: toggle.checked ? "#88c0d0" : "#4c566a"
+        color: toggle.checked ? Theme.accent : Theme.muted
 
         Rectangle {
             x: toggle.checked ? parent.width - width - 3 : 3
@@ -23,7 +23,7 @@ MouseArea {
             width: parent.height - 6
             height: width
             radius: width / 2
-            color: toggle.checked ? "#2e3440" : "#d8dee9"
+            color: toggle.checked ? Theme.bg : Theme.fg
 
             Behavior on x {
                 NumberAnimation {

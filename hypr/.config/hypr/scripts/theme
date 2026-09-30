@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Usage: theme light|dark   switch the whole desktop between Nord light and dark
+#
+# darkman runs this at sunrise and sunset (darkman/.local/share/*-mode.d), and
+# `darkman toggle` (the bar's sun/moon button) runs it by hand. Most apps follow
+# the freedesktop color-scheme setting by themselves once it changes: GTK 4 and
+# libadwaita (gtk-4.0/gtk.css), kitty (*-theme.auto.conf), nvim
+# (auto-dark-mode.nvim), Chromium, Brave, Thunderbird and the Quickshell bar
+# (Theme.qml). The rest are switched here. The lock screen stays dark.
+set -euo pipefail
+
+case ${1:-} in
+    dark)  scheme=prefer-dark  gtk=Nord       icons=Papirus-Dark ;;
+    light) scheme=prefer-light gtk=Nord-Light icons=Papirus-Light ;;
+    *) echo "Usage: theme light|dark" >&2; exit 1 ;;
+esac
+mode=$1
+
+gsettings set org.gnome.desktop.interface color-scheme "$scheme"
+# GTK 3 has no light/dark CSS, so its apps switch themes (~/.local/share/themes)
+gsettings set org.gnome.desktop.interface gtk-theme "$gtk"
+gsettings set org.gnome.desktop.interface icon-theme "$icons"
+
+# fuzzel reads its colours at every launch
+ln -sfn "nord-$mode.ini" "$HOME/.config/fuzzel/theme.ini"
+
+# Window borders (applyTheme in hyprland.lua); skipped outside a Hyprland session
+if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
+    hyprctl eval "applyTheme('$mode')" >/dev/null
+fi
+
+# tmux would notice at its next status redraw (theme-watch.sh); this is at once
+if tmux info &>/dev/null; then
+    "$HOME/.tmux/scripts/reload.sh"
+fi

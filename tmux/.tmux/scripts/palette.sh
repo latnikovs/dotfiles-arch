@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Publishes the bar's pill colors as tmux options, derived per flavor.
 #
+# (The contrast figures below were measured on Catppuccin, the palette before
+# Nord. The rule carries over: Nord's light accents sit at mid luminance too.)
+#
 # Why the two flavors cannot share one rule:
 #
 # The bar's dark look is accent-coloured text on a dark surface pill. That works
@@ -67,7 +70,7 @@ crust="$(tmux show -gqv @thm_crust 2>/dev/null)"
 
 fg="$(tmux show -gqv @thm_fg 2>/dev/null)"
 
-if [ "$flavor" = latte ]; then
+if [ "$flavor" = light ]; then
 	# Labels go neutral; only icons stay accented.
 	tmux set -g @pill_text "$fg"
 else
@@ -147,7 +150,7 @@ surface="$(tmux show -gqv @thm_surface_0 2>/dev/null)"
 # measured against that one colour. Derived before the loop because the loop
 # reaches mauve partway through, after green has already needed this value.
 mauve="$(tmux show -gqv @thm_mauve 2>/dev/null)"
-if [ "$flavor" = latte ]; then
+if [ "$flavor" = light ]; then
 	badge_mauve="$(blend "$mauve" "$base" "$BADGE_TINT")"
 else
 	badge_mauve="$mauve"
@@ -162,7 +165,7 @@ for name in "${ACCENTS[@]}"; do
 	# 3:1, the graphic floor, same as @icon_*: this is a glyph, not text.
 	tmux set -g "@badge_icon_$name" "$(darken_to "$value" "$badge_mauve" 3.0)"
 
-	if [ "$flavor" = latte ]; then
+	if [ "$flavor" = light ]; then
 		# Icon only has to clear 3:1 against the pill, so it barely moves and
 		# keeps its hue. The label is neutral and already at 5.2:1.
 		tmux set -g "@icon_$name" "$(darken_to "$value" "$surface" 3.0)"

@@ -21,13 +21,13 @@ Rectangle {
     signal activated
     signal closeRequested
 
-    // Nord, matching the bar, fuzzel and Hyprland borders
-    readonly property color fg: "#eceff4"
-    readonly property color bodyColor: "#d8dee9"
-    readonly property color dim: "#7b88a1"
-    readonly property color accent: "#88c0d0"
-    readonly property color urgent: "#bf616a"
-    readonly property string fontFamily: "JetBrainsMono Nerd Font"
+    // Nord, light or dark (Theme.qml), matching the bar, fuzzel and Hyprland borders
+    readonly property color fg: Theme.bright
+    readonly property color bodyColor: Theme.fg
+    readonly property color dim: Theme.dim
+    readonly property color accent: Theme.accent
+    readonly property color urgent: Theme.urgent
+    readonly property string fontFamily: Theme.fontFamily
 
     readonly property bool critical: urgency === NotificationUrgency.Critical
     readonly property string iconSource: source(image) || source(appIcon)
@@ -46,7 +46,7 @@ Rectangle {
     implicitWidth: 380
     implicitHeight: content.implicitHeight + 24
     radius: 10
-    color: "#2e3440"
+    color: Theme.bg
     border.width: 2
     border.color: critical ? urgent : accent
 

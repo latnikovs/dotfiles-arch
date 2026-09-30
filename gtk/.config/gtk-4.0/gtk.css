@@ -1,6 +1,7 @@
-/* Nord for libadwaita (GTK 4) apps such as Nautilus, over the dark scheme
-   install.sh selects. Translucent like kitty (background_opacity 0.9), with
-   Hyprland's blur behind.
+/* Nord for libadwaita (GTK 4) apps such as Nautilus, dark or light with the
+   color-scheme setting (scripts/theme): the light block at the end overrides the
+   dark colors, and GTK re-evaluates it live when the setting changes.
+   Translucent like kitty (background_opacity 0.9), with Hyprland's blur behind.
 
    Named colors, not the newer --window-bg-color style variables: libadwaita
    derives those from these, and setting the variables here leaves them invalid
@@ -11,6 +12,7 @@
 @define-color nord1 #3b4252;
 @define-color nord2 #434c5e;
 @define-color nord4 #d8dee9;
+@define-color nord5 #e5e9f0;
 @define-color nord6 #eceff4;
 
 @define-color window_bg_color alpha(@nord0, 0.9);
@@ -51,3 +53,34 @@
 @define-color error_bg_color #bf616a;
 @define-color error_fg_color @nord6;
 @define-color error_color #bf616a;
+
+/* Light mode: Snow Storm surfaces, Polar Night text, and accents dark enough
+   to read on them */
+@media (prefers-color-scheme: light) {
+    @define-color window_bg_color alpha(@nord6, 0.9);
+    @define-color window_fg_color @nord0;
+    @define-color view_bg_color alpha(@nord6, 0.9);
+    @define-color view_fg_color @nord0;
+    @define-color headerbar_bg_color alpha(@nord5, 0.9);
+    @define-color headerbar_fg_color @nord0;
+    @define-color headerbar_backdrop_color alpha(@nord6, 0.9);
+    @define-color sidebar_bg_color alpha(@nord5, 0.9);
+    @define-color sidebar_fg_color @nord0;
+    @define-color sidebar_backdrop_color alpha(@nord5, 0.9);
+    @define-color secondary_sidebar_bg_color alpha(@nord5, 0.9);
+    @define-color secondary_sidebar_fg_color @nord0;
+    @define-color secondary_sidebar_backdrop_color alpha(@nord5, 0.9);
+    @define-color card_bg_color alpha(@nord4, 0.6);
+    @define-color card_fg_color @nord0;
+    @define-color popover_bg_color @nord6;
+    @define-color popover_fg_color @nord0;
+    @define-color dialog_bg_color @nord6;
+    @define-color dialog_fg_color @nord0;
+    @define-color thumbnail_bg_color @nord5;
+    @define-color thumbnail_fg_color @nord0;
+
+    @define-color accent_color #5e81ac;
+    @define-color success_color #48a53d;
+    @define-color warning_color #ba793e;
+    @define-color success_fg_color @nord6;
+}

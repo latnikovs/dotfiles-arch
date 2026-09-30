@@ -16,13 +16,13 @@ import Quickshell.Widgets
 PanelWindow {
     id: bar
 
-    // Nord, matching the notification cards, fuzzel and Hyprland borders
-    readonly property color bg: "#2e3440"
-    readonly property color fg: "#d8dee9"
-    readonly property color muted: "#4c566a"
-    readonly property color warning: "#ebcb8b"
-    readonly property color urgent: "#bf616a"
-    readonly property color accent: "#88c0d0"
+    // Nord, light or dark (Theme.qml), matching the notification cards, fuzzel and Hyprland borders
+    readonly property color bg: Theme.bg
+    readonly property color fg: Theme.fg
+    readonly property color muted: Theme.muted
+    readonly property color warning: Theme.warning
+    readonly property color urgent: Theme.urgent
+    readonly property color accent: Theme.accent
 
     required property Notifications notifications
     required property Keyboard keyboard
@@ -1492,6 +1492,30 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
                 color: bar.wiredUp || bar.wifiNetwork ? bar.fg : bar.muted
+            }
+        }
+
+        // Appearance: left click switches light/dark (darkman, which otherwise follows
+        // sunrise and sunset), right click toggles the night light
+        MouseArea {
+            implicitWidth: themeIcon.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, Theme.dark ? "Dark mode" : "Light mode") : bar.hideTooltip(this)
+            onClicked: mouse => {
+                bar.hideTooltip(this);
+                if (mouse.button === Qt.LeftButton)
+                    Quickshell.execDetached(["darkman", "toggle"]);
+                else
+                    Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/nightlight"]);
+            }
+
+            BarText {
+                id: themeIcon
+                anchors.centerIn: parent
+                text: Theme.dark ? "󰖔" : "󰖙"
             }
         }
 

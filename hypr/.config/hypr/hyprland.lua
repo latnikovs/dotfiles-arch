@@ -40,6 +40,28 @@ local teams       = "special:teams"
 local teamsApp    = browser .. " --app=https://teams.microsoft.com/"
 
 
+------------------------
+---- LIGHT AND DARK ----
+------------------------
+
+-- Nord window borders for dark or light mode. scripts/theme (run by darkman at sunrise
+-- and sunset, or by the bar's sun/moon button) calls this with `hyprctl eval`; at
+-- startup it follows the color-scheme setting that script last set.
+local borders = {
+    dark  = { active = "rgb(88c0d0)", inactive = "rgb(4c566a)" }, -- Nord frost, polar night
+    light = { active = "rgb(5e81ac)", inactive = "rgb(c8ced9)" }, -- deeper frost, snow storm
+}
+
+function applyTheme(mode)
+    local b = borders[mode] or borders.dark
+    hl.config({ general = { col = { active_border = b.active, inactive_border = b.inactive } } })
+end
+
+local scheme = io.popen("gsettings get org.gnome.desktop.interface color-scheme")
+applyTheme(scheme and scheme:read("*l") == "'prefer-light'" and "light" or "dark")
+if scheme then scheme:close() end
+
+
 -------------------
 ---- AUTOSTART ----
 -------------------
@@ -65,6 +87,8 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("hypridle")
     -- Night light on a schedule (hyprsunset.conf); SUPER + CTRL + N toggles it
     hl.exec_cmd("hyprsunset")
+    -- Light or dark by sunrise and sunset (darkman runs scripts/theme)
+    hl.exec_cmd("darkman run")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail and Teams only notify while running, so they start hidden too
@@ -114,10 +138,7 @@ hl.config({
 
         border_size = 2,
 
-        col = {
-            active_border   = "rgb(88c0d0)", -- Nord frost
-            inactive_border = "rgb(4c566a)",
-        },
+        -- Border colours: applyTheme() below, light or dark
 
         -- Set to true to enable resizing windows by clicking and dragging on borders and gaps
         resize_on_border = false,

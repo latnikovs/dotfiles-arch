@@ -2,7 +2,7 @@
 import QtQuick
 
 Text {
-    color: "#d8dee9"
+    color: Theme.fg
     font.family: "JetBrainsMono Nerd Font"
     font.pixelSize: 12
     verticalAlignment: Text.AlignVCenter

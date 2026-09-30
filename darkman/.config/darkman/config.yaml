@@ -1,0 +1,14 @@
+# Light by day, dark by night, like macOS's Auto appearance: darkman switches at
+# sunrise and sunset here, running ~/.local/share/{light,dark}-mode.d/theme
+# (hypr/scripts/theme). `darkman toggle` (the bar's sun/moon button) switches by
+# hand until the next sunrise or sunset.
+
+# Riga. A fixed location rather than geoclue, which needs a location agent and
+# asks a web service where the machine is.
+lat: 56.9
+lng: 24.1
+usegeoclue: false
+
+# scripts/theme sets color-scheme through gsettings, which xdg-desktop-portal-gtk
+# already serves to apps; a second portal answering the same question could disagree
+portal: false

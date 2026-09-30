@@ -2,7 +2,7 @@
 import QtQuick
 
 BarText {
-    color: Qt.darker("#d8dee9", 1.4)
+    color: Theme.dim
     font.pixelSize: 10
     font.letterSpacing: 1
 }

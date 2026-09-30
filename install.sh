@@ -177,14 +177,14 @@ xdg-mime default org.gnome.Papers.desktop application/pdf
 # Images open in imv
 xdg-mime default imv.desktop image/png image/jpeg image/gif image/webp image/bmp image/tiff
 
-# Dark GTK apps, as in Omarchy: libadwaita (Nautilus) reads color-scheme through
-# xdg-desktop-portal-gtk, older GTK 3 apps the theme name
-gsettings set org.gnome.desktop.interface color-scheme prefer-dark
-gsettings set org.gnome.desktop.interface gtk-theme Adwaita-dark
 # Papirus icons everywhere (GTK apps, the fuzzel launcher), folders in Nord blue-grey
-gsettings set org.gnome.desktop.interface icon-theme Papirus-Dark
+# (Papirus-Light shares them)
 yay -S --needed --noconfirm papirus-folders
 sudo papirus-folders -C nordic --theme Papirus-Dark
+# Light or dark: darkman (started by Hyprland) runs scripts/theme at sunrise and
+# sunset. Dark until it first does; this also creates fuzzel's theme.ini, which
+# fuzzel won't start without.
+[[ -e $HOME/.config/fuzzel/theme.ini ]] || "$HOME/.config/hypr/scripts/theme" dark
 
 if [[ -n ${1:-} ]]; then
     src=machines/$1.lua

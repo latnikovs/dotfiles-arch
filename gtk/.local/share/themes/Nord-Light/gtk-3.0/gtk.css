@@ -1,0 +1,51 @@
+/* Nord-Light, the light GTK 3 theme: GTK's built-in Adwaita with the light
+   colors of gtk-4.0/gtk.css. scripts/theme switches between this and Nord. */
+
+@import url("resource:///org/gtk/libgtk/theme/Adwaita/gtk-contained.css");
+
+@define-color nord0 #2e3440;
+@define-color nord1 #3b4252;
+@define-color nord2 #434c5e;
+@define-color nord3 #4c566a;
+@define-color nord4 #d8dee9;
+@define-color nord5 #e5e9f0;
+@define-color nord6 #eceff4;
+
+@define-color theme_bg_color alpha(@nord6, 0.9);
+@define-color theme_fg_color @nord0;
+@define-color theme_base_color alpha(@nord6, 0.9);
+@define-color theme_text_color @nord0;
+@define-color theme_unfocused_bg_color alpha(@nord6, 0.9);
+@define-color theme_unfocused_fg_color @nord0;
+@define-color theme_unfocused_base_color alpha(@nord6, 0.9);
+@define-color theme_unfocused_text_color @nord0;
+@define-color theme_selected_bg_color #5e81ac;  /* nord10 */
+@define-color theme_selected_fg_color @nord6;
+@define-color theme_unfocused_selected_bg_color #5e81ac;
+@define-color theme_unfocused_selected_fg_color @nord6;
+@define-color borders @nord4;
+@define-color unfocused_borders @nord4;
+
+headerbar,
+headerbar:backdrop,
+.titlebar,
+.titlebar:backdrop {
+    background: @nord5;
+    color: @nord0;
+    border-color: @nord4;
+    box-shadow: none;
+}
+
+headerbar button,
+.titlebar button {
+    background: @nord6;
+    color: @nord0;
+    border-color: @nord4;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+headerbar button:hover,
+.titlebar button:hover {
+    background: @nord4;
+}
