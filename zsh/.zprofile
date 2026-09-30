@@ -10,7 +10,9 @@ export PATH="$HOME/.local/share/mise/shims:$PATH"
 # gcr-ssh-agent (enabled by install.sh); an agent forwarded over SSH wins
 export SSH_AUTH_SOCK=${SSH_AUTH_SOCK:-$XDG_RUNTIME_DIR/gcr/ssh}
 
-# Auto-start Hyprland on tty1 (not over SSH or on other TTYs)
-if [[ -z $WAYLAND_DISPLAY && $XDG_VTNR -eq 1 ]]; then
+# Auto-start Hyprland from a login on tty1 (not over SSH or on other TTYs), for when
+# greetd is off. greetd's session (hyprland-session) runs this file non-interactively
+# and starts Hyprland itself.
+if [[ -o interactive && -z $WAYLAND_DISPLAY && $XDG_VTNR -eq 1 ]]; then
     exec start-hyprland
 fi

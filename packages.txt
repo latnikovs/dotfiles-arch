@@ -71,7 +71,12 @@ github-cli
 postgresql
 gnome-keyring
 gcr-4
+# gcr-prompter: the keyring's password dialog, for when auto-login left it locked
+gcr
 libsecret
+# Login: greetd with tuigreet on tty1 (install.sh sets them up)
+greetd
+greetd-tuigreet
 keepassxc
 # Mail and calendar (Gmail, iCloud); SUPER + M
 thunderbird

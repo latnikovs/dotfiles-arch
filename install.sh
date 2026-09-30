@@ -113,14 +113,48 @@ sudo ufw reload
 # themselves stay manual: fwupdmgr update)
 sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
 
-# Keyring: unlocked with the tty login password, and re-encrypted when passwd
-# changes it. PAM keeps one stack per type, so appending lands each line last in
-# its stack; optional means a keyring failure never blocks a login.
+# Login: greetd on tty1. With the root filesystem on LUKS, the disk password at boot
+# already proved who is there, so the first session of each boot starts without a
+# login, as in Omarchy. After a logout, and on unencrypted machines, tuigreet asks.
+# The session runs through a zsh login shell, so Hyprland gets .zprofile (mise
+# shims, the SSH agent) just as it does when started from a tty login.
+sudo install -Dm755 /dev/stdin /usr/local/bin/hyprland-session <<'SH'
+#!/bin/sh
+exec zsh -lc start-hyprland
+SH
+{
+    cat <<'TOML'
+[terminal]
+vt = 1
+
+[default_session]
+command = "tuigreet --time --remember --asterisks --cmd /usr/local/bin/hyprland-session"
+user = "greeter"
+TOML
+    if lsblk -s -no TYPE "$(findmnt -no SOURCE -v /)" | grep -qx crypt; then
+        cat <<TOML
+
+[initial_session]
+command = "/usr/local/bin/hyprland-session"
+user = "$USER"
+TOML
+    fi
+} | sudo install -Dm644 /dev/stdin /etc/greetd/config.toml
+# From the next boot; starting it now would stop the tty1 session this may run in
+sudo systemctl enable greetd.service
+
+# Keyring: unlocked with the login password (tty or tuigreet), and re-encrypted
+# when passwd changes it. An auto-login has no password, so the keyring asks for
+# it once, the first time an app needs a secret. PAM keeps one stack per type, so
+# appending lands each line last in its stack; optional means a keyring failure
+# never blocks a login.
 pam_add() {
     grep -qxF "$2" "$1" || echo "$2" | sudo tee -a "$1" >/dev/null
 }
-pam_add /etc/pam.d/login  "auth       optional     pam_gnome_keyring.so"
-pam_add /etc/pam.d/login  "session    optional     pam_gnome_keyring.so auto_start"
+for pam in login greetd; do
+    pam_add /etc/pam.d/$pam "auth       optional     pam_gnome_keyring.so"
+    pam_add /etc/pam.d/$pam "session    optional     pam_gnome_keyring.so auto_start"
+done
 pam_add /etc/pam.d/passwd "password   optional     pam_gnome_keyring.so"
 
 # SSH agent that asks for key passphrases graphically and can remember them in
