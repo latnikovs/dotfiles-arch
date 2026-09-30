@@ -16,10 +16,14 @@ Rectangle {
     property int urgency: NotificationUrgency.Normal
     property string time: "" // shown next to the app name in history
     property real progress: 0 // 1 → 0 as the toast times out; 0 hides the bar
+    // The sender's actions ({ identifier, text }); all but "default" (the card's own click) get a button
+    property var actions: []
+    readonly property var buttons: actions.filter(a => a.identifier !== "default" && a.text !== "")
     readonly property alias hovered: hover.hovered
 
     signal activated
     signal closeRequested
+    signal actionInvoked(string identifier)
 
     // Nord, light or dark (Theme.qml), matching the bar, fuzzel and Hyprland borders
     readonly property color fg: Theme.bright
@@ -143,6 +147,46 @@ Rectangle {
                 wrapMode: Text.Wrap
                 maximumLineCount: 4
                 elide: Text.ElideRight
+            }
+
+            // Action buttons, e.g. a reminder's snooze. Above the card's MouseArea, so they get the click.
+            Flow {
+                Layout.fillWidth: true
+                Layout.topMargin: 6
+                visible: card.buttons.length > 0
+                spacing: 6
+
+                Repeater {
+                    model: card.buttons
+
+                    delegate: Rectangle {
+                        id: button
+                        required property var modelData
+
+                        implicitWidth: buttonText.implicitWidth + 20
+                        implicitHeight: buttonText.implicitHeight + 8
+                        radius: 6
+                        color: buttonArea.containsMouse ? Theme.muted : Theme.surface
+
+                        Text {
+                            id: buttonText
+                            anchors.centerIn: parent
+                            text: button.modelData.text
+                            textFormat: Text.PlainText
+                            color: buttonArea.containsMouse ? card.fg : card.bodyColor
+                            font.family: card.fontFamily
+                            font.pixelSize: 12
+                        }
+
+                        MouseArea {
+                            id: buttonArea
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: card.actionInvoked(button.modelData.identifier)
+                        }
+                    }
+                }
             }
         }
     }

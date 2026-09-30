@@ -100,6 +100,16 @@ Scope {
         dismiss(n);
     }
 
+    // A button on the card (NotificationCard.qml): runs that action, which closes the notification
+    // unless the sender marked it resident
+    function invoke(n, identifier) {
+        const action = n.actions.find(a => a.identifier === identifier);
+        if (!action)
+            return;
+        delete remaining[n.id];
+        action.invoke();
+    }
+
     NotificationServer {
         id: server
         actionsSupported: true
@@ -236,6 +246,7 @@ Scope {
                     image: modelData.image
                     appIcon: modelData.appIcon
                     urgency: modelData.urgency
+                    actions: modelData.actions
                     progress: {
                         root.tick;
                         return root.progress(modelData);
@@ -248,6 +259,7 @@ Scope {
                     }
                     onActivated: root.activate(modelData)
                     onCloseRequested: root.dismiss(modelData)
+                    onActionInvoked: identifier => root.invoke(modelData, identifier)
                 }
             }
         }

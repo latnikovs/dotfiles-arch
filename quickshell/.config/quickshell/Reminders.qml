@@ -1,8 +1,8 @@
 // Reminders set with hypr/scripts/remind (SUPER + CTRL + R, or `remind 20m tea` in a terminal),
 // kept in ~/.local/state/reminders.json. This watches that file, counts the reminders down and,
 // when one is due, sends a critical notification (it stays until dismissed and gets through do
-// not disturb) and drops it from the file. Any that came due while the shell wasn't running,
-// say with the machine off, are sent at startup marked as missed.
+// not disturb) with snooze buttons, and drops it from the file. Any that came due while the
+// shell wasn't running, say with the machine off, are sent at startup marked as missed.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -61,7 +61,9 @@ Scope {
         fired[r.id] = true;
         const missed = r.at < startedAt - 60;
         const body = missed ? `Missed, was due ${when(r)}` : Qt.formatDateTime(new Date(r.at * 1000), "HH:mm");
-        Quickshell.execDetached(["notify-send", "-a", "Reminders", "-u", "critical", "--", r.message, body]);
+        // notify-send waits for a button and prints its action; a snooze sets the reminder again
+        Quickshell.execDetached(["sh", "-c", `a=$(notify-send -a Reminders -u critical -A 10="Snooze 10 min" -A 60="1 hour" -- "$1" "$2") || exit
+            case $a in 10|60) exec "$3" "$a" "$1" ;; esac`, "sh", r.message, body, script]);
         cancel(r.id);
     }
 
