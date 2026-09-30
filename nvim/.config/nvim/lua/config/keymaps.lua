@@ -15,34 +15,20 @@ end, { desc = "[Y]ank full [P]ath:line" })
 vim.keymap.set("n", "<leader>bn", "<cmd>enew<cr>", { desc = "[B]uffer [N]ew" })
 vim.keymap.set("n", "<leader>bR", "<cmd>e!<cr>", { desc = "[B]uffer [R]eload" })
 
--- Daily notes in ~/notes/daily/YYYY-MM-DD.md, the Obsidian daily-note layout,
--- so the folder still opens as a vault there. A new day starts with its date
--- as the heading. Images: see plugins/notes.lua.
-local notes = vim.fn.expand("~/notes")
-
-local function daily_note(offset_days)
-  local date = os.date("%Y-%m-%d", os.time() + offset_days * 86400)
-  local path = notes .. "/daily/" .. date .. ".md"
-  vim.fn.mkdir(vim.fs.dirname(path), "p")
-  local is_new = vim.fn.filereadable(path) == 0
-  vim.cmd.edit(vim.fn.fnameescape(path))
-  if is_new and vim.api.nvim_buf_line_count(0) == 1 and vim.fn.getline(1) == "" then
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, { "# " .. date, "", "" })
-    vim.api.nvim_win_set_cursor(0, { 3, 0 })
-  end
-end
+-- Notes in ~/notes (config/notes.lua); images: see plugins/notes.lua.
+local notes = require("config.notes")
 
 vim.keymap.set("n", "<leader>jj", function()
-  daily_note(0)
+  notes.daily(0)
 end, { desc = "Today's Note" })
 vim.keymap.set("n", "<leader>jy", function()
-  daily_note(-1)
+  notes.daily(-1)
 end, { desc = "Yesterday's Note" })
 vim.keymap.set("n", "<leader>jf", function()
-  Snacks.picker.files({ cwd = notes })
+  Snacks.picker.files({ cwd = notes.dir })
 end, { desc = "Find Note" })
 vim.keymap.set("n", "<leader>jg", function()
-  Snacks.picker.grep({ cwd = notes })
+  Snacks.picker.grep({ cwd = notes.dir })
 end, { desc = "Grep Notes" })
 
 -- Buffer-local counterpart to LazyVim's <leader>ud, which hides diagnostics in

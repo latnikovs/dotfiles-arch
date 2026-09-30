@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Usage: notes   nvim on today's note in ~/notes (seeds the SUPER + N notes workspace)
+set -euo pipefail
+
+# DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
+# so it can carry "env VAR=… kitty". A fixed class lets window rules single the window out.
+# Started in ~/notes so the file pickers and :cd-relative paths stay inside the notes.
+mkdir -p ~/notes
+exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.notes --directory ~/notes \
+    nvim -c 'lua require("config.notes").daily(0)'

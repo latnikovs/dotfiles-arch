@@ -35,6 +35,7 @@ local menu        = "pkill -x fuzzel || fuzzel"
 local passwords   = "special:passwords"
 local music       = "special:music"
 local mail        = "special:mail"
+local notes       = "special:notes"
 local teams       = "special:teams"
 -- Teams as a Chromium app window; Microsoft has no Linux client
 local teamsApp    = browser .. " --app=https://teams.microsoft.com/"
@@ -345,6 +346,7 @@ bind(mainMod .. " + ALT + SHIFT + F", "File manager", hl.dsp.exec_cmd(fileManage
 bind(mainMod .. " + SHIFT + SLASH", "Toggle passwords", toggleSpecial("passwords", "fade", "fade"))
 bind(mainMod .. " + SHIFT + M", "Toggle music", toggleSpecial("music", "fade", "fade"))
 bind(mainMod .. " + M", "Toggle mail", toggleSpecial("mail", "fade", "fade"))
+bind(mainMod .. " + N", "Toggle notes", toggleSpecial("notes", "fade", "fade"))
 
 -- Teams call mode (SUPER + SHIFT + Y): Teams leaves its special workspace for a small
 -- floating window in the top right corner, pinned so it stays in view on every workspace
@@ -635,6 +637,7 @@ local specialApps = {
     [passwords] = "class:^KeePassXC$",
     [music]     = "class:^org\\.dotfiles\\.music$",
     [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
+    [notes]     = "class:^org\\.dotfiles\\.notes$",
     [teams]     = teamsWindow,
 }
 hl.on("workspace.special_active", function(ws)
@@ -667,6 +670,14 @@ hl.window_rule({
     float  = true,
     center = true,
     size   = "monitor_w*0.6 monitor_h*0.7",
+})
+
+-- Notes (nvim on today's note, scripts/notes) the same way on SUPER + N, tiled full
+-- size like mail: Obsidian's shortcut on the Mac, and like it a window that is there
+-- when called, not a new one.
+hl.workspace_rule({
+    workspace        = notes,
+    on_created_empty = "~/.config/hypr/scripts/notes",
 })
 
 -- Installing updates (the bar's update icon, scripts/updates run) in a floating terminal
