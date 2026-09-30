@@ -1,5 +1,5 @@
 // Top bar: workspaces on the left, reminders, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
-// CPU/RAM/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
+// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -94,6 +94,8 @@ PanelWindow {
         tailscalePanel.open = false;
         updatesPanel.open = false;
         remindersPanel.open = false;
+        cpuPanel.open = false;
+        memPanel.open = false;
     }
 
     function toggleDropdown(panel) {
@@ -1039,7 +1041,7 @@ PanelWindow {
         reminders: bar.reminders
     }
 
-    // ---- CPU usage from /proc/stat, polled every 5s
+    // ---- CPU usage from /proc/stat, polled every 5s; left click lists the busiest processes (ProcessPanel.qml)
 
     property real cpuUsage: 0
     property var cpuLast: null
@@ -1059,7 +1061,22 @@ PanelWindow {
         }
     }
 
-    // ---- Memory usage from /proc/meminfo, polled with the CPU
+    ProcessPanel {
+        id: cpuPanel
+        bar: bar
+        button: cpuButton
+        title: `CPU ${Math.round(bar.cpuUsage * 100)}%`
+    }
+
+    // ---- Memory usage from /proc/meminfo, polled with the CPU; left click lists the biggest processes
+
+    ProcessPanel {
+        id: memPanel
+        bar: bar
+        button: memButton
+        memory: true
+        title: bar.memDetail
+    }
 
     property real memUsage: 0
     property string memDetail: ""
@@ -1426,16 +1443,32 @@ PanelWindow {
             }
         }
 
-        BarText {
-            text: ` ${Math.round(bar.cpuUsage * 100)}%`
-            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
+        MouseArea {
+            id: cpuButton
+            implicitWidth: cpuText.implicitWidth
+            Layout.fillHeight: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: bar.toggleDropdown(cpuPanel)
+
+            BarText {
+                id: cpuText
+                anchors.centerIn: parent
+                text: ` ${Math.round(bar.cpuUsage * 100)}%`
+                color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
+            }
         }
 
         MouseArea {
+            id: memButton
             implicitWidth: memText.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, bar.memDetail) : bar.hideTooltip(this)
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !memPanel.open ? bar.showTooltip(this, bar.memDetail) : bar.hideTooltip(this)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.toggleDropdown(memPanel);
+            }
 
             BarText {
                 id: memText
