@@ -1,0 +1,13 @@
+onboarding = false
+
+[theme]
+name = "nord"
+auto_switch = false
+
+[keys]
+# Navigate mode (prefix+w): j/k move between workspaces, arrows still work too.
+# Panes take ctrl+j/k there instead; h/l (and left/right) stay on panes.
+navigate_workspace_up = ["k", "up"]
+navigate_workspace_down = ["j", "down"]
+navigate_pane_up = "ctrl+k"
+navigate_pane_down = "ctrl+j"
