@@ -664,6 +664,16 @@ hl.window_rule({
     size   = "monitor_w*0.6 monitor_h*0.7",
 })
 
+-- Installing updates (the bar's update icon, scripts/updates run) in a floating terminal
+hl.window_rule({
+    name  = "float-updates",
+    match = { class = "^org\\.dotfiles\\.updates$" },
+
+    float  = true,
+    center = true,
+    size   = "monitor_w*0.6 monitor_h*0.7",
+})
+
 -- Mail (Thunderbird, SUPER + M) and Teams (SUPER + Y) get special workspaces too,
 -- tiled full size. Thunderbird's launches are pinned there, so a compose window
 -- opened from a mailto: link appears where you are.

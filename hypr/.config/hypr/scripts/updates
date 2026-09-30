@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Usage: updates list   pending package updates, "name old -> new" per line, AUR ones last
+#        updates run    install them (yay -Syu), then refresh the bar's update icon
+# The bar (Quickshell Updates.qml) checks with `list` every 6 hours and opens `run` in a
+# terminal when the icon is clicked.
+set -euo pipefail
+
+case ${1:-} in
+    list)
+        # checkupdates syncs a private copy of the package databases, so the system's
+        # own stay as they are (no partial upgrades). Exit 2 means nothing to update.
+        checkupdates --nocolor || (( $? == 2 ))
+        # yay exits 1 when no AUR package has an update
+        { yay -Qua --color never || true; } | sed 's/$/ (AUR)/'
+        ;;
+    run)
+        if yay -Syu; then
+            echo "Up to date."
+        else
+            echo "yay failed; see above."
+        fi
+        quickshell ipc call updates refresh >/dev/null 2>&1 || true
+        read -rsn1 -p "Press any key to close."
+        ;;
+    *)
+        echo "Usage: updates list|run" >&2
+        exit 1
+        ;;
+esac

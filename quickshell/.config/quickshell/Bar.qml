@@ -1,5 +1,5 @@
-// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, tray/keyboard layout/CPU/RAM/battery/
-// microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
+// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
+// CPU/RAM/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -28,6 +28,7 @@ PanelWindow {
     required property Keyboard keyboard
     required property Tailscale tailscale
     required property Messaging messaging
+    required property Updates updates
 
     anchors {
         top: true
@@ -1258,6 +1259,30 @@ PanelWindow {
             rightMargin: 15
         }
         spacing: 15
+
+        // Pending package updates (Updates.qml), shown only when there are some: click installs them
+        MouseArea {
+            readonly property string tip: `${bar.updates.count} update${bar.updates.count === 1 ? "" : "s"}`
+                + (bar.updates.aurCount > 0 ? ` (${bar.updates.aurCount} from the AUR)` : "") + " · click to install"
+
+            visible: bar.updates.count > 0
+            implicitWidth: updatesText.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.updates.install();
+            }
+
+            BarText {
+                id: updatesText
+                anchors.centerIn: parent
+                text: `󰚰 ${bar.updates.count}`
+            }
+        }
 
         RowLayout {
             spacing: 12

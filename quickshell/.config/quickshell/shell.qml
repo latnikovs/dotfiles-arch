@@ -23,6 +23,7 @@ ShellRoot {
             keyboard: keyboardService
             tailscale: tailscaleService
             messaging: messagingService
+            updates: updatesService
         }
     }
 
@@ -41,6 +42,10 @@ ShellRoot {
 
     Tailscale {
         id: tailscaleService
+    }
+
+    Updates {
+        id: updatesService
     }
 
     Polkit {}

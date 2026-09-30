@@ -21,7 +21,8 @@ hypr=$(hyprctl binds -j | jq -r '
     | .[] | "\(.keys)\t\(.description)"')
 
 # The bar's own mouse and keyboard actions (quickshell), which Hyprland doesn't know about
-bar="Click clock	Calendar
+bar="Click update icon	Install pending updates (shown when there are some)
+Click clock	Calendar
 Right-click clock	Show date
 Click weather	Weather details
 Middle-click weather	Refresh weather
