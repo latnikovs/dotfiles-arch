@@ -1,8 +1,10 @@
 // Reminders set with hypr/scripts/remind (SUPER + CTRL + R, or `remind 20m tea` in a terminal),
 // kept in ~/.local/state/reminders.json. This watches that file, counts the reminders down and,
-// when one is due, sends a critical notification (it stays until dismissed and gets through do
-// not disturb) with snooze buttons, and drops it from the file. Any that came due while the
-// shell wasn't running, say with the machine off, are sent at startup marked as missed.
+// when one is due, has the script send a critical notification (it stays until dismissed and
+// gets through do not disturb) with snooze buttons. The reminder stays in the file, marked fired,
+// until that notification is dismissed or snoozed. At startup, any that came due while the shell
+// wasn't running (say with the machine off), and fired ones whose notification is gone, are sent
+// again marked as missed.
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -10,8 +12,12 @@ import Quickshell.Io
 Scope {
     id: reminders
 
-    // { id, at (epoch seconds), message } per reminder, soonest first
+    required property Notifications notifications
+
+    // { id, at (epoch seconds), message } per reminder still to come, soonest first
     property var list: []
+    // Fired ones waiting for their notification to be dismissed or snoozed
+    property var waiting: []
     readonly property int count: list.length
     readonly property var next: list.length > 0 ? list[0] : null
     property real now: Date.now() / 1000
@@ -20,8 +26,8 @@ Scope {
     readonly property string script: Quickshell.env("HOME") + "/.config/hypr/scripts/remind"
     readonly property string file: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/reminders.json"
 
-    // Ids already notified, so a due one fires once while the script takes it out of the file
-    property var fired: ({})
+    // Ids already sent, so each goes out once while the script marks it fired in the file
+    property var sent: ({})
 
     // Asks for a new one in fuzzel
     function prompt(): void {
@@ -57,21 +63,26 @@ Scope {
         return Qt.formatDateTime(d, today ? "HH:mm" : "ddd d MMM HH:mm");
     }
 
-    function fire(r): void {
-        fired[r.id] = true;
-        const missed = r.at < startedAt - 60;
-        const body = missed ? `Missed, was due ${when(r)}` : Qt.formatDateTime(new Date(r.at * 1000), "HH:mm");
-        // notify-send waits for a button and prints its action; a snooze sets the reminder again
-        Quickshell.execDetached(["sh", "-c", `a=$(notify-send -a Reminders -u critical -A 5="Snooze 5m" -A 10="10m" -A 30="30m" -A 60="1h" -- "$1" "$2") || exit
-            case $a in 5|10|30|60) exec "$3" "$a" "$1" ;; esac`, "sh", r.message, body, script]);
-        cancel(r.id);
+    function fire(r, missed): void {
+        sent[r.id] = true;
+        Quickshell.execDetached([script, "fire", r.id, missed ? "missed" : ""]);
     }
 
     function check(): void {
         now = Date.now() / 1000;
         for (const r of list) {
-            if (r.at <= now && !fired[r.id])
-                fire(r);
+            if (r.at <= now && !sent[r.id])
+                fire(r, r.at < startedAt - 60);
+        }
+    }
+
+    // Fired ones with no notification up: left unanswered at shutdown, or the shell was restarted.
+    // Not on a config reload, which keeps the notifications.
+    function resend(): void {
+        const up = notifications.popups.map(n => n.hints["x-dotfiles-reminder"]);
+        for (const r of waiting) {
+            if (!sent[r.id] && !up.includes(r.id))
+                fire(r, true);
         }
     }
 
@@ -91,11 +102,20 @@ Scope {
             try {
                 const parsed = JSON.parse(text());
                 if (Array.isArray(parsed)) {
-                    reminders.list = parsed.filter(r => r && r.id && typeof r.at === "number").sort((a, b) => a.at - b.at);
+                    const valid = parsed.filter(r => r && r.id && typeof r.at === "number").sort((a, b) => a.at - b.at);
+                    reminders.list = valid.filter(r => !r.fired);
+                    reminders.waiting = valid.filter(r => r.fired);
                     reminders.check();
                 }
             } catch (e) {}
         }
+    }
+
+    // Once at startup, after the notification server has taken back what it had before a reload
+    Timer {
+        interval: 3000
+        running: true
+        onTriggered: reminders.resend()
     }
 
     // Wall clock rather than one long timer, so it stays right across suspend

@@ -51,6 +51,7 @@ ShellRoot {
 
     Reminders {
         id: remindersService
+        notifications: notificationService
     }
 
     Polkit {}

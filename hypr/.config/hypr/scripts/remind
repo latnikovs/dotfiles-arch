@@ -5,12 +5,16 @@
 #                                   optionally after "in"/"at"; a time already past today means tomorrow
 #        remind cancel <id>         drop one
 #        remind clear               drop them all
+#        remind fire <id> [missed]  notify now (the bar runs this when one is due)
 # Reminders live in ~/.local/state/reminders.json, so they survive reboots. The bar (Quickshell
-# Reminders.qml) watches that file, counts them down and notifies when one is due; any that came
-# due while it wasn't running show up as missed when it starts.
+# Reminders.qml) watches that file, counts them down and fires each when it's due. A fired one
+# stays in the file until its notification is dismissed or snoozed, so one left unanswered at
+# shutdown comes back after login, as do any that came due while the machine was off.
 set -euo pipefail
 
 state=${XDG_STATE_HOME:-$HOME/.local/state}/reminders.json
+# By path: the notification cards (Quickshell) don't look icons up in the Papirus theme
+icon=/usr/share/icons/Papirus/64x64/apps/alarm-clock.svg
 
 # Rewrites the list with a jq filter, one writer at a time. In place rather than renamed over,
 # so the bar's file watch keeps following it.
@@ -22,10 +26,11 @@ update() {
     local new
     new=$(jq -c "$@" "$state")
     printf '%s\n' "$new" >"$state"
+    exec 9>&- # fire holds on for as long as its notification is up
 }
 
 say() {
-    notify-send -a Reminders -u low "$@" || true
+    notify-send -a Reminders -u low -i "$icon" "$@" || true
 }
 
 # "15:20", or "Thu 1 Oct 09:00" when it isn't today
@@ -111,6 +116,33 @@ case ${1:-} in
     cancel)
         [[ -n ${2:-} ]] || { echo "Usage: remind cancel <id>" >&2; exit 1; }
         update --arg id "$2" 'map(select(.id != $id))'
+        ;;
+    fire)
+        [[ -n ${2:-} ]] || { echo "Usage: remind fire <id> [missed]" >&2; exit 1; }
+        id=$2
+        r=$(jq -c --arg id "$id" 'first(.[] | select(.id == $id)) // empty' "$state")
+        [[ -n $r ]] || exit 0
+        # A resend after the shell restarted: the last one is still waiting on a notification
+        # that went with the old notification server
+        for pid in $(pgrep -f "remind fire $id( |$)"); do
+            ((pid == $$)) || { pkill -P "$pid"; kill "$pid"; } 2>/dev/null || true
+        done
+        update --arg id "$id" 'map(if .id == $id then .fired = true else . end)'
+        message=$(jq -r .message <<<"$r")
+        at=$(jq -r .at <<<"$r")
+        if [[ ${3:-} == missed ]]; then
+            body="Missed, was due $(when_text "$at")"
+        else
+            body=$(date -d "@$at" +%H:%M)
+        fi
+        # Waits until the notification closes and prints the button used, if any. Tagged with
+        # the id so the bar can tell it's still up. Killed with the session, it stays in the file.
+        action=$(notify-send -a Reminders -u critical -i "$icon" -h "string:x-dotfiles-reminder:$id" \
+            -A 5="Snooze 5m" -A 10="10m" -A 30="30m" -A 60="1h" -- "$message" "$body") || exit 0
+        update --arg id "$id" 'map(select(.id != $id))'
+        case $action in
+            5 | 10 | 30 | 60) add "$action" "$message" ;;
+        esac
         ;;
     clear)
         update '[]'
