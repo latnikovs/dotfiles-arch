@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Usage: wl-paste --watch clipboard-store
+# Saves each new clipboard entry to the history (cliphist), except secrets: password
+# managers (KeePassXC) mark a copied password with the x-kde-passwordManagerHint
+# type, which cliphist itself ignores.
+
+if wl-paste --list-types | grep -qx 'x-kde-passwordManagerHint'; then
+    # wl-paste is still writing the entry to us; read it so it doesn't fail
+    cat >/dev/null
+    exit 0
+fi
+exec cliphist store
