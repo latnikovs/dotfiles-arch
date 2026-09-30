@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Caffeine
+GenericName=Keep the screen awake (SUPER + CTRL + I)
+Comment=Toggle idle lock and screen blanking off / on, like macOS caffeinate
+Keywords=caffeinate;awake;idle;inhibit;sleep;lock;screensaver;
+Exec=sh -c "~/.config/hypr/scripts/caffeine"
+Icon=preferences-desktop-screensaver
+Type=Application
+Terminal=false

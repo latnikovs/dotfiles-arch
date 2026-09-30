@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, reminders, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
+// Top bar: workspaces on the left, do-not-disturb/caffeine toggles, reminders, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
 // CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
@@ -30,6 +30,7 @@ PanelWindow {
     required property Messaging messaging
     required property Updates updates
     required property Reminders reminders
+    required property Caffeine caffeine
 
     anchors {
         top: true
@@ -329,6 +330,55 @@ PanelWindow {
             anchors.centerIn: parent
             text: remindersButton.next === null ? "󰀠" : `󰀠 ${bar.reminders.left(remindersButton.next)}`
             color: remindersButton.next !== null || remindersButton.containsMouse ? bar.fg : Theme.dim
+        }
+    }
+
+    // ---- Do-not-disturb and caffeine (Caffeine.qml) toggles, left of the reminders: dim while
+    //      off, lit while on; a click flips them.
+
+    Row {
+        anchors {
+            right: remindersButton.left
+            rightMargin: 14
+            verticalCenter: parent.verticalCenter
+        }
+        height: parent.height
+        spacing: 12
+
+        MouseArea {
+            readonly property string tip: bar.notifications.dnd ? "Notifications silenced" : "Notifications on"
+            width: dndToggleText.implicitWidth
+            height: parent.height
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: bar.notifications.dnd = !bar.notifications.dnd
+
+            BarText {
+                id: dndToggleText
+                anchors.centerIn: parent
+                text: "󰂛"
+                color: bar.notifications.dnd || parent.containsMouse ? bar.fg : Theme.dim
+            }
+        }
+
+        MouseArea {
+            readonly property string tip: bar.caffeine.on ? "Caffeine on: the screen stays awake" : "Caffeine off"
+            width: caffeineText.implicitWidth
+            height: parent.height
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: bar.caffeine.on = !bar.caffeine.on
+
+            BarText {
+                id: caffeineText
+                anchors.centerIn: parent
+                text: "󰅶"
+                color: bar.caffeine.on || parent.containsMouse ? bar.fg : Theme.dim
+            }
         }
     }
 

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Do not disturb
+GenericName=Silence notifications (SUPER + CTRL + ,)
+Comment=Toggle do-not-disturb; critical notifications still get through
+Keywords=dnd;notifications;silence;mute;quiet;focus;
+Exec=sh -c "~/.config/hypr/scripts/notifications-dnd"
+Icon=notification-disabled
+Type=Application
+Terminal=false

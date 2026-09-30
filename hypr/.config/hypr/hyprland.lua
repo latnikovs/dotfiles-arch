@@ -89,6 +89,8 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("hyprsunset")
     -- Light or dark by sunrise and sunset (darkman runs scripts/theme)
     hl.exec_cmd("darkman run")
+    -- Taildrop: files sent from the tailnet land in ~/Downloads (scripts/taildrop)
+    hl.exec_cmd("~/.config/hypr/scripts/taildrop receive")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail and Teams only notify while running, so they start hidden too
@@ -467,6 +469,9 @@ bind(mainMod .. " + SHIFT + comma", "Dismiss all notifications", hl.dsp.exec_cmd
 bind(mainMod .. " + ALT + comma",   "Open last notification", hl.dsp.exec_cmd(notifications .. "invokeLast"))
 bind(mainMod .. " + CTRL + comma",  "Toggle do not disturb", hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
 bind(mainMod .. " + SHIFT + ALT + comma", "Notification history", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
+
+-- Keep the screen awake (quickshell holds the inhibitor), Omarchy's key for its idle toggle
+bind(mainMod .. " + CTRL + I", "Toggle caffeine (no idle lock)", hl.dsp.exec_cmd("~/.config/hypr/scripts/caffeine"))
 
 -- Bar dropdowns (quickshell): calendar, audio, Wi-Fi and Bluetooth on Omarchy's keys; weather is the dropdown here, not Omarchy's notification
 local bar = "quickshell ipc call bar "

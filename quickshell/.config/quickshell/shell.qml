@@ -25,6 +25,7 @@ ShellRoot {
             messaging: messagingService
             updates: updatesService
             reminders: remindersService
+            caffeine: caffeineService
         }
     }
 
@@ -52,6 +53,10 @@ ShellRoot {
     Reminders {
         id: remindersService
         notifications: notificationService
+    }
+
+    Caffeine {
+        id: caffeineService
     }
 
     Polkit {}

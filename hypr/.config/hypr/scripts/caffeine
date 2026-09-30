@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Usage: caffeine   toggle keeping the screen awake (no idle lock or blanking), held by quickshell
+set -euo pipefail
+
+if [[ $(quickshell ipc call caffeine toggle) == on ]]; then
+    notify-send -a notifications -u low "Caffeine on" "The screen stays awake"
+else
+    notify-send -a notifications -u low "Caffeine off" "Locks after 5 idle minutes again"
+fi
