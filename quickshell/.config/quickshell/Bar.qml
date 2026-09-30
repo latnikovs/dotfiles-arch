@@ -289,13 +289,14 @@ PanelWindow {
         }
     }
 
-    // ---- Reminders, left of the clock (Reminders.qml), shown only when some are set: the time
-    //      to the next one; left click lists them (RemindersPanel.qml), right click sets another
+    // ---- Reminders, left of the clock (Reminders.qml): the time to the next one; left click lists
+    //      them (RemindersPanel.qml), right click sets another. With none set, a dim alarm icon
+    //      that lights up on hover; either click sets one.
 
     MouseArea {
         id: remindersButton
         readonly property var next: bar.reminders.next
-        readonly property string tip: next === null ? ""
+        readonly property string tip: next === null ? "Set a reminder"
             : `${next.message} in ${bar.reminders.left(next)}`
                 + (bar.reminders.count > 1 ? ` (+${bar.reminders.count - 1} more)` : "")
 
@@ -306,7 +307,6 @@ PanelWindow {
         }
         width: remindersText.implicitWidth
         height: parent.height
-        visible: next !== null
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
@@ -325,7 +325,8 @@ PanelWindow {
         BarText {
             id: remindersText
             anchors.centerIn: parent
-            text: remindersButton.next === null ? "" : `󰀠 ${bar.reminders.left(remindersButton.next)}`
+            text: remindersButton.next === null ? "󰀠" : `󰀠 ${bar.reminders.left(remindersButton.next)}`
+            color: remindersButton.next !== null || remindersButton.containsMouse ? bar.fg : Theme.dim
         }
     }
 
