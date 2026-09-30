@@ -51,6 +51,8 @@ The UTM virtual machine I use for testing installs with
 - Copy over the KeePassXC database and SSH keys, then switch the remote to SSH:
   `git remote set-url origin git@github.com:latnikovs/dotfiles-arch.git`
 - `tailscale up --operator=$USER`, so the bar can drive Tailscale without `sudo`
+- Add the Mac's public key to `~/.ssh/authorized_keys`. The SSH server only
+  accepts keys, and the firewall only lets it in over Tailscale.
 - `gh auth login`
 - Sign in to Thunderbird (SUPER+M) and Teams (SUPER+Y)
 

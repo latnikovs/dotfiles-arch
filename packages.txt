@@ -39,6 +39,8 @@ bluez
 bluez-utils
 # Tailscale VPN; the bar's Tailscale dropdown drives it
 tailscale
+# SSH server (install.sh: keys only, no root; the firewall lets it in over Tailscale only)
+openssh
 hyprlock
 hypridle
 # Night light (hyprsunset.conf, SUPER + CTRL + N)

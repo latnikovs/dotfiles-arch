@@ -135,6 +135,16 @@ sudo systemctl enable ufw.service
 sudo ufw-docker install
 sudo ufw reload
 
+# SSH server, reachable only over Tailscale (the firewall above): keys only, no
+# root. The Mac's key goes in ~/.ssh/authorized_keys by hand.
+sudo install -Dm644 /dev/stdin /etc/ssh/sshd_config.d/10-hardening.conf <<'CONF'
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PermitRootLogin no
+CONF
+sudo sshd -t
+sudo systemctl enable --now sshd.service
+
 # Weekly upkeep: paccache keeps the last three versions of each package, fstrim
 # tells the SSD which blocks are free, fwupd refreshes the firmware list (updates
 # themselves stay manual: fwupdmgr update)
