@@ -52,6 +52,7 @@ bindkey -M vicmd v edit-command-line
 alias vim='nvim'
 export MANPAGER='nvim +Man!'
 alias grep='grep --color=auto'
+alias remind='~/.config/hypr/scripts/remind'   # remind 20m tea, remind tomorrow 9:00 dentist
 
 # eza (modern ls); --icons needs the Nerd Font kitty uses
 alias ls='eza --icons=auto --group-directories-first'

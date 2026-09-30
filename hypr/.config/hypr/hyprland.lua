@@ -455,6 +455,11 @@ bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNe
 bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
 bind(mainMod .. " + CTRL + T",       "Tailscale", hl.dsp.exec_cmd(bar .. "toggleTailscale"))
 
+-- Reminders (scripts/remind, listed and fired by the bar), on Omarchy's keys
+bind(mainMod .. " + CTRL + R",       "New reminder", hl.dsp.exec_cmd("~/.config/hypr/scripts/remind"))
+bind(mainMod .. " + CTRL + ALT + R", "Reminders", hl.dsp.exec_cmd(bar .. "toggleReminders"))
+bind(mainMod .. " + CTRL + SHIFT + R", "Clear reminders", hl.dsp.exec_cmd("~/.config/hypr/scripts/remind clear"))
+
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
 bind(mainMod .. " + backslash", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
 

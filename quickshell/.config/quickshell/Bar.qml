@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
+// Top bar: workspaces on the left, reminders, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
 // CPU/RAM/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
@@ -29,6 +29,7 @@ PanelWindow {
     required property Tailscale tailscale
     required property Messaging messaging
     required property Updates updates
+    required property Reminders reminders
 
     anchors {
         top: true
@@ -92,6 +93,7 @@ PanelWindow {
         bluetoothPanel.open = false;
         tailscalePanel.open = false;
         updatesPanel.open = false;
+        remindersPanel.open = false;
     }
 
     function toggleDropdown(panel) {
@@ -121,6 +123,14 @@ PanelWindow {
     function toggleUpdates() {
         if (updates.count > 0)
             toggleDropdown(updatesPanel);
+    }
+
+    // With none set there's nothing to list, so it asks for one
+    function toggleReminders() {
+        if (reminders.count > 0)
+            toggleDropdown(remindersPanel);
+        else
+            reminders.prompt();
     }
 
     // ---- Tooltip, shared by every module
@@ -276,6 +286,46 @@ PanelWindow {
             text: bar.showDate
                 ? `${Qt.formatDate(clock.date, "dd MMMM")} W${String(bar.isoWeek(clock.date)).padStart(2, "0")} ${clock.date.getFullYear()}`
                 : Qt.formatDateTime(clock.date, "HH:mm")
+        }
+    }
+
+    // ---- Reminders, left of the clock (Reminders.qml), shown only when some are set: the time
+    //      to the next one; left click lists them (RemindersPanel.qml), right click sets another
+
+    MouseArea {
+        id: remindersButton
+        readonly property var next: bar.reminders.next
+        readonly property string tip: next === null ? ""
+            : `${next.message} in ${bar.reminders.left(next)}`
+                + (bar.reminders.count > 1 ? ` (+${bar.reminders.count - 1} more)` : "")
+
+        anchors {
+            right: clockArea.left
+            rightMargin: 18
+            verticalCenter: parent.verticalCenter
+        }
+        width: remindersText.implicitWidth
+        height: parent.height
+        visible: next !== null
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        onContainsMouseChanged: containsMouse && !remindersPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+        onTipChanged: if (containsMouse && !remindersPanel.open) bar.showTooltip(this, tip)
+        onClicked: mouse => {
+            bar.hideTooltip(this);
+            if (mouse.button === Qt.RightButton) {
+                bar.closePanels();
+                bar.reminders.prompt();
+            } else {
+                bar.toggleReminders();
+            }
+        }
+
+        BarText {
+            id: remindersText
+            anchors.centerIn: parent
+            text: remindersButton.next === null ? "" : `󰀠 ${bar.reminders.left(remindersButton.next)}`
         }
     }
 
@@ -629,7 +679,7 @@ PanelWindow {
         id: weatherButton
         anchors {
             left: clockArea.right
-            leftMargin: 12
+            leftMargin: 18
             verticalCenter: parent.verticalCenter
         }
         width: weatherText.implicitWidth
@@ -657,11 +707,11 @@ PanelWindow {
     RowLayout {
         anchors {
             left: weatherButton.visible ? weatherButton.right : clockArea.right
-            leftMargin: 12
+            leftMargin: 18
             top: parent.top
             bottom: parent.bottom
         }
-        spacing: 12
+        spacing: 18
 
         // Mail: left click shows or hides Thunderbird (SUPER + M); highlighted on new mail
         MouseArea {
@@ -977,6 +1027,13 @@ PanelWindow {
         bar: bar
         button: updatesButton
         updates: bar.updates
+    }
+
+    RemindersPanel {
+        id: remindersPanel
+        bar: bar
+        button: remindersButton
+        reminders: bar.reminders
     }
 
     // ---- CPU usage from /proc/stat, polled every 5s

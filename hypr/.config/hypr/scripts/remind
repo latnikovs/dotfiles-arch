@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Usage: remind                     prompt for one (fuzzel), e.g. "20m tea", "15:00 call Anna"
+#        remind <when> [message]    set one; <when> is minutes ("20"), a duration ("1h30m", "90s")
+#                                   or a time `date -d` reads ("15:00", "tomorrow 9:00", "fri 14:30"),
+#                                   optionally after "in"/"at"; a time already past today means tomorrow
+#        remind cancel <id>         drop one
+#        remind clear               drop them all
+# Reminders live in ~/.local/state/reminders.json, so they survive reboots. The bar (Quickshell
+# Reminders.qml) watches that file, counts them down and notifies when one is due; any that came
+# due while it wasn't running show up as missed when it starts.
+set -euo pipefail
+
+state=${XDG_STATE_HOME:-$HOME/.local/state}/reminders.json
+
+# Rewrites the list with a jq filter, one writer at a time. In place rather than renamed over,
+# so the bar's file watch keeps following it.
+update() {
+    mkdir -p "${state%/*}"
+    exec 9>"$state.lock"
+    flock 9
+    [[ -s $state ]] || echo '[]' >"$state"
+    local new
+    new=$(jq -c "$@" "$state")
+    printf '%s\n' "$new" >"$state"
+}
+
+say() {
+    notify-send -a Reminders -u low "$@" || true
+}
+
+# "15:20", or "Thu 1 Oct 09:00" when it isn't today
+when_text() {
+    if [[ $(date -d "@$1" +%F) == $(date +%F) ]]; then
+        date -d "@$1" +%H:%M
+    else
+        date -d "@$1" '+%a %-d %b %H:%M'
+    fi
+}
+
+# Sets `at` (epoch seconds) from the first words of "$@" and `used` to how many words that took
+parse_when() {
+    local now word n phrase t
+    now=$(date +%s)
+    word=${1,,}
+    if [[ $word == in || $word == at ]] && (($# > 1)); then
+        shift
+        parse_when "$@"
+        used=$((used + 1))
+        return
+    fi
+    if [[ $word =~ ^[0-9]+$ ]]; then
+        at=$((now + word * 60)) used=1
+        return
+    fi
+    if [[ $word =~ ^([0-9]+[dhms])+$ ]]; then
+        local secs=0 part
+        while [[ $word =~ ^([0-9]+)([dhms])(.*)$ ]]; do
+            part=${BASH_REMATCH[1]}
+            case ${BASH_REMATCH[2]} in
+                d) secs=$((secs + part * 86400)) ;;
+                h) secs=$((secs + part * 3600)) ;;
+                m) secs=$((secs + part * 60)) ;;
+                s) secs=$((secs + part)) ;;
+            esac
+            word=${BASH_REMATCH[3]}
+        done
+        at=$((now + secs)) used=1
+        return
+    fi
+    # The longest run of leading words that date reads. A single letter at the end is left to
+    # the message: date takes one as a military time zone ("15:00 a call").
+    for ((n = $# < 4 ? $# : 4; n > 0; n--)); do
+        phrase=${*:1:n}
+        [[ ${phrase##* } =~ ^[[:alpha:]]$ ]] && continue
+        t=$(date -d "$phrase" +%s 2>/dev/null) || continue
+        if ((t <= now)); then
+            t=$(date -d "tomorrow $phrase" +%s 2>/dev/null) || continue
+            ((t > now)) || continue
+        fi
+        at=$t used=$n
+        return
+    done
+    return 1
+}
+
+add() {
+    local at used message
+    # Same words whether they came quoted together or not
+    read -ra words <<<"$*"
+    set -- "${words[@]}"
+    if ! parse_when "$@"; then
+        say "Reminder not set" "Couldn't read a time from “$*”"
+        echo "remind: couldn't read a time from: $*" >&2
+        exit 1
+    fi
+    shift "$used"
+    message=${*:-Reminder}
+    update --arg id "$(date +%s%N)" --argjson at "$at" --arg message "$message" \
+        '. + [{id: $id, at: $at, message: $message}] | sort_by(.at)'
+    say "$message" "At $(when_text "$at")"
+}
+
+case ${1:-} in
+    "")
+        pkill -x fuzzel && exit 0
+        line=$(fuzzel --dmenu --lines 0 --width 50 --prompt "󰀠   " \
+            --placeholder "20m tea · 15:00 call Anna · tomorrow 9:00 dentist" </dev/null) || exit 0
+        [[ -n ${line// /} ]] || exit 0
+        add "$line"
+        ;;
+    cancel)
+        [[ -n ${2:-} ]] || { echo "Usage: remind cancel <id>" >&2; exit 1; }
+        update --arg id "$2" 'map(select(.id != $id))'
+        ;;
+    clear)
+        update '[]'
+        say "Reminders cleared"
+        ;;
+    -h | --help)
+        sed -n '2,/^set /{/^set /d;s/^# \{0,1\}//;p}' "$0"
+        ;;
+    *)
+        add "$@"
+        ;;
+esac

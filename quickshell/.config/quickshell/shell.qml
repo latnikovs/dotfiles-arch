@@ -24,6 +24,7 @@ ShellRoot {
             tailscale: tailscaleService
             messaging: messagingService
             updates: updatesService
+            reminders: remindersService
         }
     }
 
@@ -46,6 +47,10 @@ ShellRoot {
 
     Updates {
         id: updatesService
+    }
+
+    Reminders {
+        id: remindersService
     }
 
     Polkit {}
@@ -80,6 +85,10 @@ ShellRoot {
 
         function toggleUpdates(): void {
             root.focusedBar()?.toggleUpdates();
+        }
+
+        function toggleReminders(): void {
+            root.focusedBar()?.toggleReminders();
         }
     }
 }
