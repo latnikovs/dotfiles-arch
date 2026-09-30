@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# Usage: taildrop send FILE...   send files to a device on the tailnet (picked in fuzzel)
+#        taildrop receive        save incoming files to ~/Downloads and announce each one
+# Taildrop, after Omarchy's omarchy-tailscale-send/receive. hyprland.lua starts the
+# receiver; Nautilus sends through Scripts → Send to device (right-click on files).
+set -euo pipefail
+
+# Nord icons in the notification cards' accent, light or dark like the rest (scripts/theme)
+icons=$HOME/.config/hypr/icons
+mode=dark
+[[ $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) == *light* ]] && mode=light
+
+send() {
+    (($# > 0)) || { echo "Usage: taildrop send FILE..." >&2; exit 1; }
+
+    # Devices that can take files, as "IP<tab>name[<tab>offline; last seen …]"; online only
+    local targets machine what error
+    if ! targets=$(tailscale file cp --targets 2>&1); then
+        notify-send -a Taildrop -u critical -i "$icons/alert-$mode.svg" "Could not send" "${targets:-Tailscale is not running}"
+        exit 1
+    fi
+    targets=$(awk -F '\t' '$3 !~ /offline/ { print $2 }' <<<"$targets")
+    if [[ -z $targets ]]; then
+        notify-send -a Taildrop -u critical -i "$icons/alert-$mode.svg" "Could not send" "No devices online to send to"
+        exit 1
+    fi
+
+    local lines
+    lines=$(wc -l <<<"$targets")
+    pkill -x fuzzel || true
+    machine=$(fuzzel --dmenu --prompt "󰒊   " --placeholder "Send to" --width 24 --lines "$lines" \
+        <<<"$targets") || exit 0
+
+    if (($# == 1)); then what=$(basename "$1"); else what="$# files"; fi
+    if error=$(tailscale file cp -- "$@" "$machine:" 2>&1); then
+        notify-send -a Taildrop -i "$icons/send-$mode.svg" "Sent to $machine" "$what"
+    else
+        notify-send -a Taildrop -u critical -i "$icons/alert-$mode.svg" "Could not send to $machine" "${error:-Transfer failed}"
+        exit 1
+    fi
+}
+
+# A notification for a received file; clicking it opens the file
+announce() {
+    local file=$1 icon=$icons/download-$mode.svg
+    case ${file,,} in
+        *.png | *.jpg | *.jpeg | *.gif | *.webp | *.avif | *.heic) icon=$file ;;
+    esac
+    (
+        action=$(notify-send -a Taildrop -i "$icon" -A default=Open --wait \
+            "Received ${file##*/}" "Saved to ${dir/#$HOME/\~}") || exit 0
+        [[ $action == default ]] && xdg-open "$file"
+    ) &
+}
+
+receive() {
+    dir=${XDG_DOWNLOAD_DIR:-$HOME/Downloads}
+    mkdir -p "$dir"
+    # --loop waits for files and keeps going; --verbose prints "wrote NAME as PATH (N bytes)"
+    # for each one. It exits while Tailscale is down, so try again every 10 seconds.
+    local wrote="^wrote .* as ($dir/.*) \\([0-9]+ bytes\\)$"
+    while true; do
+        while IFS= read -r line; do
+            if [[ $line =~ $wrote ]]; then
+                announce "${BASH_REMATCH[1]}"
+            fi
+        done < <(tailscale file get --loop --verbose --conflict=rename "$dir" 2>&1)
+        sleep 10
+    done
+}
+
+case ${1:-} in
+    send)    shift; send "$@" ;;
+    receive) receive ;;
+    *)
+        echo "Usage: taildrop send FILE... | taildrop receive" >&2
+        exit 1
+        ;;
+esac

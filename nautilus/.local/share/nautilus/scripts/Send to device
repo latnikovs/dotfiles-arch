@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Nautilus: right-click files → Scripts → Send to device (Taildrop to a tailnet device)
+exec ~/.config/hypr/scripts/taildrop send "$@"

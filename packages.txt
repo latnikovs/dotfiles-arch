@@ -13,6 +13,10 @@ chromium
 # makepkg, for AUR packages (yay, Brave Origin) in install.sh
 base-devel
 less
+# man pages (the man command itself)
+man-db
+# System summary in the terminal
+fastfetch
 git-delta
 grim
 slurp
@@ -90,6 +94,9 @@ nautilus
 sushi
 papers
 imv
+# Video and audio player; mpv-mpris lets playerctl (media keys, the bar) control it
+mpv
+mpv-mpris
 imagemagick
 satty
 gvfs
