@@ -91,6 +91,7 @@ PanelWindow {
         networkPanel.open = false;
         bluetoothPanel.open = false;
         tailscalePanel.open = false;
+        updatesPanel.open = false;
     }
 
     function toggleDropdown(panel) {
@@ -115,6 +116,11 @@ PanelWindow {
     function toggleTailscale() {
         if (tailscale.available)
             toggleDropdown(tailscalePanel);
+    }
+
+    function toggleUpdates() {
+        if (updates.count > 0)
+            toggleDropdown(updatesPanel);
     }
 
     // ---- Tooltip, shared by every module
@@ -966,6 +972,13 @@ PanelWindow {
         tailscale: bar.tailscale
     }
 
+    UpdatesPanel {
+        id: updatesPanel
+        bar: bar
+        button: updatesButton
+        updates: bar.updates
+    }
+
     // ---- CPU usage from /proc/stat, polled every 5s
 
     property real cpuUsage: 0
@@ -1260,21 +1273,29 @@ PanelWindow {
         }
         spacing: 15
 
-        // Pending package updates (Updates.qml), shown only when there are some: click installs them
+        // Pending package updates (Updates.qml), shown only when there are some: left click lists
+        // them (UpdatesPanel.qml), right click installs them
         MouseArea {
+            id: updatesButton
             readonly property string tip: `${bar.updates.count} update${bar.updates.count === 1 ? "" : "s"}`
-                + (bar.updates.aurCount > 0 ? ` (${bar.updates.aurCount} from the AUR)` : "") + " · click to install"
+                + (bar.updates.aurCount > 0 ? ` (${bar.updates.aurCount} from the AUR)` : "")
 
             visible: bar.updates.count > 0
             implicitWidth: updatesText.implicitWidth
             Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
-            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
-            onClicked: {
+            onContainsMouseChanged: containsMouse && !updatesPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !updatesPanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
                 bar.hideTooltip(this);
-                bar.updates.install();
+                if (mouse.button === Qt.RightButton) {
+                    bar.closePanels();
+                    bar.updates.install();
+                } else {
+                    bar.toggleUpdates();
+                }
             }
 
             BarText {

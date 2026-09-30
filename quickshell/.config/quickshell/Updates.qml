@@ -9,10 +9,13 @@ import Quickshell.Io
 Scope {
     id: updates
 
-    // "name old -> new", AUR ones ending in " (AUR)"
+    // { name, from, to, aur } per pending update, official packages first
     property var packages: []
     readonly property int count: packages.length
-    readonly property int aurCount: packages.filter(p => p.endsWith(" (AUR)")).length
+    readonly property int aurCount: packages.filter(p => p.aur).length
+    readonly property bool checking: check.running
+    property date checkedAt
+    property bool checked: false
 
     function refresh(): void {
         if (!check.running)
@@ -31,8 +34,15 @@ Scope {
         stdout: StdioCollector {
             onStreamFinished: {
                 const lines = text.split("\n").filter(l => l.trim() !== "");
-                if (lines.pop() === "ok")
-                    updates.packages = lines;
+                if (lines.pop() !== "ok")
+                    return;
+                // "name old -> new", with " (AUR)" after the AUR ones
+                updates.packages = lines.map(l => {
+                    const m = /^(\S+) (\S+) -> (\S+)( \(AUR\))?$/.exec(l.trim());
+                    return m ? { name: m[1], from: m[2], to: m[3], aur: !!m[4] } : { name: l.trim(), from: "", to: "", aur: false };
+                });
+                updates.checkedAt = new Date();
+                updates.checked = true;
             }
         }
     }

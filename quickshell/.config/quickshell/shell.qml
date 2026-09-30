@@ -77,5 +77,9 @@ ShellRoot {
         function toggleTailscale(): void {
             root.focusedBar()?.toggleTailscale();
         }
+
+        function toggleUpdates(): void {
+            root.focusedBar()?.toggleUpdates();
+        }
     }
 }
