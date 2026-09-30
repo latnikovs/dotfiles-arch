@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Usage: herd   herdr (agent workspace manager) in a terminal: attaches to the running session or starts one
+set -euo pipefail
+
+# Started in ~/Work like the agent script, so Claude inside it has a trusted directory
+mkdir -p "$HOME/Work"
+cd "$HOME/Work"
+
+# DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
+# so it can carry "env VAR=… kitty". A fixed class lets window rules single herdr out.
+exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.herdr herdr

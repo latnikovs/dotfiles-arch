@@ -336,6 +336,7 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + CTRL + N", "Toggle night light", hl.dsp.exec_cmd("~/.config/hypr/scripts/nightlight"))
+bind(mainMod .. " + G", "herdr (coding agents)", hl.dsp.exec_cmd("~/.config/hypr/scripts/herd"))
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
 bind(mainMod .. " + SHIFT + B", "Brave Origin", hl.dsp.exec_cmd("brave-origin"))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
