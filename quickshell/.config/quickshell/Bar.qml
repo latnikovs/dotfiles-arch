@@ -23,8 +23,6 @@ PanelWindow {
     readonly property color warning: Theme.warning
     readonly property color urgent: Theme.urgent
     readonly property color accent: Theme.accent
-    // Idle status icons (nothing new, nothing wrong) sit back in this until hovered
-    readonly property color idle: Theme.dim
 
     required property Notifications notifications
     required property Keyboard keyboard
@@ -328,7 +326,7 @@ PanelWindow {
             id: remindersText
             anchors.centerIn: parent
             text: remindersButton.next === null ? "󰀠" : `󰀠 ${bar.reminders.left(remindersButton.next)}`
-            color: remindersButton.next !== null || remindersButton.containsMouse ? bar.fg : bar.idle
+            color: remindersButton.next !== null || remindersButton.containsMouse ? bar.fg : Theme.dim
         }
     }
 
@@ -737,7 +735,7 @@ PanelWindow {
                 id: mailIcon
                 anchors.centerIn: parent
                 text: bar.messaging.mailNew ? "󰇮" : "󰇰"
-                color: bar.messaging.mailNew ? bar.warning : mailButton.containsMouse ? bar.fg : bar.idle
+                color: bar.messaging.mailNew ? bar.warning : mailButton.containsMouse ? bar.fg : Theme.dim
             }
         }
 
@@ -767,7 +765,7 @@ PanelWindow {
                 id: teamsIcon
                 anchors.centerIn: parent
                 text: parent.unread > 0 ? `󰊻 ${parent.unread}` : "󰊻"
-                color: parent.alert ? bar.warning : parent.containsMouse ? bar.fg : bar.idle
+                color: parent.alert ? bar.warning : parent.containsMouse ? bar.fg : Theme.dim
             }
         }
     }
@@ -1425,17 +1423,15 @@ PanelWindow {
                 id: layoutText
                 anchors.centerIn: parent
                 text: bar.keyboard.code
-                color: layoutButton.containsMouse ? bar.fg : bar.idle
             }
         }
 
         BarText {
             text: ` ${Math.round(bar.cpuUsage * 100)}%`
-            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.idle
+            color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
         }
 
         MouseArea {
-            id: memButton
             implicitWidth: memText.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
@@ -1445,14 +1441,14 @@ PanelWindow {
                 id: memText
                 anchors.centerIn: parent
                 text: ` ${Math.round(bar.memUsage * 100)}%`
-                color: bar.memUsage >= 0.9 ? bar.urgent : memButton.containsMouse ? bar.fg : bar.idle
+                color: bar.memUsage >= 0.9 ? bar.urgent : bar.fg
             }
         }
 
         BarText {
             visible: bar.battery.isLaptopBattery
             text: `${bar.batteryPercent}% ${bar.charging ? "󰂄" : ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"][Math.min(4, Math.floor(bar.batteryPercent / 20))]}`
-            color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.idle
+            color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.fg
         }
 
         // Microphone in use: shown only while an app records, crossed out if the input is muted
@@ -1512,7 +1508,6 @@ PanelWindow {
                 id: volumeIcon
                 anchors.centerIn: parent
                 text: bar.volumeIcon(bar.sink)
-                color: volumeButton.containsMouse ? bar.fg : bar.idle
             }
         }
 
@@ -1543,8 +1538,7 @@ PanelWindow {
                 id: btIcon
                 anchors.centerIn: parent
                 text: !bar.btAdapter?.enabled ? "󰂲" : bar.btConnected.length > 0 ? "󰂱" : "󰂯"
-                color: !bar.btAdapter?.enabled ? bar.muted
-                    : bar.btConnected.length > 0 || btButton.containsMouse ? bar.fg : bar.idle
+                color: bar.btAdapter?.enabled ? bar.fg : bar.muted
             }
         }
 
@@ -1578,8 +1572,7 @@ PanelWindow {
                 id: tsIcon
                 anchors.centerIn: parent
                 text: "󰖂"
-                color: !parent.ts.running ? bar.muted : parent.ts.exitNode ? bar.accent
-                    : parent.containsMouse ? bar.fg : bar.idle
+                color: !parent.ts.running ? bar.muted : parent.ts.exitNode ? bar.accent : bar.fg
             }
         }
 
@@ -1604,14 +1597,13 @@ PanelWindow {
                 id: netIcon
                 anchors.centerIn: parent
                 text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
-                color: !bar.wiredUp && !bar.wifiNetwork ? bar.muted : netButton.containsMouse ? bar.fg : bar.idle
+                color: bar.wiredUp || bar.wifiNetwork ? bar.fg : bar.muted
             }
         }
 
         // Appearance: left click switches light/dark (darkman, which otherwise follows
         // sunrise and sunset), right click toggles the night light
         MouseArea {
-            id: themeButton
             implicitWidth: themeIcon.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -1631,7 +1623,6 @@ PanelWindow {
                 id: themeIcon
                 anchors.centerIn: parent
                 text: Theme.dark ? "󰖔" : "󰖙"
-                color: themeButton.containsMouse ? bar.fg : bar.idle
             }
         }
 
@@ -1660,7 +1651,6 @@ PanelWindow {
                 id: dndIcon
                 anchors.centerIn: parent
                 text: bar.notifications.dnd ? "󰂛" : "󰂚"
-                color: bell.containsMouse ? bar.fg : bar.idle
             }
         }
     }
