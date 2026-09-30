@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Keybindings
+GenericName=Show keybindings (SUPER + /)
+Comment=Searchable list of Hyprland and bar keybindings
+Keywords=keys;shortcuts;hotkeys;binds;help;cheatsheet;
+Exec=sh -c "~/.config/hypr/scripts/keybindings"
+Icon=preferences-desktop-keyboard-shortcuts
+Type=Application
+Terminal=false
