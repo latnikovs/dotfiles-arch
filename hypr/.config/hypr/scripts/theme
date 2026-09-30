@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage: theme light|dark   switch the whole desktop between Nord light and dark
 #
-# darkman runs this at sunrise and sunset (darkman/.local/share/*-mode.d), and
+# darkman runs this at sunrise and sunset (darkman/.local/share/darkman), and
 # `darkman toggle` (the bar's sun/moon button) runs it by hand. Most apps follow
 # the freedesktop color-scheme setting by themselves once it changes: GTK 4 and
 # libadwaita (gtk-4.0/gtk.css), kitty (*-theme.auto.conf), nvim

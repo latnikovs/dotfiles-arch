@@ -1,5 +1,5 @@
 # Light by day, dark by night, like macOS's Auto appearance: darkman switches at
-# sunrise and sunset here, running ~/.local/share/{light,dark}-mode.d/theme
+# sunrise and sunset here, running ~/.local/share/darkman/theme light|dark
 # (hypr/scripts/theme). `darkman toggle` (the bar's sun/moon button) switches by
 # hand until the next sunrise or sunset.
 

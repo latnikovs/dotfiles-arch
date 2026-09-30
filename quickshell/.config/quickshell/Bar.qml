@@ -1506,8 +1506,9 @@ PanelWindow {
             onContainsMouseChanged: containsMouse ? bar.showTooltip(this, Theme.dark ? "Dark mode" : "Light mode") : bar.hideTooltip(this)
             onClicked: mouse => {
                 bar.hideTooltip(this);
+                // Straight to scripts/theme if darkman isn't running (it starts with Hyprland)
                 if (mouse.button === Qt.LeftButton)
-                    Quickshell.execDetached(["darkman", "toggle"]);
+                    Quickshell.execDetached(["sh", "-c", `darkman toggle || ~/.config/hypr/scripts/theme ${Theme.dark ? "light" : "dark"}`]);
                 else
                     Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/nightlight"]);
             }

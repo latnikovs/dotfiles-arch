@@ -1,3 +1,0 @@
-#!/bin/sh
-# darkman runs this at sunrise (config.yaml)
-exec "$HOME/.config/hypr/scripts/theme" light

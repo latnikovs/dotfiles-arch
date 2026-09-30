@@ -1,0 +1,4 @@
+#!/bin/sh
+# darkman runs this with "light" at sunrise and "dark" at sunset (config.yaml),
+# and on `darkman toggle`
+exec "$HOME/.config/hypr/scripts/theme" "$1"
