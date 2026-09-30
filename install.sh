@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Usage: ./install.sh [machine]
 #   machine: name of a file in machines/ (without .lua) to install as ~/.config/hypr/local.lua
-#            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml)
+#            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml,
+#            and machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua)
 set -euo pipefail
 cd "$(dirname "$(readlink -f "$0")")"
 
@@ -16,7 +17,7 @@ grep -qx 0x1002 /sys/class/drm/card*/device/vendor 2>/dev/null && sudo pacman -S
 
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
@@ -115,20 +116,28 @@ sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
 
 # Login: greetd on tty1. With the root filesystem on LUKS, the disk password at boot
 # already proved who is there, so the first session of each boot starts without a
-# login, as in Omarchy. After a logout, and on unencrypted machines, tuigreet asks.
-# The session runs through a zsh login shell, so Hyprland gets .zprofile (mise
-# shims, the SSH agent) just as it does when started from a tty login.
+# login, as in Omarchy. After a logout, and on unencrypted machines, the login
+# screen (greeter/) asks: a Hyprland of its own running a Quickshell greeter, with
+# tuigreet on the console if that fails. The session runs through a zsh login
+# shell, so Hyprland gets .zprofile (mise shims, the SSH agent) just as it does
+# when started from a tty login.
 sudo install -Dm755 /dev/stdin /usr/local/bin/hyprland-session <<'SH'
 #!/bin/sh
 exec zsh -lc start-hyprland
 SH
+sudo install -Dm755 greeter/dotfiles-greeter /usr/local/bin/dotfiles-greeter
+sudo install -Dm644 greeter/hyprland.lua /etc/greetd/hyprland.lua
+sudo install -Dm644 greeter/shell.qml /etc/greetd/quickshell/shell.qml
+sudo install -Dm644 hypr/.config/hypr/wallpapers/nord-0-black-moon.jpg /etc/greetd/wallpaper.jpg
+# The greeter user's home is /, so it gets one to write caches to
+sudo install -d -o greeter -g greeter -m700 /var/lib/dotfiles-greeter
 {
-    cat <<'TOML'
+    cat <<TOML
 [terminal]
 vt = 1
 
 [default_session]
-command = "tuigreet --time --remember --asterisks --cmd /usr/local/bin/hyprland-session"
+command = "env DOTFILES_GREETER_USER=$USER /usr/local/bin/dotfiles-greeter"
 user = "greeter"
 TOML
     if lsblk -s -no TYPE "$(findmnt -no SOURCE -v /)" | grep -qx crypt; then
@@ -142,6 +151,39 @@ TOML
 } | sudo install -Dm644 /dev/stdin /etc/greetd/config.toml
 # From the next boot; starting it now would stop the tty1 session this may run in
 sudo systemctl enable greetd.service
+
+# The console (ttys, and tuigreet if the login screen fails): Nord colours, loaded
+# at boot by setvtrgb (console/vtrgb holds Nord's 16 terminal colours, with the
+# background as colour 0), and Terminus sized for the screen. The font applies from
+# the next boot, and to the disk password prompt once mkinitcpio next runs.
+sudo install -Dm644 console/vtrgb /etc/vtrgb
+sudo install -Dm644 /dev/stdin /etc/systemd/system/console-nord.service <<'INI'
+[Unit]
+Description=Nord colours for the Linux console
+DefaultDependencies=no
+After=systemd-vconsole-setup.service
+Before=sysinit.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/setvtrgb /etc/vtrgb
+
+[Install]
+WantedBy=sysinit.target
+INI
+sudo systemctl daemon-reload
+sudo systemctl enable --now console-nord.service
+fb_height=$(cut -d, -f2 /sys/class/graphics/fb0/virtual_size 2>/dev/null || echo 0)
+if (( fb_height >= 2000 )); then
+    console_font=ter-v32b
+elif (( fb_height >= 1400 )); then
+    console_font=ter-v24b
+else
+    console_font=ter-v20b
+fi
+sudo touch /etc/vconsole.conf
+sudo sed -i '/^FONT=/d' /etc/vconsole.conf
+echo "FONT=$console_font" | sudo tee -a /etc/vconsole.conf >/dev/null
 
 # Keyring: unlocked with the login password (tty or tuigreet), and re-encrypted
 # when passwd changes it. An auto-login has no password, so the keyring asks for
@@ -228,6 +270,10 @@ if [[ -n ${1:-} ]]; then
         echo "$dst exists and differs from $src; leaving it alone" >&2
     else
         cp "$src" "$dst"
+    fi
+    # The login screen's monitors, if the machine needs them set
+    if [[ -f machines/$1.greeter.lua ]]; then
+        sudo install -Dm644 "machines/$1.greeter.lua" /etc/greetd/local.lua
     fi
 fi
 

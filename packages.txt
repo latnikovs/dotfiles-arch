@@ -74,9 +74,11 @@ gcr-4
 # gcr-prompter: the keyring's password dialog, for when auto-login left it locked
 gcr
 libsecret
-# Login: greetd with tuigreet on tty1 (install.sh sets them up)
+# Login: greetd on tty1, with the Quickshell greeter (greeter/) and tuigreet as its
+# fallback; Terminus, the console font (install.sh sets them up)
 greetd
 greetd-tuigreet
+terminus-font
 keepassxc
 # Mail and calendar (Gmail, iCloud); SUPER + M
 thunderbird

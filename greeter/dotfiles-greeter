@@ -1,0 +1,19 @@
+#!/bin/sh
+# greetd's greeter (/etc/greetd/config.toml): a Hyprland just for the login screen
+# (/etc/greetd/hyprland.lua) running the Quickshell greeter (/etc/greetd/quickshell).
+# If either fails, tuigreet takes over on the console, so a broken greeter never
+# keeps anyone out. install.sh puts this in /usr/local/bin.
+
+# The greeter user's home is /; Hyprland and Quickshell need somewhere to write
+export HOME=/var/lib/dotfiles-greeter
+
+failed=${XDG_RUNTIME_DIR:-$HOME}/greeter-failed
+rm -f "$failed"
+start-hyprland -- --config /etc/greetd/hyprland.lua || touch "$failed"
+[ -e "$failed" ] || exit 0
+
+# tuigreet in Nord: the console palette (console/vtrgb) maps these names to it
+exec tuigreet --time --remember --asterisks \
+    --greeting "Quickshell greeter failed; see journalctl -b -u greetd" \
+    --theme 'border=cyan;title=cyan;greet=yellow;prompt=blue;time=blue;action=blue;button=cyan;input=white;text=white' \
+    --cmd /usr/local/bin/hyprland-session
