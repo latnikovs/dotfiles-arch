@@ -2,7 +2,8 @@
 # Usage: ./install.sh [machine]
 #   machine: name of a file in machines/ (without .lua) to install as ~/.config/hypr/local.lua
 #            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml,
-#            and machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua)
+#            machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua, and
+#            machines/<machine>.wireplumber.conf, if any, as ~/.config/wireplumber/wireplumber.conf.d/50-machine.conf)
 #
 # On a fresh Arch install, straight from GitHub (add `-s -- <machine>` after bash for a machine):
 #   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
@@ -63,6 +64,11 @@ fi
 if [[ -n ${1:-} && -f machines/$1.mise.toml ]]; then
     mkdir -p "$HOME/.config/mise/conf.d"
     cp "machines/$1.mise.toml" "$HOME/.config/mise/conf.d/machine.toml"
+fi
+# Audio rules the machine needs (read when WirePlumber starts)
+if [[ -n ${1:-} && -f machines/$1.wireplumber.conf ]]; then
+    mkdir -p "$HOME/.config/wireplumber/wireplumber.conf.d"
+    cp "machines/$1.wireplumber.conf" "$HOME/.config/wireplumber/wireplumber.conf.d/50-machine.conf"
 fi
 mise install
 
