@@ -62,8 +62,8 @@ Scope {
         const missed = r.at < startedAt - 60;
         const body = missed ? `Missed, was due ${when(r)}` : Qt.formatDateTime(new Date(r.at * 1000), "HH:mm");
         // notify-send waits for a button and prints its action; a snooze sets the reminder again
-        Quickshell.execDetached(["sh", "-c", `a=$(notify-send -a Reminders -u critical -A 10="Snooze 10 min" -A 60="1 hour" -- "$1" "$2") || exit
-            case $a in 10|60) exec "$3" "$a" "$1" ;; esac`, "sh", r.message, body, script]);
+        Quickshell.execDetached(["sh", "-c", `a=$(notify-send -a Reminders -u critical -A 5="Snooze 5m" -A 10="10m" -A 30="30m" -A 60="1h" -- "$1" "$2") || exit
+            case $a in 5|10|30|60) exec "$3" "$a" "$1" ;; esac`, "sh", r.message, body, script]);
         cancel(r.id);
     }
 
