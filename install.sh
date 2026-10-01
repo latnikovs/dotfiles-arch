@@ -3,7 +3,8 @@
 #   machine: name of a file in machines/ (without .lua) to install as ~/.config/hypr/local.lua
 #            (and machines/<machine>.mise.toml, if any, as ~/.config/mise/conf.d/machine.toml,
 #            machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua, and
-#            machines/<machine>.wireplumber.conf, if any, as ~/.config/wireplumber/wireplumber.conf.d/50-machine.conf)
+#            machines/<machine>.wireplumber.conf, if any, as ~/.config/wireplumber/wireplumber.conf.d/50-machine.conf,
+#            machines/<machine>.hwdb, if any, as /etc/udev/hwdb.d/90-machine.hwdb)
 #
 # On a fresh Arch install, straight from GitHub (add `-s -- <machine>` after bash for a machine):
 #   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
@@ -622,6 +623,13 @@ if [[ -n $machine ]]; then
     if [[ -f machines/$machine.greeter.lua ]]; then
         step 'Login screen monitors'
         sudo install -Dm644 "machines/$machine.greeter.lua" /etc/greetd/local.lua
+    fi
+    # Key remaps the machine's keyboard needs, applied to keyboards already plugged in
+    if [[ -f machines/$machine.hwdb ]] && ! cmp -s "machines/$machine.hwdb" /etc/udev/hwdb.d/90-machine.hwdb; then
+        step 'Keyboard remaps'
+        sudo install -Dm644 "machines/$machine.hwdb" /etc/udev/hwdb.d/90-machine.hwdb
+        sudo systemd-hwdb update
+        sudo udevadm trigger --subsystem-match=input --action=change
     fi
 fi
 

@@ -1,0 +1,7 @@
+# Apple ISO keyboard through UTM: QEMU sends the key left of 1 (§) as the ISO key next to
+# left Shift and vice versa, so the Russian layout typed / where ё belongs. Swap them back,
+# as hid_apple does for an Apple keyboard plugged into real hardware.
+# Installed as /etc/udev/hwdb.d/90-machine.hwdb by: ./install.sh utm-vm
+evdev:input:b0003v0627p0001*
+ KEYBOARD_KEY_70035=102nd
+ KEYBOARD_KEY_70064=grave
