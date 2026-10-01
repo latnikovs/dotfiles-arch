@@ -32,12 +32,16 @@ curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/instal
 ```
 
 It installs git, clones this repo to `~/dotfiles` and carries on from there.
-Everything it prints also goes to `~/install.log`.
+The terminal shows one line per step; every command and all it prints go to
+`~/.local/state/dotfiles/install.log` (the latest run, with the nine before it
+kept beside it). `DOTFILES_ICONS=nerd|unicode|ascii` overrides the icons it
+picks for the terminal, `NO_COLOR=1` turns colours off.
 
-The script asks for your password a few times (`sudo`, `chsh`). It stops at
-the first error. Most of it can safely be run again, so fix the problem and
-rerun it, either the same way or as `~/dotfiles/install.sh`. It ends by
-switching to NetworkManager, which drops the connection for a few seconds.
+The script asks for your `sudo` password once, at the start. It stops at the
+first error and shows the end of the failed step's log. Most of it can safely
+be run again, so fix the problem and rerun it, either the same way or as
+`~/dotfiles/install.sh`. It ends by switching to NetworkManager, which drops
+the connection for a few seconds.
 
 Then reboot. You should get the login screen (or, with an encrypted disk,
 land straight in Hyprland).
