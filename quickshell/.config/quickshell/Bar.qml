@@ -1516,7 +1516,7 @@ PanelWindow {
             }
         }
 
-        // Keyboard layout: left click opens the selector, right click (or CTRL + ALT + SPACE) picks the next one
+        // Keyboard layout: left click opens the selector, right click (or SUPER + SHIFT + SPACE) picks the next one
         MouseArea {
             id: layoutButton
             implicitWidth: layoutText.implicitWidth
