@@ -122,3 +122,6 @@ pacman-contrib
 fwupd
 # Firewall (install.sh: nothing comes in except over Tailscale)
 ufw
+# Crash diagnosis (the bar's crash list, claude/ diagnose-crash skill): backtraces from core
+# dumps, with symbols from Arch's debuginfod
+gdb

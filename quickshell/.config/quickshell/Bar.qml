@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, pending updates/tray/keyboard layout/
+// Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, crashed programs/pending updates/tray/keyboard layout/
 // CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
@@ -29,6 +29,7 @@ PanelWindow {
     required property Tailscale tailscale
     required property Messaging messaging
     required property Updates updates
+    required property Crashes crashes
     required property Reminders reminders
     required property Caffeine caffeine
 
@@ -94,6 +95,7 @@ PanelWindow {
         bluetoothPanel.open = false;
         tailscalePanel.open = false;
         updatesPanel.open = false;
+        crashesPanel.open = false;
         remindersPanel.open = false;
         cpuPanel.open = false;
         memPanel.open = false;
@@ -126,6 +128,11 @@ PanelWindow {
     function toggleUpdates() {
         if (updates.count > 0)
             toggleDropdown(updatesPanel);
+    }
+
+    function toggleCrashes() {
+        if (crashes.count > 0)
+            toggleDropdown(crashesPanel);
     }
 
     // With none set there's nothing to list, so it asks for one
@@ -1066,6 +1073,13 @@ PanelWindow {
         updates: bar.updates
     }
 
+    CrashesPanel {
+        id: crashesPanel
+        bar: bar
+        button: crashesButton
+        crashes: bar.crashes
+    }
+
     RemindersPanel {
         id: remindersPanel
         bar: bar
@@ -1381,6 +1395,41 @@ PanelWindow {
             rightMargin: 15
         }
         spacing: 15
+
+        // Programs that crashed (Crashes.qml), shown only when there are some, in red: left click
+        // lists them (CrashesPanel.qml), right click clears them
+        MouseArea {
+            id: crashesButton
+            readonly property var latest: bar.crashes.count > 0 ? bar.crashes.list[0] : null
+            readonly property string tip: latest === null ? ""
+                : `${latest.name} crashed ${bar.crashes.when(latest)} (${latest.signal})`
+                    + (bar.crashes.count > 1 ? `, +${bar.crashes.count - 1} more` : "")
+
+            visible: bar.crashes.count > 0
+            implicitWidth: crashesText.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !crashesPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !crashesPanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
+                bar.hideTooltip(this);
+                if (mouse.button === Qt.RightButton) {
+                    bar.closePanels();
+                    bar.crashes.clear();
+                } else {
+                    bar.toggleCrashes();
+                }
+            }
+
+            BarText {
+                id: crashesText
+                anchors.centerIn: parent
+                text: `󱚡 ${bar.crashes.count}`
+                color: bar.urgent
+            }
+        }
 
         // Pending package updates (Updates.qml), shown only when there are some: left click lists
         // them (UpdatesPanel.qml), right click installs them

@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Usage: crash-diagnose <pid> [name] [exe] [signal] [when]
+# Claude in a terminal, asked why a program crashed (the diagnose-crash skill). Run from the
+# bar's crash list, or by hand with a PID from `coredumpctl list`.
+set -euo pipefail
+
+pid=${1:?usage: crash-diagnose <pid> [name] [exe] [signal] [when]}
+[[ $pid =~ ^[0-9]+$ ]] || { echo "Not a PID: $pid (see coredumpctl list)" >&2; exit 1; }
+
+# The facts go in as a prompt of plain text, never through a shell, since a program can call
+# itself anything
+prompt="A program crashed on this machine and I want to know why.
+
+What systemd-coredump recorded:
+  program:  ${2:-unknown}
+  PID:      $pid
+  binary:   ${3:-unknown}
+  signal:   ${4:-unknown}
+  time:     ${5:-unknown}
+
+Use the diagnose-crash skill (~/.claude/skills/diagnose-crash/SKILL.md)."
+
+exec "${BASH_SOURCE[0]%/*}/agent" "$prompt"

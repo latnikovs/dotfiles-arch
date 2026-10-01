@@ -24,6 +24,7 @@ ShellRoot {
             tailscale: tailscaleService
             messaging: messagingService
             updates: updatesService
+            crashes: crashesService
             reminders: remindersService
             caffeine: caffeineService
         }
@@ -48,6 +49,10 @@ ShellRoot {
 
     Updates {
         id: updatesService
+    }
+
+    Crashes {
+        id: crashesService
     }
 
     Reminders {
@@ -91,6 +96,10 @@ ShellRoot {
 
         function toggleUpdates(): void {
             root.focusedBar()?.toggleUpdates();
+        }
+
+        function toggleCrashes(): void {
+            root.focusedBar()?.toggleCrashes();
         }
 
         function toggleReminders(): void {
