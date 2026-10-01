@@ -3,6 +3,12 @@
 -- the first <leader>D asks for the master password and fills the drawer.
 -- Connections added with DBUIAddConnection go to dadbod_ui/connections.json in
 -- plain text, so keep the ones with passwords in KeePassXC.
+
+-- The extra turns off Vim's sqlcomplete for blink, but the SQL ftplugin still
+-- maps <Left>/<Right> in insert mode to sqlcomplete functions (E117 on every
+-- arrow key in a query buffer). Drop those maps.
+vim.g.omni_sql_no_default_maps = 1
+
 local function keepass_dbs()
   return require("config.keepass_dbs")
 end

@@ -58,7 +58,7 @@ function M.with_credentials(url, user, password)
   return scheme .. (creds ~= "" and creds .. "@" or "") .. host .. rest:sub(#authority + 1)
 end
 
--- Returns { [name] = url } for the group's entries, or nil and an error.
+-- Returns { { name = ..., url = ... } } sorted by name, or nil and an error.
 function M.read(kdbx, master)
   local ls = cli({ "ls", kdbx, M.group }, master):wait()
   if ls.code ~= 0 then
@@ -87,9 +87,12 @@ function M.read(kdbx, master)
     end
     local url, user, password = unpack(vim.split(res.stdout, "\n"))
     if url and url ~= "" then
-      dbs[name] = M.with_credentials(url, user or "", password or "")
+      table.insert(dbs, { name = name, url = M.with_credentials(url, user or "", password or "") })
     end
   end
+  table.sort(dbs, function(a, b)
+    return a.name < b.name
+  end)
   return dbs
 end
 
