@@ -110,6 +110,9 @@ other, and files both have but with different contents keep both versions (one a
 - **SUPER+/** lists every keybinding.
 - SUPER+RETURN opens a terminal, SUPER+SPACE the app launcher and SUPER+ESC
   the system menu (lock, suspend, log out, restart, shut down).
+- SUPER+ALT+SPACE opens the menu, as in Omarchy: apps, screenshots, toggles
+  (caffeine, do not disturb, night light, light/dark), reminders, the bar's
+  panels, updates and the system menu. Esc in a submenu goes back.
 - SUPER+`hjkl` moves focus between windows, as in Vim; SUPER+SHIFT+`hjkl` swaps them.
 
 ## Layout

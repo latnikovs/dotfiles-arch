@@ -25,5 +25,6 @@ hl.monitor({
     scale    = 1,
 })
 
--- macOS swallows Cmd + Esc before it reaches the VM, so open the system menu on SUPER + ALT + M too.
-hl.bind("SUPER + ALT + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"), { description = "System menu" })
+-- macOS swallows Cmd + Esc (system menu) and Cmd + Option + Space (menu, Finder search there)
+-- before they reach the VM, so open the menu on SUPER + ALT + M too; System is in it.
+hl.bind("SUPER + ALT + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"), { description = "Menu (commands, as Omarchy's)" })

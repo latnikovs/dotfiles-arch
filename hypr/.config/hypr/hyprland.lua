@@ -454,6 +454,7 @@ bind(mainMod .. " + SHIFT + Y", "Teams call mode (pinned, top right)", toggleTea
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
+bind(mainMod .. " + ALT + SPACE", "Menu (commands, as Omarchy's)", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"))
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
 bind(mainMod .. " + CTRL + SPACE", "Next wallpaper", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
 bind(mainMod .. " + SHIFT + SPACE", "Next keyboard layout", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"))

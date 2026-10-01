@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+# Usage: menu [apps|learn|capture|toggle|remind|panels|system]
+#   the desktop's commands in nested fuzzel menus (SUPER + ALT + SPACE), after Omarchy's
+#   omarchy-menu; Esc in a submenu goes back to the main one
+set -euo pipefail
+
+scripts=~/.config/hypr/scripts
+bar="quickshell ipc call bar"
+
+# Picks one of the given lines: "pick <prompt icon> <title> <lines>…"; sets $label to the
+# chosen one without its icon. Esc in a submenu goes back to the main menu; Esc in the main menu,
+# or fuzzel closed by pressing the key again (killed), ends the script.
+pick() {
+    local icon=$1 title=$2 choice status=0
+    shift 2
+    choice=$(printf '%s\n' "$@" \
+        | fuzzel --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) || status=$?
+    if (( status == 1 )) && [[ $title != Menu ]]; then exec "$0"; fi
+    (( status == 0 )) || exit 0
+    label=${choice#*  }
+}
+
+# Lets fuzzel's surface go before screenshots and pickers grab the screen
+run_after_close() { sleep 0.2; exec "$@"; }
+
+main() {
+    pick "󰍜" Menu "󰀻  Apps" "󰧑  Learn" "󰄀  Capture" "󰔡  Toggle" "󰀠  Remind" \
+         "󰅌  Clipboard" "󰕾  Panels" "󰚰  Update" "󰐥  System"
+    case $label in
+        Apps)      apps ;;
+        Learn)     learn ;;
+        Capture)   capture ;;
+        Toggle)    toggle ;;
+        Remind)    remind ;;
+        Clipboard) exec $scripts/clipboard-history ;;
+        Panels)    panels ;;
+        Update)    exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/updates run ;;
+        System)    exec $scripts/system menu ;;
+    esac
+}
+
+# The app launcher; terminal apps start in the machine's terminal (see machines/utm-vm.lua)
+apps() { exec fuzzel --terminal "${DOTFILES_TERMINAL:-kitty} -e"; }
+
+learn() {
+    pick "󰧑" Learn "󰌌  Keybindings" "  Hyprland wiki" "󰣇  Arch wiki" "  LazyVim" \
+         "  Quickshell"
+    case $label in
+        Keybindings) exec $scripts/keybindings ;;
+        Hyprland*)   exec xdg-open https://wiki.hypr.land/ ;;
+        Arch*)       exec xdg-open https://wiki.archlinux.org/title/Main_page ;;
+        LazyVim)     exec xdg-open https://www.lazyvim.org/keymaps ;;
+        Quickshell)  exec xdg-open https://quickshell.org/docs/ ;;
+    esac
+}
+
+capture() {
+    pick "󰄀" Capture "󰏫  Screenshot and annotate" "󰩭  Screenshot region" \
+         "󰍹  Screenshot monitor" "󰈊  Color picker"
+    case $label in
+        *annotate)  run_after_close $scripts/screenshot annotate ;;
+        *region)    run_after_close $scripts/screenshot region ;;
+        *monitor)   run_after_close $scripts/screenshot output ;;
+        Color*)     run_after_close hyprpicker --autocopy ;;
+    esac
+}
+
+toggle() {
+    pick "󰔡" Toggle "󰅶  Caffeine" "󰂛  Do not disturb" "󰖔  Night light" \
+         "󰔎  Light / dark" "󰸉  Next wallpaper" "󰊻  Teams call mode"
+    case $label in
+        Caffeine)    exec $scripts/caffeine ;;
+        Do*)         exec $scripts/notifications-dnd ;;
+        Night*)      exec $scripts/nightlight ;;
+        Light*)
+            # As the bar's sun/moon: darkman, or the theme script if darkman isn't running
+            [[ $(gsettings get org.gnome.desktop.interface color-scheme) == "'prefer-light'" ]] \
+                && mode=dark || mode=light
+            darkman toggle 2>/dev/null || exec $scripts/theme $mode ;;
+        Next*)       exec $scripts/wallpaper next ;;
+        Teams*)      exec hyprctl eval 'toggleTeamsCall()' ;;
+    esac
+}
+
+remind() {
+    pick "󰀠" Remind "󰀠  New reminder" "󰂚  Reminders" "󰂭  Clear reminders"
+    case $label in
+        New*)       exec $scripts/remind ;;
+        Reminders)  exec $bar toggleReminders ;;
+        Clear*)     exec $scripts/remind clear ;;
+    esac
+}
+
+# The bar's dropdowns
+panels() {
+    pick "󰕾" Panels "󰕾  Audio" "󰖩  Network" "󰂯  Bluetooth" "󰖂  Tailscale" "󰓦  Syncthing" \
+         "󰃭  Calendar" "󰖐  Weather" "󰂚  Notification history"
+    case $label in
+        Audio)        exec $bar toggleAudio ;;
+        Network)      exec $bar toggleNetwork ;;
+        Bluetooth)    exec $bar toggleBluetooth ;;
+        Tailscale)    exec $bar toggleTailscale ;;
+        Syncthing)    exec $bar toggleSyncthing ;;
+        Calendar)     exec $bar toggleCalendar ;;
+        Weather)      exec $bar toggleWeather ;;
+        Notification*) exec quickshell ipc call notifications toggleHistory ;;
+    esac
+}
+
+pkill -x fuzzel && exit 0
+
+case ${1:-main} in
+    main|apps|learn|capture|toggle|remind|panels) "${1:-main}" ;;
+    system) exec $scripts/system menu ;;
+    *)
+        echo "Usage: menu [apps|learn|capture|toggle|remind|panels|system]" >&2
+        exit 1
+        ;;
+esac
