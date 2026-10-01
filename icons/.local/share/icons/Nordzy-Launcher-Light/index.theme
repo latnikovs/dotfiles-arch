@@ -1,0 +1,14 @@
+# The launcher's (fuzzel) icons: Nordzy's Nord-coloured app icons, aliases (made by install.sh) for
+# apps Nordzy lacks, then Papirus for anything else.
+[Icon Theme]
+Name=Nordzy-Launcher-Light
+Comment=Nordzy for the fuzzel launcher, light mode
+Inherits=Nordzy,Papirus-Light,hicolor
+Directories=apps/scalable
+
+[apps/scalable]
+Size=64
+Context=Applications
+MinSize=16
+MaxSize=512
+Type=Scalable

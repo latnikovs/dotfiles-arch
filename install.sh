@@ -316,9 +316,25 @@ xdg-mime default org.gnome.Papers.desktop application/pdf
 # Images open in imv
 xdg-mime default imv.desktop image/png image/jpeg image/gif image/webp image/bmp image/tiff
 
-# Papirus icons everywhere (GTK apps, the fuzzel launcher), folders in Nord blue-grey
-# (Papirus-Light shares them)
-yay -S --needed --noconfirm papirus-folders
+# Papirus icons for GTK apps, folders in Nord blue-grey (Papirus-Light shares them).
+# The fuzzel launcher uses Nordzy's Nord-coloured app icons instead, through the
+# Nordzy-Launcher-* themes in icons/, which fall back to Papirus.
+yay -S --needed --noconfirm papirus-folders nordzy-icon-theme
+# Icons for the apps Nordzy lacks (stow won't link outside the repo, so they're made here)
+for variant in Light:Nordzy Dark:Nordzy-dark; do
+    dir=$HOME/.local/share/icons/Nordzy-Launcher-${variant%%:*}/apps/scalable
+    src=/usr/share/icons/${variant#*:}/apps/scalable
+    mkdir -p "$dir"
+    while read -r name icon; do
+        ln -sfn "$src/$icon.svg" "$dir/$name.svg"
+    done <<'ICONS'
+brave-origin brave
+cliamp elisa
+org.gnome.Papers accessories-document-viewer
+multimedia-photo-viewer accessories-image-viewer
+preferences-desktop-keyboard-shortcuts org.xfce.settings.keyboard
+ICONS
+done
 sudo papirus-folders -C nordic --theme Papirus-Dark
 # Light or dark: darkman (started by Hyprland) runs scripts/theme at sunrise and
 # sunset. Dark until it first does; this also creates fuzzel's theme.ini, which
