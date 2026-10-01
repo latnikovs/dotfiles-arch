@@ -11,7 +11,7 @@ Scope {
     // False while Syncthing isn't running (or isn't installed); the bar hides its icon then
     property bool available: false
     property string myId: ""
-    // { id, label, path, paused, state, needBytes, needFiles, globalBytes, errors } per folder
+    // { id, label, path, paused, state, needBytes, needFiles, errors } per folder
     property var folders: []
     // { id, name, paused, connected, address, completion } per other device, by name
     property var devices: []
@@ -22,13 +22,10 @@ Scope {
     readonly property int connectedCount: devices.filter(d => d.connected).length
     readonly property int errorCount: folders.reduce((n, f) => n + f.errors, 0)
     readonly property real needBytes: folders.reduce((n, f) => n + f.needBytes, 0)
-    readonly property real globalBytes: folders.reduce((n, f) => n + f.globalBytes, 0)
     // Pulling from another device, or a connected one still pulling from this one
     readonly property bool downloading: folders.some(f => ["syncing", "sync-preparing"].includes(f.state))
     readonly property bool uploading: devices.some(d => d.connected && d.completion < 100)
     readonly property bool syncing: downloading || uploading
-    // Of everything in the folders, how much this device has, 0–100
-    readonly property int progress: globalBytes > 0 ? Math.floor(100 * (1 - needBytes / globalBytes)) : 100
 
     property string apiKey: ""
     property string address: "127.0.0.1:8384"
@@ -107,7 +104,7 @@ Scope {
             const folders = config.folders.map(f => {
                 const old = syncthing.folders.find(o => o.id === f.id);
                 return old ? Object.assign({}, old, { label: f.label || f.id, path: f.path, paused: f.paused })
-                    : { id: f.id, label: f.label || f.id, path: f.path, paused: f.paused, state: "", needBytes: 0, needFiles: 0, globalBytes: 0, errors: 0 };
+                    : { id: f.id, label: f.label || f.id, path: f.path, paused: f.paused, state: "", needBytes: 0, needFiles: 0, errors: 0 };
             });
             syncthing.folders = folders;
             for (const f of folders)
@@ -116,7 +113,6 @@ Scope {
                             state: s.state,
                             needBytes: s.needBytes,
                             needFiles: s.needFiles,
-                            globalBytes: s.globalBytes,
                             errors: Math.max(s.errors ?? 0, s.pullErrors ?? 0)
                         }) : o);
                 });

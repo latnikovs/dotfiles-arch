@@ -347,8 +347,8 @@ PanelWindow {
         }
     }
 
-    // ---- Caffeine toggle (Caffeine.qml), left of the reminders: dim while off, lit while on;
-    //      a click flips it.
+    // ---- Caffeine toggle (Caffeine.qml), left of the reminders: dim while off, in the
+    //      unread mail/Teams colour while on; a click flips it.
 
     Row {
         anchors {
@@ -373,7 +373,7 @@ PanelWindow {
                 id: caffeineText
                 anchors.centerIn: parent
                 text: "󰅶"
-                color: bar.caffeine.on || parent.containsMouse ? bar.fg : Theme.dim
+                color: bar.caffeine.on ? bar.warning : parent.containsMouse ? bar.fg : Theme.dim
             }
         }
     }
@@ -1673,7 +1673,7 @@ PanelWindow {
         }
 
         // Syncthing: left click opens the folders and devices, right click pauses or resumes.
-        // Accent with a percentage while syncing, red on errors, dim when paused or with no
+        // Accent while syncing, red on errors, dim when paused or with no
         // device connected.
         MouseArea {
             id: stButton
@@ -1710,7 +1710,6 @@ PanelWindow {
                 readonly property var st: parent.st
                 text: st.errorCount > 0 ? "󰓧"
                     : st.paused || st.connectedCount === 0 ? "󰓨"
-                    : st.downloading ? `󰓦 ${st.progress}%`
                     : "󰓦"
                 color: st.errorCount > 0 ? bar.urgent
                     : st.paused || st.connectedCount === 0 ? bar.muted
