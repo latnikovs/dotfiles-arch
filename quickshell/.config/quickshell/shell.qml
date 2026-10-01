@@ -1,5 +1,8 @@
 //@ pragma UseQApplication
-// UseQApplication lets tray icons open their native menus.
+//@ pragma IconTheme Nordzy-Launcher-Dark
+// UseQApplication lets tray icons open their native menus. IconTheme resolves icons apps
+// name (notification cards, the tray) in the launcher's Nord theme (icons/, from install.sh);
+// its app icons are the same in light and dark mode.
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
