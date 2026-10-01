@@ -37,7 +37,7 @@ Rectangle {
     // Chromium starts a web notification's body with the site, "teams.microsoft.com\n\n…"
     // (as a link when the server takes hyperlinks). Show the site in the header instead.
     readonly property var webOrigin: /^(?:<a [^>]*>)?([\w-]+(?:\.[\w-]+)+(?::\d+)?)(?:<\/a>)?\n\n/.exec(body)
-    readonly property string source: webOrigin ? webOrigin[1].replace(/^www\./, "") : appName
+    readonly property string sender: webOrigin ? webOrigin[1].replace(/^www\./, "") : appName
     readonly property string bodyText: webOrigin ? body.slice(webOrigin[0].length) : body
     readonly property string iconSource: source(image) || source(appIcon)
 
@@ -105,7 +105,7 @@ Rectangle {
                     id: appNameText
                     Layout.fillWidth: true
                     visible: text !== "" && text !== card.summary
-                    text: card.source
+                    text: card.sender
                     textFormat: Text.PlainText
                     color: card.dim
                     font.family: card.fontFamily
