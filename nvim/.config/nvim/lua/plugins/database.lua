@@ -9,6 +9,16 @@
 -- arrow key in a query buffer). Drop those maps.
 vim.g.omni_sql_no_default_maps = 1
 
+-- Export to CSV next to dadbod-ui's <leader>W/E/S (config/db_export.lua)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "sql", "mysql", "plsql" },
+  callback = function(ev)
+    local export = require("config.db_export")
+    vim.keymap.set("n", "<leader>X", export.export_paragraph, { buffer = ev.buf, desc = "Export Query to CSV" })
+    vim.keymap.set("x", "<leader>X", export.export_selection, { buffer = ev.buf, desc = "Export Selection to CSV" })
+  end,
+})
+
 local function keepass_dbs()
   return require("config.keepass_dbs")
 end
