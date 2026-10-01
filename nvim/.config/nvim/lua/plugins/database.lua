@@ -19,6 +19,63 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- Cancelling: dadbod's <C-c> in a result pane (and closing the pane) stops
+-- the client with SIGTERM, and psql then just drops the connection while the
+-- server keeps running the statement. SIGINT makes psql send the server a
+-- cancel request first, as Ctrl-C at a psql prompt does.
+local function interrupt(job)
+  local ok, pid = pcall(vim.fn.jobpid, job)
+  if ok and pid > 0 then
+    vim.uv.kill(pid, "sigint")
+  end
+end
+
+local function running(job)
+  return vim.fn.jobwait({ job }, 0)[1] == -1
+end
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "dbout",
+  callback = function(ev)
+    -- After dadbod's own buffer setup, which maps <C-c> too
+    vim.schedule(function()
+      if not vim.api.nvim_buf_is_valid(ev.buf) then
+        return
+      end
+      vim.keymap.set("n", "<C-c>", function()
+        local query = vim.b[ev.buf].db
+        local job = type(query) == "table" and query.job
+        if not job then
+          vim.notify("No query running")
+          return
+        end
+        interrupt(job)
+        -- psql exits once the server has cancelled; stop it if it hangs
+        vim.defer_fn(function()
+          if running(job) then
+            vim.fn["db#cancel"](ev.buf)
+          end
+        end, 3000)
+      end, { buffer = ev.buf, desc = "Cancel Query" })
+    end)
+  end,
+})
+
+-- Closing a result pane (gq, <leader>D) runs dadbod's BufUnload, which stops
+-- psql at once; this one is defined earlier so it runs first and lets psql
+-- cancel on the server, waiting up to a second for it.
+vim.api.nvim_create_autocmd("BufUnload", {
+  pattern = "*.dbout",
+  callback = function(ev)
+    local query = vim.b[ev.buf].db
+    local job = type(query) == "table" and query.job
+    if job and running(job) then
+      interrupt(job)
+      vim.fn.jobwait({ job }, 1000)
+    end
+  end,
+})
+
 local function keepass_dbs()
   return require("config.keepass_dbs")
 end
@@ -60,11 +117,21 @@ local function close_db_windows()
       last_query = buf
     end
   end
+  -- Query windows go last, so the window that may have to stay open is a
+  -- query window and not the result pane: that one is the preview window,
+  -- where dadbod puts every result, and a query reopened in it would be
+  -- replaced by the next result.
+  table.sort(wins, function(a, b)
+    local qa = vim.b[vim.api.nvim_win_get_buf(a)].dbui_db_key_name ~= nil
+    local qb = vim.b[vim.api.nvim_win_get_buf(b)].dbui_db_key_name ~= nil
+    return not qa and qb
+  end)
   for _, win in ipairs(wins) do
     if #vim.api.nvim_tabpage_list_wins(0) > 1 then
       vim.api.nvim_win_close(win, false)
     else
       -- The last window: show the file from before <leader>D opened them instead
+      vim.wo[win].previewwindow = false
       vim.api.nvim_win_call(win, function()
         if last_file and vim.api.nvim_buf_is_valid(last_file) and vim.bo[last_file].buflisted then
           vim.api.nvim_win_set_buf(win, last_file)
@@ -83,11 +150,17 @@ local function open_db_windows()
   if vim.bo[cur].buflisted and not is_db_buf(cur) then
     last_file = cur
   end
+  local query_win
   if last_query and vim.api.nvim_buf_is_valid(last_query) and not is_db_buf(vim.api.nvim_get_current_buf()) then
     vim.api.nvim_win_set_buf(0, last_query)
+    query_win = vim.api.nvim_get_current_win()
   end
   last_query = nil
   vim.cmd("DBUI")
+  -- Back in the query it brought back, ready for <leader>S, not in the drawer
+  if query_win and vim.api.nvim_win_is_valid(query_win) then
+    vim.api.nvim_set_current_win(query_win)
+  end
 end
 
 return {
