@@ -13,6 +13,19 @@ local function keepass_dbs()
   return require("config.keepass_dbs")
 end
 
+-- dadbod-ui opens queries only in a normal file window and splits off a new
+-- one otherwise, so the start screen would keep a third of the width. Swap it
+-- for an empty buffer that the first query then takes over.
+local function replace_dashboard()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "snacks_dashboard" then
+      vim.api.nvim_win_call(win, function()
+        vim.cmd.enew()
+      end)
+    end
+  end
+end
+
 return {
   {
     "kristijanhusak/vim-dadbod-ui",
@@ -22,6 +35,7 @@ return {
         "<leader>D",
         function()
           if keepass_dbs().loaded or keepass_dbs().load() then
+            replace_dashboard()
             vim.cmd("DBUIToggle")
           end
         end,
@@ -35,6 +49,7 @@ return {
           return
         end
         pcall(vim.cmd, "DBUIClose")
+        replace_dashboard()
         vim.fn["db_ui#reset_state"]()
         vim.cmd("DBUI")
       end, { desc = "Reload database connections from KeePassXC" })
