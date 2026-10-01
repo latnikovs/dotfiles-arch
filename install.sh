@@ -38,7 +38,7 @@ grep -qx 0x1002 /sys/class/drm/card*/device/vendor 2>/dev/null && sudo pacman -S
 
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console || $pkg == syncthing ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
@@ -102,6 +102,11 @@ for _ in {1..10}; do
     sudo tailscale set --operator="$USER" 2>/dev/null && break
     sleep 1
 done
+
+# Syncthing: ~/notes and ~/Documents, with paired devices over Tailscale only
+# (syncthing/setup; pairing is by hand, see the README)
+systemctl --user enable --now syncthing.service
+syncthing/setup
 
 # Swap: zram, compressed in RAM, half its size. The sysctls are the usual ones for
 # swap this fast: swap before dropping file cache, one page at a time.

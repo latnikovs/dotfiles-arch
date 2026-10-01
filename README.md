@@ -55,6 +55,39 @@ The UTM virtual machine I use for testing installs with
   accepts keys, and the firewall only lets it in over Tailscale.
 - `gh auth login`
 - Sign in to Thunderbird (SUPER+M) and Teams (SUPER+Y)
+- Pair Syncthing with the other machines (below)
+
+### Syncthing
+
+`~/notes` and `~/Documents` sync between my machines with Syncthing, over
+Tailscale only: no discovery servers, relays or LAN broadcasts, and paired
+devices may connect only from Tailscale addresses. `install.sh` sets up the
+Linux side with `syncthing/setup`, which prints this machine's device ID.
+Replaced and deleted files stay in each folder's `.stversions` for 90 days.
+Syncthing isn't a backup, since deletions sync too.
+
+On the Mac (not managed by this repo), once:
+
+```sh
+brew install syncthing && brew services start syncthing
+curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/syncthing/setup | bash
+```
+
+Keep `~/Documents` out of iCloud Drive ("Desktop & Documents Folders" off)
+before syncing it. iCloud swaps files it offloads for placeholders, and those
+would sync as missing.
+
+Then pair each pair of machines on both sides, using Tailscale names and the IDs
+the setup printed (`syncthing cli show system` shows them again):
+
+```sh
+~/dotfiles/syncthing/setup pair dmbp <Mac's device ID>        # on Linux
+curl -fsSL …/syncthing/setup | bash -s -- pair archvm <its ID>  # on the Mac
+```
+
+The first sync merges the folders: files only one side has are copied to the
+other, and files both have but with different contents keep both versions (one as
+`*.sync-conflict-*`). The web UI is at http://127.0.0.1:8384.
 
 ## If something breaks
 
@@ -83,6 +116,7 @@ The UTM virtual machine I use for testing installs with
 | `console/` | Nord colours for the Linux console |
 | `machines/` | Per-machine overrides: `./install.sh <name>` installs `machines/<name>.lua` as `~/.config/hypr/local.lua`, plus `<name>.mise.toml` and `<name>.greeter.lua` if they exist |
 | `browser-policies/`, `keepassxc/` | Copied into place by `install.sh` rather than stowed |
+| `syncthing/` | `setup`: Syncthing over Tailscale only, pairing (run, not stowed) |
 | `packages.txt` | Packages from the official repos; AUR packages are installed in `install.sh` |
 | everything else | One Stow package per program (`zsh/`, `tmux/`, `nvim/`, `kitty/`, …) |
 

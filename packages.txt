@@ -43,6 +43,8 @@ bluez
 bluez-utils
 # Tailscale VPN; the bar's Tailscale dropdown drives it
 tailscale
+# File sync between my machines over Tailscale (syncthing/setup)
+syncthing
 # SSH server (install.sh: keys only, no root; the firewall lets it in over Tailscale only)
 openssh
 hyprlock

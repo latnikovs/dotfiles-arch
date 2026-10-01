@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Syncthing over Tailscale only: syncs ~/notes and ~/Documents with paired
+# devices and talks to nothing else (no discovery servers, LAN broadcasts,
+# relays, NAT traversal or usage reports). Works on Linux (install.sh runs it)
+# and on the Mac (bash 3.2), against the running Syncthing.
+#
+# Usage: setup                    set up this device and print its device ID
+#        setup pair <host> <id>   sync both folders with the device with this
+#                                 Tailscale name and Syncthing device ID
+#
+# The folder IDs (notes, documents) must match on every device, so set every
+# device up with this script rather than by hand.
+set -euo pipefail
+
+folders="notes:Notes:$HOME/notes documents:Documents:$HOME/Documents"
+# Tailscale's address ranges (IPv4 CGNAT, IPv6 ULA). Paired devices may connect
+# only from these, on top of the firewall on Linux.
+tailnet="--allowed-networks 100.64.0.0/10 --allowed-networks fd7a:115c:a1e0::/48"
+
+st() { syncthing cli "$@"; }
+my_id() { st show system | sed -n 's/.*"myID": *"\([^"]*\)".*/\1/p'; }
+
+# The daemon may have only just started
+for _ in $(seq 30); do
+    st show system >/dev/null 2>&1 && break
+    sleep 1
+done
+st show system >/dev/null || { echo "Syncthing isn't running" >&2; exit 1; }
+
+if [[ ${1:-} == pair ]]; then
+    host=${2:?usage: setup pair <host> <device-id>}
+    id=${3:?usage: setup pair <host> <device-id>}
+    if ! st config devices list | grep -qx "$id"; then
+        # shellcheck disable=SC2086
+        st config devices add --device-id "$id" --name "$host" --addresses "tcp://$host:22000" $tailnet
+    fi
+    for folder in $folders; do
+        folder=${folder%%:*}
+        st config folders "$folder" devices list | grep -qx "$id" ||
+            st config folders "$folder" devices add --device-id "$id"
+    done
+    # This device's Tailscale name (the Mac's CLI may not be on PATH)
+    me=$(tailscale status --peers=false 2>/dev/null | awk '{ print $2; exit }') || true
+    echo "Paired with $host. On $host, run: setup pair ${me:-$(uname -n)} $(my_id)"
+    exit
+fi
+
+for option in global-ann-enabled local-ann-enabled relays-enabled natenabled crenabled start-browser; do
+    st config options "$option" set false
+done
+st config options uraccepted set -- -1
+
+for folder in $folders; do
+    IFS=: read -r id label path <<<"$folder"
+    mkdir -p "$path"
+    # Not synced itself, so every device writes its own. (?d) lets Syncthing
+    # delete these files when they'd keep a deleted folder from going away.
+    cat >"$path/.stignore" <<'EOF'
+// Written by the dotfiles' syncthing/setup; changes here are overwritten
+// macOS
+(?d).DS_Store
+(?d)._*
+(?d).localized
+(?d).Spotlight-V100
+(?d).Trashes
+(?d).fseventsd
+// Editors
+*.swp
+*.swo
+.obsidian/workspace*.json
+EOF
+    if ! st config folders list | grep -qx "$id"; then
+        st config folders add --id "$id" --label "$label" --path "$path"
+        # Replaced and deleted files are kept in .stversions for 90 days
+        st config folders "$id" versioning type set staggered
+        st config folders "$id" versioning params set maxAge 7776000
+    fi
+done
+
+echo "Syncthing device ID: $(my_id)"
