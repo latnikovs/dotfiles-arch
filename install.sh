@@ -316,14 +316,33 @@ xdg-mime default org.gnome.Papers.desktop application/pdf
 # Images open in imv
 xdg-mime default imv.desktop image/png image/jpeg image/gif image/webp image/bmp image/tiff
 
-# Papirus icons for GTK apps, folders in Nord blue-grey (Papirus-Light shares them).
+# Papirus icons for GTK apps, folders in Nord blue-grey (Papirus-Light shares them)
+yay -S --needed --noconfirm papirus-folders
+sudo papirus-folders -C nordic --theme Papirus-Dark
 # The fuzzel launcher uses Nordzy's Nord-coloured app icons instead, through the
-# Nordzy-Launcher-* themes in icons/, which fall back to Papirus.
-yay -S --needed --noconfirm papirus-folders nordzy-icon-theme
+# Nordzy-Launcher-* themes in icons/, which fall back to Papirus. Only the two variants
+# we use, from the release; the AUR package builds all 18 (~1 GB, many minutes).
+pacman -Q nordzy-icon-theme &>/dev/null && sudo pacman -Rns --noconfirm nordzy-icon-theme
+nordzy_version=1.8.7
+icon_dir=$HOME/.local/share/icons
+mkdir -p "$icon_dir"
+while read -r theme sha256; do
+    [[ $(cat "$icon_dir/$theme/.version" 2>/dev/null) == "$nordzy_version" ]] && continue
+    tarball=$(mktemp)
+    curl -fsSL "https://github.com/alvatip/Nordzy-icon/releases/download/$nordzy_version/$theme.tar.gz" -o "$tarball"
+    sha256sum --quiet -c <<<"$sha256  $tarball"
+    rm -rf "${icon_dir:?}/$theme"
+    tar -xzf "$tarball" -C "$icon_dir"
+    echo "$nordzy_version" >"$icon_dir/$theme/.version"
+    rm -f "$tarball"
+done <<'NORDZY'
+Nordzy 38c346bc4de165b79d5b678284b63cc0fa058dccea29ec1b6fabea7117d7b8ad
+Nordzy-dark ad752b5ce70577408431734fc8004f928a00027a8fce6dd131ae2d0c3dc82069
+NORDZY
 # Icons for the apps Nordzy lacks (stow won't link outside the repo, so they're made here)
 for variant in Light:Nordzy Dark:Nordzy-dark; do
-    dir=$HOME/.local/share/icons/Nordzy-Launcher-${variant%%:*}/apps/scalable
-    src=/usr/share/icons/${variant#*:}/apps/scalable
+    dir=$icon_dir/Nordzy-Launcher-${variant%%:*}/apps/scalable
+    src=$icon_dir/${variant#*:}/apps/scalable
     mkdir -p "$dir"
     while read -r name icon; do
         ln -sfn "$src/$icon.svg" "$dir/$name.svg"
@@ -335,7 +354,6 @@ multimedia-photo-viewer accessories-image-viewer
 preferences-desktop-keyboard-shortcuts org.xfce.settings.keyboard
 ICONS
 done
-sudo papirus-folders -C nordic --theme Papirus-Dark
 # Light or dark: darkman (started by Hyprland) runs scripts/theme at sunrise and
 # sunset. Dark until it first does; this also creates fuzzel's theme.ini, which
 # fuzzel won't start without.
