@@ -3,7 +3,9 @@
 -- one connection: its title is the name, its URL field the connection URL
 -- (postgres://host:5432/db, without the password), and its username and
 -- password fields are spliced into that URL. A user already in the URL wins
--- over the username field.
+-- over the username field. Subgroups become name prefixes, so
+-- Databases/WMS/Stag shows as "WMS › Stag" and a project's connections sort
+-- together (not "/": dadbod-ui makes the name a folder for saved queries).
 --
 -- KeePassXC's Secret Service is left to gnome-keyring, so this goes through
 -- keepassxc-cli, which asks for the master password once per nvim session.
@@ -60,7 +62,7 @@ end
 
 -- Returns { { name = ..., url = ... } } sorted by name, or nil and an error.
 function M.read(kdbx, master)
-  local ls = cli({ "ls", kdbx, M.group }, master):wait()
+  local ls = cli({ "ls", "-R", "-f", kdbx, M.group }, master):wait()
   if ls.code ~= 0 then
     if ls.stderr:find("Cannot find group") then
       return nil,
@@ -73,9 +75,11 @@ function M.read(kdbx, master)
   end
   -- One keepassxc-cli per entry, all at once: each one pays the KDF on its own
   local jobs = {}
-  for name in vim.gsplit(ls.stdout, "\n", { trimempty = true }) do
-    if not name:find("/$") and not name:find("^%[") then
-      local entry = M.group .. "/" .. name
+  for path in vim.gsplit(ls.stdout, "\n", { trimempty = true }) do
+    -- Skip the group lines ("WMS/") and empty-group markers ("WMS/[empty]")
+    if not path:find("/$") and not path:find("%[empty%]$") then
+      local name = path:gsub("/", " › ")
+      local entry = M.group .. "/" .. path
       jobs[name] = cli({ "show", "-s", "-a", "URL", "-a", "UserName", "-a", "Password", kdbx, entry }, master)
     end
   end
@@ -91,7 +95,7 @@ function M.read(kdbx, master)
     end
   end
   table.sort(dbs, function(a, b)
-    return a.name < b.name
+    return a.name:lower() < b.name:lower()
   end)
   return dbs
 end
