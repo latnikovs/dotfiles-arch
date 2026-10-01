@@ -36,6 +36,60 @@ local function replace_dashboard()
   end
 end
 
+local function is_db_buf(buf)
+  local ft = vim.bo[buf].filetype
+  return ft == "dbui" or ft == "dbout" or vim.b[buf].dbui_db_key_name ~= nil
+end
+
+local last_query, last_file
+
+-- <leader>D toggles the whole database view: when any dadbod window is up it
+-- closes the drawer, the result panes and the query windows (the query
+-- buffers stay loaded and listed under the drawer's Buffers), and remembers
+-- the query so the next <leader>D brings it back next to the drawer.
+local function close_db_windows()
+  local wins = vim.tbl_filter(function(win)
+    return is_db_buf(vim.api.nvim_win_get_buf(win))
+  end, vim.api.nvim_tabpage_list_wins(0))
+  if #wins == 0 then
+    return false
+  end
+  for _, win in ipairs(wins) do
+    local buf = vim.api.nvim_win_get_buf(win)
+    if vim.b[buf].dbui_db_key_name and (win == vim.api.nvim_get_current_win() or not last_query) then
+      last_query = buf
+    end
+  end
+  for _, win in ipairs(wins) do
+    if #vim.api.nvim_tabpage_list_wins(0) > 1 then
+      vim.api.nvim_win_close(win, false)
+    else
+      -- The last window: show the file from before <leader>D opened them instead
+      vim.api.nvim_win_call(win, function()
+        if last_file and vim.api.nvim_buf_is_valid(last_file) and vim.bo[last_file].buflisted then
+          vim.api.nvim_win_set_buf(win, last_file)
+        else
+          vim.cmd.enew()
+        end
+      end)
+    end
+  end
+  return true
+end
+
+local function open_db_windows()
+  replace_dashboard()
+  local cur = vim.api.nvim_get_current_buf()
+  if vim.bo[cur].buflisted and not is_db_buf(cur) then
+    last_file = cur
+  end
+  if last_query and vim.api.nvim_buf_is_valid(last_query) and not is_db_buf(vim.api.nvim_get_current_buf()) then
+    vim.api.nvim_win_set_buf(0, last_query)
+  end
+  last_query = nil
+  vim.cmd("DBUI")
+end
+
 return {
   {
     "kristijanhusak/vim-dadbod-ui",
@@ -44,12 +98,11 @@ return {
       {
         "<leader>D",
         function()
-          if keepass_dbs().loaded or keepass_dbs().load() then
-            replace_dashboard()
-            vim.cmd("DBUIToggle")
+          if not close_db_windows() and (keepass_dbs().loaded or keepass_dbs().load()) then
+            open_db_windows()
           end
         end,
-        desc = "Toggle DBUI",
+        desc = "Toggle Databases",
       },
     },
     config = function()
