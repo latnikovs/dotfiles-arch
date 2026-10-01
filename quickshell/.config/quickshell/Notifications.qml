@@ -25,11 +25,20 @@ Scope {
     required property Messaging messaging
 
     // History: the last 30 notifications that left the screen (expired or dismissed) or
-    // arrived while silenced, newest first. Kept in memory, so it starts empty after a restart.
+    // arrived while silenced, newest first. Saved to `historyFile`, so it survives restarts.
     readonly property int historyLimit: 30
     property var history: []
     property int historySeq: 0
     property bool historyOpen: false
+    // Message previews end up on disk, so the file sits in a directory only this user can open
+    readonly property string historyDir: (Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state") + "/quickshell"
+    readonly property string historyFile: historyDir + "/notifications.json"
+    property bool historyLoaded: false // nothing is written before the saved list is read
+
+    onHistoryChanged: {
+        if (historyLoaded)
+            historyView.setText(JSON.stringify(history.map(e => Object.assign({}, e, { time: e.time.getTime() }))) + "\n");
+    }
 
     // Copied while the notification is live: Quickshell clears its fields by the time `closed` fires
     function snapshot(n) {
@@ -108,6 +117,36 @@ Scope {
             return;
         delete remaining[n.id];
         action.invoke();
+    }
+
+    // The directory has to exist (and be private) before the file is read or written
+    Process {
+        running: true
+        command: ["mkdir", "-p", "-m", "700", root.historyDir]
+        onExited: historyView.path = root.historyFile
+    }
+
+    FileView {
+        id: historyView
+        printErrors: false
+        // Notifications that arrived while the file was loading stay on top
+        function restore(saved) {
+            const entries = saved.filter(e => e && typeof e.key === "number" && typeof e.time === "number").map(e => Object.assign({}, e, { time: new Date(e.time) }));
+            root.historySeq = Math.max(root.historySeq, ...entries.map(e => e.key));
+            const fresh = root.history.map(e => Object.assign({}, e, { key: ++root.historySeq }));
+            root.historyLoaded = true;
+            root.history = [...fresh, ...entries].slice(0, root.historyLimit);
+        }
+        onLoaded: {
+            let saved = [];
+            try {
+                const parsed = JSON.parse(text());
+                if (Array.isArray(parsed))
+                    saved = parsed;
+            } catch (e) {}
+            restore(saved);
+        }
+        onLoadFailed: restore([]) // first run: no file yet
     }
 
     NotificationServer {
