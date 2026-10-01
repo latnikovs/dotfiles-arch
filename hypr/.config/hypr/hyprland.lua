@@ -47,14 +47,19 @@ local teamsApp    = browser .. " --app=https://teams.microsoft.com/"
 -- Nord window borders for dark or light mode. scripts/theme (run by darkman at sunrise
 -- and sunset, or by the bar's sun/moon button) calls this with `hyprctl eval`; at
 -- startup it follows the color-scheme setting that script last set.
+-- Light mode also dims unfocused windows 8%: light windows look alike, so the
+-- border alone doesn't show focus well.
 local borders = {
-    dark  = { active = "rgb(88c0d0)", inactive = "rgb(4c566a)" }, -- Nord frost, polar night
-    light = { active = "rgb(5e81ac)", inactive = "rgb(c8ced9)" }, -- deeper frost, snow storm
+    dark  = { active = "rgb(88c0d0)", inactive = "rgb(4c566a)", dim = false }, -- Nord frost, polar night
+    light = { active = "rgb(3e5f8a)", inactive = "rgb(c8ced9)", dim = true },  -- darkened frost, snow storm
 }
 
 function applyTheme(mode)
     local b = borders[mode] or borders.dark
-    hl.config({ general = { col = { active_border = b.active, inactive_border = b.inactive } } })
+    hl.config({
+        general    = { col = { active_border = b.active, inactive_border = b.inactive } },
+        decoration = { dim_inactive = b.dim, dim_strength = 0.08 },
+    })
 end
 
 local scheme = io.popen("gsettings get org.gnome.desktop.interface color-scheme")

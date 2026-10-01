@@ -24,9 +24,11 @@ gsettings set org.gnome.desktop.interface icon-theme "$icons"
 # fuzzel reads its colours at every launch
 ln -sfn "nord-$mode.ini" "$HOME/.config/fuzzel/theme.ini"
 
-# Window borders (applyTheme in hyprland.lua); skipped outside a Hyprland session
+# Window borders (applyTheme in hyprland.lua) and the wallpaper (scripts/wallpaper);
+# skipped outside a Hyprland session
 if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
     hyprctl eval "applyTheme('$mode')" >/dev/null
+    "$HOME/.config/hypr/scripts/wallpaper" theme
 fi
 
 # tmux would notice at its next status redraw (theme-watch.sh); this is at once

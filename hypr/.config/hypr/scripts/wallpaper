@@ -1,33 +1,68 @@
 #!/usr/bin/env bash
-# Usage: wallpaper init   ensure the current-wallpaper link exists (run before hyprpaper)
-#        wallpaper next   switch to the next wallpaper in ~/.config/hypr/wallpapers
+# Usage: wallpaper init    point the current-wallpaper link at this mode's wallpaper (run before hyprpaper)
+#        wallpaper theme   the same, and show it now (scripts/theme, on a light/dark switch)
+#        wallpaper next    switch to the next wallpaper for this mode
+#
+# Light mode uses the nord-light-* files in ~/.config/hypr/wallpapers, dark mode the
+# rest, so the gaps between windows stay the same lightness as the windows and the
+# active border stands out. Each mode remembers its last wallpaper (wallpaper-light,
+# wallpaper-dark); hyprpaper.conf shows the `wallpaper` link, and hyprlock.conf
+# wallpaper-dark, so the lock screen stays dark.
 set -euo pipefail
 
 dir=$HOME/.config/hypr/wallpapers
-current=${XDG_STATE_HOME:-$HOME/.local/state}/hypr/wallpaper
+state=${XDG_STATE_HOME:-$HOME/.local/state}/hypr
+current=$state/wallpaper
+mkdir -p "$state"
 
-mapfile -t walls < <(find -L "$dir" -maxdepth 1 -type f | sort)
-(( ${#walls[@]} )) || { echo "No wallpapers in $dir" >&2; exit 1; }
-mkdir -p "$(dirname "$current")"
+# Wallpapers for light or dark mode
+walls() {
+    if [[ $1 == light ]]; then
+        find -L "$dir" -maxdepth 1 -type f -name 'nord-light-*' | sort
+    else
+        find -L "$dir" -maxdepth 1 -type f ! -name 'nord-light-*' | sort
+    fi
+}
+
+# Make sure a mode's link points at one of its wallpapers
+ensure() {
+    local link=$state/wallpaper-$1 list
+    list=$(walls "$1")
+    [[ -n $list ]] || { echo "No $1 wallpapers in $dir" >&2; exit 1; }
+    grep -qxF "$(readlink "$link" 2>/dev/null || true)" <<<"$list" || ln -sfn "${list%%$'\n'*}" "$link"
+}
+
+show() {
+    hyprctl hyprpaper wallpaper ",$(readlink "$current")" >/dev/null || true
+}
+
+ensure dark
+ensure light
+mode=dark
+[[ $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) == "'prefer-light'" ]] && mode=light
+link=$state/wallpaper-$mode
 
 case ${1:-} in
-    init)
-        [[ -e $current ]] || ln -sfn "${walls[0]}" "$current"
+    init|theme)
+        ln -sfn "$(readlink "$link")" "$current"
+        if [[ $1 == theme ]]; then show; fi
         ;;
     next)
-        now=$(readlink "$current" 2>/dev/null || true)
-        next=${walls[0]}
-        for i in "${!walls[@]}"; do
-            if [[ ${walls[$i]} == "$now" ]]; then
-                next=${walls[$(( (i + 1) % ${#walls[@]} ))]}
+        mapfile -t list < <(walls "$mode")
+        now=$(readlink "$link")
+        next=${list[0]}
+        for i in "${!list[@]}"; do
+            if [[ ${list[$i]} == "$now" ]]; then
+                next=${list[$(( (i + 1) % ${#list[@]} ))]}
                 break
             fi
         done
+        ln -sfn "$next" "$link"
         ln -sfn "$next" "$current"
-        hyprctl hyprpaper wallpaper ",$next" >/dev/null
+        show
         ;;
     *)
-        echo "Usage: wallpaper init|next" >&2
+        echo "Usage: wallpaper init|theme|next" >&2
         exit 1
         ;;
 esac
