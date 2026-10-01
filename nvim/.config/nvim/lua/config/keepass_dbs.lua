@@ -62,6 +62,13 @@ end
 function M.read(kdbx, master)
   local ls = cli({ "ls", kdbx, M.group }, master):wait()
   if ls.code ~= 0 then
+    if ls.stderr:find("Cannot find group") then
+      return nil,
+        ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>D again'):format(
+          M.group,
+          vim.fn.fnamemodify(kdbx, ":t")
+        )
+    end
     return nil, vim.trim(ls.stderr)
   end
   -- One keepassxc-cli per entry, all at once: each one pays the KDF on its own
