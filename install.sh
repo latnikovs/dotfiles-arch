@@ -88,6 +88,12 @@ yay -S --needed --noconfirm herdr-bin
 
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
+# Its status line (claude/.claude/statusline.sh). settings.json also holds what
+# each machine sets for itself (plugins, permissions), so only this key is set.
+claude_settings=$HOME/.claude/settings.json
+[[ -s $claude_settings ]] || echo '{}' >"$claude_settings"
+jq '.statusLine = {"type": "command", "command": "~/.claude/statusline.sh"}' "$claude_settings" >"$claude_settings.new"
+mv "$claude_settings.new" "$claude_settings"
 
 # Audio: WirePlumber and the PulseAudio socket, in the user session
 systemctl --user enable --now wireplumber.service pipewire-pulse.socket
