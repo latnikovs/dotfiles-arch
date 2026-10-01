@@ -37,6 +37,8 @@ Scroll on volume	Volume up / down
 Click microphone	Audio mixer (shown while recording)
 Click Bluetooth	Bluetooth devices
 Right-click Bluetooth	Bluetooth on / off
+Click sync icon	Syncthing folders and devices (shown while it runs)
+Right-click sync icon	Pause / resume syncing
 Click Tailscale	Tailscale devices
 Right-click Tailscale	Tailscale on / off
 Click network	Network

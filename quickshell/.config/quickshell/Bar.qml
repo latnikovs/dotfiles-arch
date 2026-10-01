@@ -1,5 +1,5 @@
 // Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, crashed programs/pending updates/tray/keyboard layout/
-// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
+// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -27,6 +27,7 @@ PanelWindow {
     required property Notifications notifications
     required property Keyboard keyboard
     required property Tailscale tailscale
+    required property Syncthing syncthing
     required property Messaging messaging
     required property Updates updates
     required property Crashes crashes
@@ -94,6 +95,7 @@ PanelWindow {
         networkPanel.open = false;
         bluetoothPanel.open = false;
         tailscalePanel.open = false;
+        syncthingPanel.open = false;
         updatesPanel.open = false;
         crashesPanel.open = false;
         remindersPanel.open = false;
@@ -123,6 +125,11 @@ PanelWindow {
     function toggleTailscale() {
         if (tailscale.available)
             toggleDropdown(tailscalePanel);
+    }
+
+    function toggleSyncthing() {
+        if (syncthing.available)
+            toggleDropdown(syncthingPanel);
     }
 
     function toggleUpdates() {
@@ -1066,6 +1073,15 @@ PanelWindow {
         tailscale: bar.tailscale
     }
 
+    // ---- Syncthing, hidden while it isn't running
+
+    SyncthingPanel {
+        id: syncthingPanel
+        bar: bar
+        button: stButton
+        syncthing: bar.syncthing
+    }
+
     UpdatesPanel {
         id: updatesPanel
         bar: bar
@@ -1653,6 +1669,53 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: !bar.btAdapter?.enabled ? "󰂲" : bar.btConnected.length > 0 ? "󰂱" : "󰂯"
                 color: bar.btAdapter?.enabled ? bar.fg : bar.muted
+            }
+        }
+
+        // Syncthing: left click opens the folders and devices, right click pauses or resumes.
+        // Accent with a percentage while syncing, red on errors, dim when paused or with no
+        // device connected.
+        MouseArea {
+            id: stButton
+            readonly property var st: bar.syncthing
+            readonly property string tip: st.paused ? "Syncthing paused"
+                : st.errorCount > 0 ? `Syncthing · ${st.errorCount} file${st.errorCount === 1 ? "" : "s"} failed to sync`
+                : st.devices.length === 0 ? "Syncthing · no paired devices"
+                : st.connectedCount === 0 ? "Syncthing · no device connected"
+                : st.downloading ? `Syncing · ${st.formatBytes(st.needBytes)} left`
+                : st.uploading ? "Syncing · sending"
+                : "Syncthing · up to date"
+
+            visible: st.available
+            implicitWidth: stText.implicitWidth
+            Layout.fillHeight: true
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse && !syncthingPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !syncthingPanel.open) bar.showTooltip(this, tip)
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    if (st.devices.length > 0)
+                        st.setPaused(!st.paused);
+                    return;
+                }
+                bar.hideTooltip(this);
+                bar.toggleSyncthing();
+            }
+
+            BarText {
+                id: stText
+                anchors.centerIn: parent
+                readonly property var st: parent.st
+                text: st.errorCount > 0 ? "󰓧"
+                    : st.paused || st.connectedCount === 0 ? "󰓨"
+                    : st.downloading ? `󰓦 ${st.progress}%`
+                    : "󰓦"
+                color: st.errorCount > 0 ? bar.urgent
+                    : st.paused || st.connectedCount === 0 ? bar.muted
+                    : st.syncing ? bar.accent
+                    : bar.fg
             }
         }
 

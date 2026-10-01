@@ -22,6 +22,7 @@ ShellRoot {
             notifications: notificationService
             keyboard: keyboardService
             tailscale: tailscaleService
+            syncthing: syncthingService
             messaging: messagingService
             updates: updatesService
             crashes: crashesService
@@ -45,6 +46,10 @@ ShellRoot {
 
     Tailscale {
         id: tailscaleService
+    }
+
+    Syncthing {
+        id: syncthingService
     }
 
     Updates {
@@ -92,6 +97,10 @@ ShellRoot {
 
         function toggleTailscale(): void {
             root.focusedBar()?.toggleTailscale();
+        }
+
+        function toggleSyncthing(): void {
+            root.focusedBar()?.toggleSyncthing();
         }
 
         function toggleUpdates(): void {
