@@ -81,8 +81,10 @@ Then pair each pair of machines on both sides, using Tailscale names and the IDs
 the setup printed (`syncthing cli show system` shows them again):
 
 ```sh
-~/dotfiles/syncthing/setup pair dmbp <Mac's device ID>        # on Linux
-curl -fsSL …/syncthing/setup | bash -s -- pair archvm <its ID>  # on the Mac
+# on Linux
+~/dotfiles/syncthing/setup pair dmbp <Mac's device ID>
+# on the Mac
+curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/syncthing/setup | bash -s -- pair archvm <its ID>
 ```
 
 The first sync merges the folders: files only one side has are copied to the
