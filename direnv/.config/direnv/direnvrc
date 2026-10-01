@@ -12,6 +12,13 @@ kp() {
     local db=${KEEPASSXC_DB:-$HOME/Documents/my-passwords.kdbx}
     local value
     if [[ -z ${__kp_password-} ]]; then
+        # Never read without a visible prompt: zsh's cd completion runs `cd` in a
+        # subshell with stderr on /dev/null, direnv's chpwd hook loads this .envrc
+        # there, and a hidden read would swallow the next keystrokes.
+        if [[ ! -t 2 ]]; then
+            log_error "kp: no terminal to prompt on, skipping $var"
+            return 1
+        fi
         read -rs -p "KeePassXC password for ${db/#$HOME/\~}: " __kp_password </dev/tty || return 1
         echo >&2
     fi
