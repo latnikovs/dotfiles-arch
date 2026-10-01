@@ -1,7 +1,7 @@
 -- Databases: dadbod, dadbod-ui and completion come from LazyVim's lang.sql
 -- extra (lazyvim.json). Connections come from KeePassXC (config/keepass_dbs.lua):
 -- the first <leader>D asks for the master password and fills the drawer.
--- Connections added with DBUIAddConnection go to dadbod_ui/connections.json in
+-- Connections added with DBUIAddConnection go to connections.json in
 -- plain text, so keep the ones with passwords in KeePassXC.
 
 -- The extra turns off Vim's sqlcomplete for blink, but the SQL ftplugin still
@@ -53,6 +53,11 @@ return {
       },
     },
     config = function()
+      -- Saved queries (<leader>W) live with the notes, which Syncthing syncs
+      -- and versions; one folder per connection. Scratch buffers stay in the
+      -- extra's tmp dir under stdpath("data"). DBUIAddConnection would write
+      -- its plain-text connections.json here too, another reason not to use it.
+      vim.g.db_ui_save_location = vim.fn.expand("~/notes/queries")
       -- Re-read KeePassXC after adding or changing an entry there
       vim.api.nvim_create_user_command("DBUIKeepass", function()
         if not keepass_dbs().load() then
