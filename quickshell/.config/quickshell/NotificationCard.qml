@@ -34,6 +34,11 @@ Rectangle {
     readonly property string fontFamily: Theme.fontFamily
 
     readonly property bool critical: urgency === NotificationUrgency.Critical
+    // Chromium starts a web notification's body with the site, "teams.microsoft.com\n\n…"
+    // (as a link when the server takes hyperlinks). Show the site in the header instead.
+    readonly property var webOrigin: /^(?:<a [^>]*>)?([\w-]+(?:\.[\w-]+)+(?::\d+)?)(?:<\/a>)?\n\n/.exec(body)
+    readonly property string source: webOrigin ? webOrigin[1].replace(/^www\./, "") : appName
+    readonly property string bodyText: webOrigin ? body.slice(webOrigin[0].length) : body
     readonly property string iconSource: source(image) || source(appIcon)
 
     // Accepts a file path, a URL, or an icon theme name ("" when the theme lacks it)
@@ -100,7 +105,7 @@ Rectangle {
                     id: appNameText
                     Layout.fillWidth: true
                     visible: text !== "" && text !== card.summary
-                    text: card.appName
+                    text: card.source
                     textFormat: Text.PlainText
                     color: card.dim
                     font.family: card.fontFamily
@@ -139,7 +144,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 visible: text !== ""
-                text: card.body
+                text: card.bodyText
                 textFormat: Text.StyledText
                 color: card.bodyColor
                 font.family: card.fontFamily
