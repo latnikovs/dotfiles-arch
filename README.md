@@ -73,9 +73,13 @@ brew install syncthing && brew services start syncthing
 curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/syncthing/setup | bash
 ```
 
-Keep `~/Documents` out of iCloud Drive ("Desktop & Documents Folders" off)
-before syncing it. iCloud swaps files it offloads for placeholders, and those
-would sync as missing.
+If iCloud Drive syncs the Mac's Desktop & Documents, keep all of `~/Documents`
+downloaded before syncing it: in Finder, right-click Documents → Keep
+Downloaded (macOS 15+), or turn off Optimize Mac Storage at the bottom of System
+Settings → your name → iCloud. Otherwise iCloud swaps files it offloads for
+placeholders, and those would sync as missing. iCloud stays on, so Documents
+still reach the iPhone; an edit on the phone and one on Linux before either
+has synced leaves a conflict copy (iCloud's `name 2.ext`).
 
 Then pair each pair of machines on both sides, using Tailscale names and the IDs
 the setup printed (`syncthing cli show system` shows them again):

@@ -64,6 +64,8 @@ for folder in $folders; do
 (?d).Spotlight-V100
 (?d).Trashes
 (?d).fseventsd
+// Placeholders for files iCloud has offloaded (older macOS)
+(?d)*.icloud
 // Editors
 *.swp
 *.swo
