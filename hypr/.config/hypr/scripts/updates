@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: updates list   pending package updates, "name old -> new" per line, AUR ones last
-#        updates run    install them (yay -Syu), offer to merge .pacnew files, say when
+#        updates run    install them (yay -Syu, one password, one confirmation), offer to merge .pacnew files, say when
 #                       a reboot is needed, then refresh the bar's update icon
 # The bar (Quickshell Updates.qml) checks with `list` every 6 hours and opens `run` in a
 # terminal when the icon is clicked.
@@ -15,7 +15,11 @@ case ${1:-} in
         { yay -Qua --color never || true; } | sed 's/$/ (AUR)/'
         ;;
     run)
-        if yay -Syu; then
+        # --answerupgrade None skips yay's "Packages to exclude" menu (the bar already
+        # listed them, and excluding some is a partial upgrade). --sudoloop asks for the
+        # password once and keeps it fresh, so a slow answer or long AUR build doesn't
+        # run past sudo's timeout and ask again.
+        if yay -Syu --answerupgrade None --sudoloop; then
             echo "Up to date."
         else
             echo "yay failed; see above."
