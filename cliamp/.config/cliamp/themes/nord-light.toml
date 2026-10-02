@@ -1,0 +1,9 @@
+# OneNord light, matching kitty's light-theme.auto.conf. cliamp's default theme
+# draws dim text in ANSI white, which vanishes on a light background.
+bg = "#f7f8fa"
+accent = "#3879c5"
+bright_fg = "#2e3440"
+fg = "#646a76"
+green = "#48a53d"
+yellow = "#ba793e"
+red = "#cb4f53"

@@ -31,6 +31,11 @@ if [[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]]; then
     "$HOME/.config/hypr/scripts/wallpaper" theme
 fi
 
+# cliamp, live if it's running; scripts/music picks the theme at launch
+if pgrep -x cliamp >/dev/null; then
+    cliamp theme "nord-$mode" >/dev/null || true
+fi
+
 # tmux would notice at its next status redraw (theme-watch.sh); this is at once
 if tmux info &>/dev/null; then
     "$HOME/.tmux/scripts/reload.sh"

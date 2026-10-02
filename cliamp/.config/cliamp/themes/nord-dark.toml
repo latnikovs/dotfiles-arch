@@ -1,0 +1,9 @@
+# Nord dark, matching kitty's dark-theme.auto.conf. scripts/theme switches
+# cliamp between this and nord-light with the rest of the desktop.
+bg = "#2e3440"
+accent = "#88c0d0"
+bright_fg = "#eceff4"
+fg = "#9da7b8"
+green = "#a3be8c"
+yellow = "#ebcb8b"
+red = "#bf616a"

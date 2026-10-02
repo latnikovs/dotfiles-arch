@@ -2,6 +2,11 @@
 # Usage: music   cliamp in a terminal (seeds the SUPER + SHIFT + M music workspace)
 set -euo pipefail
 
+# Nord light or dark to match the desktop (cliamp/.config/cliamp/themes); scripts/theme
+# switches it while it runs
+mode=dark
+[[ $(gsettings get org.gnome.desktop.interface color-scheme 2>/dev/null) == "'prefer-light'" ]] && mode=light
+
 # DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
 # so it can carry "env VAR=… kitty". A fixed class lets window rules single the player out.
-exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.music cliamp
+exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.music cliamp --start-theme "nord-$mode"
