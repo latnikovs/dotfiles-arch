@@ -278,7 +278,7 @@ hl.config({
         kb_layout  = "us,lv,ru",
         kb_variant = ",apostrophe,",
         kb_model   = "",
-        kb_options = "",
+        kb_options = "caps:escape", -- Caps Lock is a second Escape
         kb_rules   = "",
 
         -- Faster key repeat than the defaults (25/s after 600ms)
