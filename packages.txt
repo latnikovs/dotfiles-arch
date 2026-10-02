@@ -134,6 +134,9 @@ hunspell-ru
 zram-generator
 # paccache and its weekly timer, which trims the package cache
 pacman-contrib
+# Keeps the running kernel's modules after a kernel update until the reboot, so USB
+# sticks, new devices and the like still work (install.sh enables its cleanup)
+kernel-modules-hook
 # Firmware updates (BIOS, SSD, peripherals) from LVFS: fwupdmgr refresh && fwupdmgr update
 fwupd
 # Firewall (install.sh: nothing comes in except over Tailscale)

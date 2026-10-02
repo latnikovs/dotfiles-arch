@@ -142,12 +142,15 @@ hl.env("HYPRCURSOR_SIZE", "24")
 -----------------------
 
 -- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
+-- Gaps, border and rounding; SUPER + SHIFT + BACKSPACE turns them off and back to these
+local frame = { gaps_in = 3, gaps_out = 6, border_size = 2, rounding = 10 }
+
 hl.config({
     general = {
-        gaps_in  = 3,
-        gaps_out = 6,
+        gaps_in  = frame.gaps_in,
+        gaps_out = frame.gaps_out,
 
-        border_size = 2,
+        border_size = frame.border_size,
 
         -- Border colours: applyTheme() below, light or dark
 
@@ -161,7 +164,7 @@ hl.config({
     },
 
     decoration = {
-        rounding       = 10,
+        rounding       = frame.rounding,
         rounding_power = 2,
 
         -- Change transparency of focused and unfocused windows
@@ -460,6 +463,12 @@ bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + ALT + SPACE", "Menu (commands, as Omarchy's)", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"))
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
+bind(mainMod .. " + CTRL + F", "Tiled fullscreen (app fullscreen, window stays in its tile)", function()
+    local window = hl.get_active_window()
+    if not window then return end
+    hl.dispatch(hl.dsp.window.fullscreen_state({ internal = 0, client = window.fullscreen_client == 2 and 0 or 2 }))
+end)
+bind(mainMod .. " + ALT + F", "Full width (maximize, bar stays)", hl.dsp.window.fullscreen({ mode = "maximized" }))
 bind(mainMod .. " + CTRL + SPACE", "Next wallpaper", hl.dsp.exec_cmd("~/.config/hypr/scripts/wallpaper next"))
 bind(mainMod .. " + SHIFT + SPACE", "Next keyboard layout", hl.dsp.exec_cmd("hyprctl switchxkblayout all next"))
 
@@ -505,6 +514,69 @@ bind(mainMod .. " + CTRL + SHIFT + R", "Clear reminders", hl.dsp.exec_cmd("~/.co
 
 bind(mainMod .. " + P", "Toggle window pseudotiling", hl.dsp.window.pseudo())
 bind(mainMod .. " + backslash", "Toggle window split", hl.dsp.layout("togglesplit"))    -- dwindle only
+
+-- Pop a window out, as in Omarchy: floating, centred, pinned on every workspace, on top.
+-- Pressed again on it, it goes back into its tile.
+bind(mainMod .. " + O", "Pop window out (float & pin) / back", function()
+    local window = hl.get_active_window()
+    if not window then return end
+    local target = "address:" .. window.address
+    if window.pinned then
+        hl.dispatch(hl.dsp.window.pin({ action = "disable", window = target }))
+        hl.dispatch(hl.dsp.window.float({ action = "disable", window = target }))
+        return
+    end
+    hl.dispatch(hl.dsp.window.float({ action = "enable", window = target }))
+    hl.dispatch(hl.dsp.window.resize({ x = 1300, y = 900, window = target }))
+    hl.dispatch(hl.dsp.window.center({ window = target }))
+    hl.dispatch(hl.dsp.window.pin({ action = "enable", window = target }))
+    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = target }))
+end)
+
+-- Window looks, Omarchy's keys: this window opaque (kitty and the like are see-through),
+-- and gaps, border and rounding off for every window, for more room
+bind(mainMod .. " + BACKSPACE", "Toggle window transparency", function()
+    local window = hl.get_active_window()
+    if not window then return end
+    hl.dispatch(hl.dsp.window.set_prop({ window = "address:" .. window.address, prop = "opaque", value = "toggle" }))
+end)
+-- Global for the menu (Toggle › Window gaps): `hyprctl eval 'toggleWindowGaps()'`
+local frameless = false
+function toggleWindowGaps()
+    frameless = not frameless
+    local value = function(key) return frameless and 0 or frame[key] end
+    hl.config({
+        general    = { gaps_in = value("gaps_in"), gaps_out = value("gaps_out"), border_size = value("border_size") },
+        decoration = { rounding = value("rounding") },
+    })
+end
+bind(mainMod .. " + SHIFT + BACKSPACE", "Toggle window gaps", toggleWindowGaps)
+
+-- Resize the focused window from the keyboard, as in Omarchy: SUPER + - / = for width,
+-- with SHIFT for height; ALT in small steps, CTRL in large ones. A tiled resize moves the
+-- split, which grows a window on the far side of it, so then the step is turned around:
+-- - always shrinks and = always grows.
+local function resizeBy(x, y)
+    return function()
+        local window = hl.get_active_window()
+        if not window then return end
+        local target = "address:" .. window.address
+        local width, height = window.size.x, window.size.y
+        hl.dispatch(hl.dsp.window.resize({ x = x, y = y, relative = true, window = target }))
+        local size = hl.get_window(target).size
+        if (size.x - width) * x + (size.y - height) * y < 0 then
+            hl.dispatch(hl.dsp.window.resize({ x = -2 * x, y = -2 * y, relative = true, window = target }))
+        end
+    end
+end
+
+for _, step in ipairs({ { "", 100, "" }, { "ALT + ", 25, " a little" }, { "CTRL + ", 300, " a lot" } }) do
+    local mods, px, how = step[1], step[2], step[3]
+    bind(mainMod .. " + " .. mods .. "minus",         "Narrower window" .. how, resizeBy(-px, 0), { repeating = true })
+    bind(mainMod .. " + " .. mods .. "equal",         "Wider window" .. how,    resizeBy(px, 0),  { repeating = true })
+    bind(mainMod .. " + SHIFT + " .. mods .. "minus", "Shorter window" .. how,  resizeBy(0, -px), { repeating = true })
+    bind(mainMod .. " + SHIFT + " .. mods .. "equal", "Taller window" .. how,   resizeBy(0, px),  { repeating = true })
+end
 
 -- Move focus with mainMod + arrow keys or vim keys
 bind(mainMod .. " + left",  "Focus window left", hl.dsp.focus({ direction = "left" }))

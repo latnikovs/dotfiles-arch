@@ -87,7 +87,8 @@ capture() {
 
 toggle() {
     pick "󰔡" Toggle "󰅶  Caffeine" "󰂛  Do not disturb" "󰖔  Night light" \
-         "󰔎  Light / dark" "󰸉  Next wallpaper" "󰊻  Teams call mode"
+         "󰔎  Light / dark" "󰸉  Next wallpaper" "󰊻  Teams call mode" \
+         "󰕰  Window gaps"
     case $label in
         Caffeine)    exec $scripts/caffeine ;;
         Do*)         exec $scripts/notifications-dnd ;;
@@ -99,6 +100,7 @@ toggle() {
             darkman toggle 2>/dev/null || exec $scripts/theme $mode ;;
         Next*)       exec $scripts/wallpaper next ;;
         Teams*)      exec hyprctl eval 'toggleTeamsCall()' ;;
+        Window*)     exec hyprctl eval 'toggleWindowGaps()' ;;
     esac
 }
 

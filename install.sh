@@ -452,6 +452,10 @@ step 'Maintenance timers'
 # tells the SSD which blocks are free, fwupd refreshes the firmware list (updates
 # themselves stay manual: fwupdmgr update)
 sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
+# kernel-modules-hook, as in Omarchy: a kernel update keeps the running kernel's modules,
+# and this removes them at the next boot. Arch Linux ARM kernels (the VM) don't install
+# vmlinuz where its pacman hook looks, so there it does nothing.
+sudo systemctl enable linux-modules-cleanup.service
 
 # Snapshots, as in Omarchy: with / on Btrfs, snapper snapshots it before and after
 # every pacman transaction (snap-pac), so an update that breaks the system can be
