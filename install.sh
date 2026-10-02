@@ -308,13 +308,15 @@ if ! command -v yay >/dev/null; then
     (cd "$yay_build" && makepkg -si --noconfirm)
     rm -rf "$yay_build"
 fi
-step 'Brave Origin, cliamp, herdr (AUR)'
+step 'Brave Origin, cliamp, herdr, gtypist (AUR)'
 # Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
 yay -S --needed --noconfirm brave-origin-bin
 # cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
 yay -S --needed --noconfirm cliamp-bin
 # herdr: terminal workspace manager for supervising several coding agents at once
 yay -S --needed --noconfirm herdr-bin
+# gtypist: GNU Typist, touch-typing lessons in the terminal
+yay -S --needed --noconfirm gtypist
 
 step 'Claude Code'
 # Claude Code: Anthropic's native installer, which keeps it updated itself
