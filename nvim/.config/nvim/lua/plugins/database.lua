@@ -184,6 +184,8 @@ return {
       -- extra's tmp dir under stdpath("data"). DBUIAddConnection would write
       -- its plain-text connections.json here too, another reason not to use it.
       vim.g.db_ui_save_location = vim.fn.expand("~/notes/queries")
+      -- DDL entry under each Postgres table: pg_dump's full definition
+      require("config.db_ddl").setup()
       -- Re-read KeePassXC after adding or changing an entry there
       vim.api.nvim_create_user_command("DBUIKeepass", function()
         if not keepass_dbs().load() then
