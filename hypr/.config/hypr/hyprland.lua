@@ -518,9 +518,21 @@ bind(mainMod .. " + SHIFT + J", "Swap window down", hl.dsp.window.swap({ directi
 
 -- Switch workspaces with mainMod + [0-9]
 -- Move active window to a workspace with mainMod + SHIFT + [0-9]
+-- A special workspace (passwords, mail, Teams, ...) stays open over every workspace
+-- until toggled, so switching closes the one showing first.
+local function goToWorkspace(workspace)
+    return function()
+        local active = hl.get_active_special_workspace()
+        if active then
+            toggleSpecial(active.name:gsub("^special:", ""), "fade", "fade")()
+        end
+        hl.dispatch(hl.dsp.focus({ workspace = workspace }))
+    end
+end
+
 for i = 1, 10 do
     local key = i % 10 -- 10 maps to key 0
-    bind(mainMod .. " + " .. key,             "Go to workspace " .. i, hl.dsp.focus({ workspace = i}))
+    bind(mainMod .. " + " .. key,             "Go to workspace " .. i, goToWorkspace(i))
     bind(mainMod .. " + SHIFT + " .. key,     "Move window to workspace " .. i, hl.dsp.window.move({ workspace = i }))
 end
 
@@ -563,8 +575,8 @@ bind(mainMod .. " + grave",         "Toggle scratchpad", toggleSpecial("scratchp
 bind(mainMod .. " + SHIFT + grave", "Move window to scratchpad", hl.dsp.window.move({ workspace = "special:scratchpad", follow = false }))
 
 -- Scroll through existing workspaces with mainMod + scroll
-bind(mainMod .. " + mouse_down", "Next workspace", hl.dsp.focus({ workspace = "e+1" }))
-bind(mainMod .. " + mouse_up",   "Previous workspace", hl.dsp.focus({ workspace = "e-1" }))
+bind(mainMod .. " + mouse_down", "Next workspace", goToWorkspace("e+1"))
+bind(mainMod .. " + mouse_up",   "Previous workspace", goToWorkspace("e-1"))
 
 -- Move/resize windows with mainMod + LMB/RMB and dragging
 bind(mainMod .. " + mouse:272", "Move window", hl.dsp.window.drag(),   { mouse = true })
