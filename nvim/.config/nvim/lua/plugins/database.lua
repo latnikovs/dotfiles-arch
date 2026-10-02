@@ -68,6 +68,10 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Column names stay on top while scrolling a result (config/db_sticky.lua)
 require("config.db_sticky").setup()
 
+-- Production connections in red: the winbar of their query and result
+-- windows, and their line in the drawer (config/db_env.lua)
+require("config.db_env").setup()
+
 -- Closing a result pane (gq, <leader>D) runs dadbod's BufUnload, which stops
 -- psql at once; this one is defined earlier so it runs first and lets psql
 -- cancel on the server, waiting up to a second for it.
