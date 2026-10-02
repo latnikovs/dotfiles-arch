@@ -57,6 +57,10 @@ vim.api.nvim_create_autocmd("FileType", {
           end
         end, 3000)
       end, { buffer = ev.buf, desc = "Cancel Query" })
+      -- Change the cell under the cursor (config/db_edit.lua)
+      vim.keymap.set("n", "cc", function()
+        require("config.db_edit").edit()
+      end, { buffer = ev.buf, desc = "Edit Cell" })
     end)
   end,
 })
