@@ -8,26 +8,32 @@ scripts=~/.config/hypr/scripts
 bar="quickshell ipc call bar"
 
 # Picks one of the given lines: "pick <prompt icon> <title> <lines>…"; sets $label to the
-# chosen one without its icon. A submenu ends in Back, and Esc there goes back to the main menu
-# too; Esc in the main menu, or fuzzel closed by pressing the key again (killed), ends the script.
+# chosen one without its icon. A submenu ends in Back, and Esc (fuzzel exits 2) or Left (exits 10,
+# fuzzel/menu.ini) there go back to the main menu too; Esc in the main menu, or fuzzel closed by
+# pressing the key again (killed), ends the script.
+back_keys=(--config "$HOME/.config/fuzzel/menu.ini")
+
 pick() {
-    local icon=$1 title=$2 choice status=0
+    local icon=$1 title=$2 choice status=0 keys=()
     shift 2
-    [[ $title == Menu ]] || set -- "$@" "󰁍  Back"
+    [[ $title == Menu ]] || { set -- "$@" "󰁍  Back"; keys=("${back_keys[@]}"); }
     choice=$(printf '%s\n' "$@" \
-        | fuzzel --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) || status=$?
-    if [[ $title != Menu ]] && { (( status == 2 )) || [[ $choice == *"  Back" ]]; }; then exec "$0"; fi
+        | fuzzel "${keys[@]}" --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) \
+        || status=$?
+    if [[ $title != Menu ]] && { (( status == 2 || status == 10 )) || [[ $choice == *"  Back" ]]; }; then
+        exec "$0"
+    fi
     (( status == 0 )) || exit 0
     label=${choice#*  }
 }
 
-# Runs another script's picker (System, Clipboard, ...). Those exit 2 on Esc (fuzzel's status),
-# and System also on its Back entry, which it shows only with DOTFILES_MENU set; then it's back
-# to the main menu.
+# Runs another script's picker (System, Clipboard, ...). With DOTFILES_MENU set their lists take
+# Left as back too (fuzzel/menu.ini), and System shows a Back entry; on Esc or Left they exit
+# with fuzzel's status (2 or 10), System's Back with 2, and it's back to the main menu.
 sub() {
     local status=0
     DOTFILES_MENU=1 "$@" || status=$?
-    (( status == 2 )) && exec "$0"
+    (( status == 2 || status == 10 )) && exec "$0"
     exit 0
 }
 

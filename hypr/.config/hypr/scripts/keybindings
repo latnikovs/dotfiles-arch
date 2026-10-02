@@ -62,5 +62,5 @@ Esc in bar dropdowns	Close"
 
 printf '%s\n%s\n' "$hypr" "$bar" \
     | awk -F'\t' '{ printf "%-28s %s\n", $1, $2 }' \
-    | fuzzel --dmenu --font "JetBrainsMono Nerd Font:size=11" --prompt "󰌌   " --placeholder Keybindings \
-        --width 80 --lines 15 >/dev/null  # Esc: 2, for scripts/menu
+    | fuzzel ${DOTFILES_MENU:+--config=$HOME/.config/fuzzel/menu.ini} --dmenu --font "JetBrainsMono Nerd Font:size=11" --prompt "󰌌   " --placeholder Keybindings \
+        --width 80 --lines 15 >/dev/null  # Esc: 2 (Left from the menu: 10), for scripts/menu

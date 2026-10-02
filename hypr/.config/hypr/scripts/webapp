@@ -137,7 +137,7 @@ remove() {
     [[ -n $list ]] || { say "No web apps to remove"; exit 0; }
     if [[ -z $name ]]; then
         name=$(cut -f2 <<<"$list" | sort |
-            fuzzel --dmenu --prompt "󰖟   " --placeholder "Remove web app" --width 40 \
+            fuzzel ${DOTFILES_MENU:+--config=$HOME/.config/fuzzel/menu.ini} --dmenu --prompt "󰖟   " --placeholder "Remove web app" --width 40 \
                 --lines "$(wc -l <<<"$list")") || exit
     fi
     line=$(awk -F'\t' -v n="$name" '$2 == n { print; exit }' <<<"$list")
