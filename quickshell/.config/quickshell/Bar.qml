@@ -1,4 +1,4 @@
-// Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, crashed programs/pending updates/tray/keyboard layout/
+// Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, screen recording/crashed programs/pending updates/tray/keyboard layout/
 // CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
@@ -33,6 +33,7 @@ PanelWindow {
     required property Crashes crashes
     required property Reminders reminders
     required property Caffeine caffeine
+    required property Recording recording
 
     anchors {
         top: true
@@ -1030,6 +1031,9 @@ PanelWindow {
         objects: [Pipewire.defaultAudioSink, Pipewire.defaultAudioSource, ...bar.recorders]
     }
 
+    // For the on-screen display (Osd.qml), which stays quiet while the sliders show the level
+    readonly property bool audioOpen: audioPanel.open
+
     AudioPanel {
         id: audioPanel
         bar: bar
@@ -1411,6 +1415,27 @@ PanelWindow {
             rightMargin: 15
         }
         spacing: 15
+
+        // A screen recording running (Recording.qml, scripts/screenrecord), in red: a click stops it
+        MouseArea {
+            visible: bar.recording.on
+            implicitWidth: recordingText.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, "Recording the screen: click to stop") : bar.hideTooltip(this)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.recording.stop();
+            }
+
+            BarText {
+                id: recordingText
+                anchors.centerIn: parent
+                text: "󰑊"
+                color: bar.urgent
+            }
+        }
 
         // Programs that crashed (Crashes.qml), shown only when there are some, in red: left click
         // lists them (CrashesPanel.qml), right click clears them

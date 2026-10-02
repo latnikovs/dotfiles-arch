@@ -101,6 +101,8 @@ mpv
 mpv-mpris
 imagemagick
 satty
+# Screen recording (scripts/screenrecord): the GPU's video encoder, or the CPU's
+gpu-screen-recorder
 gvfs
 gvfs-mtp
 gvfs-smb

@@ -259,7 +259,7 @@ section dotfiles Dotfiles
 step 'Linking configs (stow)'
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console || $pkg == syncthing ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console || $pkg == syncthing || $pkg == limine ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
@@ -426,6 +426,110 @@ step 'Maintenance timers'
 # tells the SSD which blocks are free, fwupd refreshes the firmware list (updates
 # themselves stay manual: fwupdmgr update)
 sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
+
+# Snapshots, as in Omarchy: with / on Btrfs, snapper snapshots it before and after
+# every pacman transaction (snap-pac), so an update that breaks the system can be
+# undone. /home isn't snapshotted: rolling it back would lose your work.
+step 'Snapshots (snapper)'
+if [[ $(findmnt -no FSTYPE /) != btrfs ]]; then
+    note "/ is $(findmnt -no FSTYPE /), not Btrfs: no snapshots"
+else
+    sudo pacman -S --needed --noconfirm snapper btrfs-progs
+    if ! sudo snapper --no-dbus --csvout list-configs --columns config | grep -qx root; then
+        # archinstall makes /.snapshots a subvolume of its own (@.snapshots), but
+        # create-config insists on creating it: let it, then mount archinstall's back
+        if mountpoint -q /.snapshots; then
+            sudo umount /.snapshots
+            sudo rmdir /.snapshots
+            sudo snapper --no-dbus -c root create-config /
+            sudo btrfs subvolume delete /.snapshots
+            sudo mkdir /.snapshots
+            sudo mount /.snapshots
+        else
+            sudo snapper --no-dbus -c root create-config /
+        fi
+        sudo chmod 750 /.snapshots
+    fi
+    # The last ten, at any age (five updates, before and after); no hourly snapshots
+    sudo snapper --no-dbus -c root set-config NUMBER_LIMIT=10 NUMBER_LIMIT_IMPORTANT=10 \
+        NUMBER_MIN_AGE=0 TIMELINE_CREATE=no
+    sudo systemctl disable --now snapper-timeline.timer
+    sudo systemctl enable --now snapper-cleanup.timer
+    # Quotas (snapper's space-aware cleanup) slow Btrfs down a lot; the limits above are by count
+    sudo btrfs quota disable /
+    sudo pacman -S --needed --noconfirm snap-pac
+
+    # With Limine as the bootloader, each snapshot also gets a boot menu entry
+    # (limine-snapper-sync, with its kernel kept on the boot partition), so a system an
+    # update broke still boots as it was before. Booted, a snapshot is read-only with
+    # a throwaway writable layer on top, and a notification offers to restore it.
+    # limine-mkinitcpio-hook writes the kernel entries from /etc/default/limine.
+    if pacman -Q limine &>/dev/null && [[ -d /sys/firmware/efi ]]; then
+        step 'Snapshot boot menu (Limine)'
+        esp=''
+        for dir in /boot /efi /boot/efi; do
+            [[ $(findmnt -no FSTYPE "$dir" 2>/dev/null) == vfat ]] && { esp=$dir; break; }
+        done
+        [[ -n $esp ]] || { echo "No boot partition (vfat) at /boot, /efi or /boot/efi" >&2; exit 1; }
+        # archinstall's own config, where it put it, holds the kernel command line
+        archinstall_conf=$(sudo find "$esp" -maxdepth 3 -name limine.conf ! -path "$esp/limine.conf" -print -quit)
+        rebuild=no
+        if [[ ! -f /etc/default/limine ]]; then
+            cmdline=$(sudo sed -nE 's/^\s*(kernel_)?cmdline:\s*//p; T; q' "${archinstall_conf:-$esp/limine.conf}")
+            [[ -n $cmdline ]] || { echo "No kernel command line in archinstall's limine.conf" >&2; exit 1; }
+            sudo install -Dm644 /dev/stdin /etc/default/limine <<CONF
+# Limine boot entries (limine-mkinitcpio-hook) and snapshot entries (limine-snapper-sync),
+# written by install.sh; limine-update applies changes
+ESP_PATH="$esp"
+TARGET_OS_NAME="Arch Linux"
+KERNEL_CMDLINE[default]="$cmdline"
+BOOT_ORDER="*, *fallback, Snapshots"
+# Limine also as the firmware's fallback loader, in case an update drops its boot entry
+ENABLE_LIMINE_FALLBACK=yes
+FIND_BOOTLOADERS=yes
+SNAPPER_CONFIG_NAME="root"
+# Entries only for the snapshots taken before each update (the "after" ones are the
+# system as it is) and without the fallback kernels, which saves boot partition space
+EXCLUDE_SNAPSHOT_TYPES="post"
+EXCLUDE_SNAPSHOT_ENTRIES="*fallback, Windows*, windows*"
+SNAPSHOT_FORMAT_CHOICE=0
+CONF
+            rebuild=yes
+        fi
+        # Our limine.conf (Nord colours); the entries are generated into it. The old one is
+        # kept beside it as limine.conf.archinstall.
+        if ! sudo grep -q '^/+' "$esp/limine.conf" 2>/dev/null; then
+            ! sudo test -f "$esp/limine.conf" || sudo cp "$esp/limine.conf" "$esp/limine.conf.archinstall"
+            sudo install -Dm644 limine/limine.conf "$esp/limine.conf"
+            rebuild=yes
+        fi
+        # Built from source with GraalVM, a large download, the first time
+        yay -S --needed --noconfirm limine-mkinitcpio-hook limine-snapper-sync
+        # The initramfs hook that puts a writable layer over a booted read-only snapshot,
+        # after filesystems in the HOOKS that count (the last file that sets them);
+        # systemd-based initramfs images need the sd- one
+        hooks_conf=$(grep -l '^HOOKS=' /etc/mkinitcpio.conf /etc/mkinitcpio.conf.d/*.conf 2>/dev/null | tail -n 1)
+        if ! grep -qE '^HOOKS=.*btrfs-overlayfs' "$hooks_conf"; then
+            overlay_hook=btrfs-overlayfs
+            grep -qE '^HOOKS=.*\<systemd\>' "$hooks_conf" && overlay_hook=sd-btrfs-overlayfs
+            sudo sed -i -E "/^HOOKS=/s/\<filesystems\>/& $overlay_hook/" "$hooks_conf"
+            rebuild=yes
+        fi
+        [[ $rebuild == no ]] || sudo limine-update
+        if ! sudo grep -q '^/+' "$esp/limine.conf"; then
+            ! sudo test -f "$esp/limine.conf.archinstall" || sudo cp "$esp/limine.conf.archinstall" "$esp/limine.conf"
+            echo "limine-update wrote no boot entries; archinstall's limine.conf is back" >&2
+            exit 1
+        fi
+        # archinstall's copy next to its Limine binary would win over ours; that binary's
+        # boot entry then finds ours at the top of the boot partition
+        if [[ -n $archinstall_conf ]]; then
+            sudo mv "$archinstall_conf" "$archinstall_conf.archinstall"
+        fi
+        sudo systemctl enable --now limine-snapper-sync.service
+        sudo limine-snapper-sync
+    fi
+fi
 
 section desktop Desktop
 step 'Login screen (greetd)'

@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Usage: snapshot create [description]   snapshot / now (snap-pac already takes one around every pacman run)
+#        snapshot list                   the snapshots, newest last
+#        snapshot restore                restore the snapshot you booted from the Limine menu
+# System snapshots (snapper, set up by install.sh on a Btrfs root). Run in a terminal: they ask for sudo.
+set -euo pipefail
+
+if ! command -v snapper >/dev/null || [[ ! -e /etc/snapper/configs/root ]]; then
+    echo "No snapshots on this machine (/ isn't Btrfs, or install.sh hasn't set up snapper)." >&2
+    exit 1
+fi
+
+# In a terminal of its own (the menu's), wait for a key before it closes
+pause() { [[ -z ${SNAPSHOT_PAUSE:-} ]] || read -rsn1 -p "Press any key to close."; }
+
+case ${1:-} in
+    create)
+        sudo snapper -c root create -c number -d "${2:-Manual}"
+        sudo snapper -c root list
+        pause
+        ;;
+    list)
+        sudo snapper -c root list
+        pause
+        ;;
+    restore)
+        if ! command -v limine-snapper-restore >/dev/null; then
+            echo "Restoring needs the Limine snapshot entries (limine-snapper-sync)." >&2
+            pause
+            exit 1
+        fi
+        sudo limine-snapper-restore
+        pause
+        ;;
+    *)
+        echo "Usage: snapshot create [description]|list|restore" >&2
+        exit 1
+        ;;
+esac

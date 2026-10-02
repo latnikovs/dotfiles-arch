@@ -16,6 +16,17 @@ Install Arch with `archinstall`. The choices that matter here:
 
 - **Disk encryption: yes (LUKS).** On an encrypted disk the first login of
   each boot is automatic, since the disk password already identified you.
+- **Filesystem: Btrfs**, with archinstall's default subvolumes and
+  compression. `install.sh` then sets up snapshots of `/` (not `/home`)
+  before and after every package update, as Omarchy does.
+- **Bootloader: Limine.** Each snapshot then gets a boot menu entry, so an
+  update that breaks the system can be undone: boot the snapshot from the
+  menu, then click the notification to restore it (or *Menu › Snapshots ›
+  Restore booted snapshot*). On another bootloader the snapshots are still
+  taken, but restoring them is up to you.
+- **Boot partition: 2 GiB or more**, if you partition by hand. Each snapshot
+  entry keeps its own kernel there; with archinstall's 1 GiB only the
+  newest few fit, and the oldest entries make room automatically.
 - **Network: NetworkManager**, or plug in Ethernet for the first run.
   `install.sh` moves the machine to NetworkManager and carries over Wi-Fi
   networks saved by iwd, but enterprise and WPA3-only networks don't come
@@ -114,9 +125,15 @@ other, and files both have but with different contents keep both versions (one a
 - **SUPER+/** lists every keybinding.
 - SUPER+RETURN opens a terminal, SUPER+SPACE the app launcher and SUPER+ESC
   the system menu (lock, suspend, log out, restart, shut down).
-- SUPER+ALT+SPACE opens the menu, as in Omarchy: apps, screenshots, toggles
-  (caffeine, do not disturb, night light, light/dark), reminders, the bar's
-  panels, updates and the system menu. Esc in a submenu goes back.
+- SUPER+ALT+SPACE opens the menu, as in Omarchy: apps, web apps,
+  screenshots and screen recordings, toggles (caffeine, do not disturb, night
+  light, light/dark), reminders, the bar's panels, updates, snapshots and the
+  system menu. Esc in a submenu goes back.
+- *Menu › Web apps* adds a site to the app launcher as an app of its own (a
+  Chromium app window with the site's icon), as Omarchy does.
+- SUPER+SHIFT+R (or CTRL+Print) records a screen region into
+  `~/Videos/Screencasts`; the bar shows a red dot until you press it again
+  or click the dot. *Menu › Capture* also records with sound, or a whole monitor.
 - SUPER+`hjkl` moves focus between windows, as in Vim; SUPER+SHIFT+`hjkl` swaps them.
 
 ## Layout
@@ -127,6 +144,7 @@ other, and files both have but with different contents keep both versions (one a
 | `quickshell/` | Bar, notifications, dropdown panels, polkit prompt |
 | `greeter/` | Login screen: greetd runs a separate Hyprland with a Quickshell greeter (installed to `/etc/greetd`) |
 | `console/` | Nord colours for the Linux console |
+| `limine/` | The Limine boot menu's look (Nord), put on the boot partition by `install.sh` when Limine is the bootloader |
 | `machines/` | Per-machine overrides: `./install.sh <name>` installs `machines/<name>.lua` as `~/.config/hypr/local.lua`, plus `<name>.mise.toml` and `<name>.greeter.lua` if they exist |
 | `browser-policies/`, `keepassxc/` | Copied into place by `install.sh` rather than stowed |
 | `syncthing/` | `setup`: Syncthing over Tailscale only, pairing (run, not stowed) |

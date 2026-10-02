@@ -96,6 +96,10 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("darkman run")
     -- Taildrop: files sent from the tailnet land in ~/Downloads (scripts/taildrop)
     hl.exec_cmd("~/.config/hypr/scripts/taildrop receive")
+    -- Snapshot boot entries (install.sh, Btrfs + Limine only): booted from a snapshot, a
+    -- notification offers to restore it; the other reports problems keeping the entries
+    hl.exec_cmd("command -v limine-snapper-restore >/dev/null && limine-snapper-restore --notify")
+    hl.exec_cmd("command -v limine-snapper-notify >/dev/null && limine-snapper-notify")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail and Teams only notify while running, so they start hidden too
@@ -468,6 +472,12 @@ bind(mainMod .. " + CTRL + S",         "Screenshot region, annotate", hl.dsp.exe
 bind(mainMod .. " + CTRL + ALT + S",   "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
 bind(mainMod .. " + CTRL + SHIFT + S", "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
 
+-- Screen recording (scripts/screenrecord): a region, without sound; pressed again (or the bar's
+-- red dot) it stops. The menu's Capture has the monitor and sound variants.
+local screenrecord = "~/.config/hypr/scripts/screenrecord"
+bind("CTRL + Print",                 "Record screen region / stop", hl.dsp.exec_cmd(screenrecord .. " region"))
+bind(mainMod .. " + SHIFT + R",      "Record screen region / stop", hl.dsp.exec_cmd(screenrecord .. " region"))
+
 -- Notifications (quickshell), same keys as Omarchy
 local notifications = "quickshell ipc call notifications "
 bind(mainMod .. " + comma",         "Dismiss notification", hl.dsp.exec_cmd(notifications .. "dismissOne"))
@@ -587,8 +597,13 @@ bind("XF86AudioRaiseVolume", "Volume up", hl.dsp.exec_cmd("wpctl set-volume -l 1
 bind("XF86AudioLowerVolume", "Volume down", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
 bind("XF86AudioMute",        "Mute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
 bind("XF86AudioMicMute",     "Mute microphone", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
-bind("XF86MonBrightnessUp",  "Brightness up", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%+"),                  { locked = true, repeating = true })
-bind("XF86MonBrightnessDown","Brightness down", hl.dsp.exec_cmd("brightnessctl -e4 -n2 set 5%-"),                  { locked = true, repeating = true })
+-- The volume shows on screen by itself (Quickshell Osd.qml); brightness is passed on, in percent.
+-- Backlights only (laptops): external monitors have none, and other devices would be LEDs
+local function brightness(step)
+    return "quickshell ipc call osd brightness \"$(brightnessctl -c backlight -m -e4 -n2 set " .. step .. " | cut -d, -f4 | tr -d %)\""
+end
+bind("XF86MonBrightnessUp",  "Brightness up", hl.dsp.exec_cmd(brightness("5%+")),   { locked = true, repeating = true })
+bind("XF86MonBrightnessDown","Brightness down", hl.dsp.exec_cmd(brightness("5%-")), { locked = true, repeating = true })
 
 -- Requires playerctl
 bind("XF86AudioNext",  "Next track", hl.dsp.exec_cmd("playerctl next"),       { locked = true })

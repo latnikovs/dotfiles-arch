@@ -31,6 +31,7 @@ ShellRoot {
             crashes: crashesService
             reminders: remindersService
             caffeine: caffeineService
+            recording: recordingService
         }
     }
 
@@ -72,7 +73,16 @@ ShellRoot {
         id: caffeineService
     }
 
+    Recording {
+        id: recordingService
+    }
+
     Polkit {}
+
+    // Volume, microphone and brightness changes (Osd.qml); quiet while an audio dropdown is open
+    Osd {
+        suppressed: bars.instances.some(b => b.audioOpen)
+    }
 
     // Bar dropdowns on the focused monitor: `quickshell ipc call bar <function>`
     IpcHandler {

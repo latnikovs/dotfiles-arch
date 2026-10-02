@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: menu [apps|learn|capture|toggle|remind|panels|system]
+# Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|snapshots|system]
 #   the desktop's commands in nested fuzzel menus (SUPER + ALT + SPACE), after Omarchy's
 #   omarchy-menu; Esc in a submenu goes back to the main one
 set -euo pipefail
@@ -24,10 +24,13 @@ pick() {
 run_after_close() { sleep 0.2; exec "$@"; }
 
 main() {
-    pick "󰍜" Menu "󰀻  Apps" "󰧑  Learn" "󰄀  Capture" "󰔡  Toggle" "󰀠  Remind" \
-         "󰅌  Clipboard" "󰕾  Panels" "󰚰  Update" "󰐥  System"
+    local items=("󰀻  Apps" "󰖟  Web apps" "󰧑  Learn" "󰄀  Capture" "󰔡  Toggle" "󰀠  Remind" "󰅌  Clipboard" "󰕾  Panels" "󰚰  Update")
+    # Only where install.sh set up snapper (a Btrfs root)
+    [[ ! -e /etc/snapper/configs/root ]] || items+=("󰁯  Snapshots")
+    pick "󰍜" Menu "${items[@]}" "󰐥  System"
     case $label in
         Apps)      apps ;;
+        Web*)      webapps ;;
         Learn)     learn ;;
         Capture)   capture ;;
         Toggle)    toggle ;;
@@ -35,12 +38,22 @@ main() {
         Clipboard) exec $scripts/clipboard-history ;;
         Panels)    panels ;;
         Update)    exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/updates run ;;
+        Snapshots) snapshots ;;
         System)    exec $scripts/system menu ;;
     esac
 }
 
 # The app launcher; terminal apps start in the machine's terminal (see machines/utm-vm.lua)
 apps() { exec fuzzel --terminal "${DOTFILES_TERMINAL:-kitty} -e"; }
+
+# Sites as apps of their own in the launcher (scripts/webapp)
+webapps() {
+    pick "󰖟" "Web apps" "󰐕  Add web app" "󰍴  Remove web app"
+    case $label in
+        Add*)    exec $scripts/webapp install ;;
+        Remove*) exec $scripts/webapp remove ;;
+    esac
+}
 
 learn() {
     pick "󰧑" Learn "󰌌  Keybindings" "  Hyprland wiki" "󰣇  Arch wiki" "  LazyVim" \
@@ -55,13 +68,20 @@ learn() {
 }
 
 capture() {
-    pick "󰄀" Capture "󰏫  Screenshot and annotate" "󰩭  Screenshot region" \
+    # While a recording runs, stopping it comes first
+    local record=("󰑊  Record region" "󰑊  Record region with sound" "󰑊  Record monitor with sound")
+    pgrep -f '^gpu-screen-recorder' >/dev/null && record=("󰓛  Stop recording")
+    pick "󰄀" Capture "${record[@]}" "󰏫  Screenshot and annotate" "󰩭  Screenshot region" \
          "󰍹  Screenshot monitor" "󰈊  Color picker"
     case $label in
-        *annotate)  run_after_close $scripts/screenshot annotate ;;
-        *region)    run_after_close $scripts/screenshot region ;;
-        *monitor)   run_after_close $scripts/screenshot output ;;
-        Color*)     run_after_close hyprpicker --autocopy ;;
+        Stop*)              exec $scripts/screenrecord stop ;;
+        Record\ region)     run_after_close $scripts/screenrecord region ;;
+        Record\ region\ *)  run_after_close $scripts/screenrecord region audio ;;
+        Record\ monitor\ *) run_after_close $scripts/screenrecord output audio ;;
+        *annotate)          run_after_close $scripts/screenshot annotate ;;
+        *region)            run_after_close $scripts/screenshot region ;;
+        *monitor)           run_after_close $scripts/screenshot output ;;
+        Color*)             run_after_close hyprpicker --autocopy ;;
     esac
 }
 
@@ -107,13 +127,26 @@ panels() {
     esac
 }
 
+# System snapshots (scripts/snapshot), in the floating terminal updates use; restoring is for
+# after booting a snapshot from the boot menu
+snapshots() {
+    pick "󰁯" Snapshots "󰁯  Snapshot now" "󰋚  List snapshots" "󰦛  Restore booted snapshot"
+    local action
+    case $label in
+        Snapshot*) action=create ;;
+        List*)     action=list ;;
+        Restore*)  action=restore ;;
+    esac
+    SNAPSHOT_PAUSE=1 exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/snapshot $action
+}
+
 pkill -x fuzzel && exit 0
 
 case ${1:-main} in
-    main|apps|learn|capture|toggle|remind|panels) "${1:-main}" ;;
+    main|apps|webapps|learn|capture|toggle|remind|panels|snapshots) "${1:-main}" ;;
     system) exec $scripts/system menu ;;
     *)
-        echo "Usage: menu [apps|learn|capture|toggle|remind|panels|system]" >&2
+        echo "Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|snapshots|system]" >&2
         exit 1
         ;;
 esac

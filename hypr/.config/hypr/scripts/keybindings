@@ -21,7 +21,8 @@ hypr=$(hyprctl binds -j | jq -r '
     | .[] | "\(.keys)\t\(.description)"')
 
 # The bar's own mouse and keyboard actions (quickshell), which Hyprland doesn't know about
-bar="Click crash icon	Crashed programs, to diagnose with Claude (shown when there are some)
+bar="Click red dot	Stop screen recording (shown while recording)
+Click crash icon	Crashed programs, to diagnose with Claude (shown when there are some)
 Right-click crash icon	Clear crashes
 Click update icon	Pending updates, with versions (shown when there are some)
 Right-click update icon	Install updates

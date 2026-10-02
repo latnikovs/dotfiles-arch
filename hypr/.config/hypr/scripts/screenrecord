@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# Usage: screenrecord [region|output] [audio]
+#   region    drag a region or click a window (default)
+#   output    the focused monitor
+#   audio     record what plays and the microphone too, mixed into one track
+#   stop      stop the recording (as does running it again with anything)
+# Screen recording with gpu-screen-recorder, after Omarchy's: the GPU's video encoder where
+# it has one (VA-API on AMD), the CPU otherwise. Saves to ~/Videos/Screencasts; the bar shows
+# a red dot while it records (click it to stop), and a notification opens the video in mpv.
+set -euo pipefail
+
+dir=${XDG_VIDEOS_DIR:-$HOME/Videos}/Screencasts
+runtime=${XDG_RUNTIME_DIR:-/tmp}
+# The file being written, for the notification once it's done
+current=$runtime/screenrecord-file
+
+recording() { pgrep -f '^gpu-screen-recorder' >/dev/null; }
+refresh_bar() { quickshell ipc call recording refresh >/dev/null 2>&1 || true; }
+
+stop() {
+    # SIGINT, so it finishes the file properly
+    pkill -INT -f '^gpu-screen-recorder' || true
+    for _ in {1..50}; do
+        recording || break
+        sleep 0.1
+    done
+    refresh_bar
+    if recording; then
+        pkill -KILL -f '^gpu-screen-recorder' || true
+        notify-send -a screenrecord -u critical "Screen recording failed" "The recorder had to be killed; the video may be broken"
+        exit 1
+    fi
+    local file
+    file=$(cat "$current" 2>/dev/null) || exit 0
+    rm -f "$current"
+    [[ -s $file ]] || exit 0
+    # Its first frame as the notification's picture (cards take icons as file paths)
+    local preview=$runtime/screenrecord-preview.png
+    ffmpeg -y -loglevel quiet -ss 0.1 -i "$file" -frames:v 1 -vf scale=320:-1 "$preview" || preview=''
+    action=$(notify-send -a screenrecord ${preview:+-i "$preview"} -A default=Open --wait \
+        "Screen recording saved" "${file/#$HOME/\~}" || true)
+    [[ $action != default ]] || exec mpv --player-operation-mode=pseudo-gui "$file"
+}
+
+# Prints the geometry of a dragged region or clicked window as WxH+X+Y; fails on Escape
+select_region() {
+    local ws geom
+    ws=$(hyprctl -j monitors | jq -c '[.[].activeWorkspace.id]')
+    geom=$(hyprctl -j clients \
+        | jq -r --argjson ws "$ws" '.[] | select(.workspace.id as $w | $ws | index($w))
+            | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' \
+        | slurp) || return 1
+    # slurp: "X,Y WxH" in layout coordinates, which gpu-screen-recorder takes as they are
+    [[ $geom =~ ^(-?[0-9]+),(-?[0-9]+)\ ([0-9]+)x([0-9]+)$ ]] || return 1
+    echo "${BASH_REMATCH[3]}x${BASH_REMATCH[4]}+${BASH_REMATCH[1]}+${BASH_REMATCH[2]}"
+}
+
+start() {
+    local target=$1 audio=$2 window
+    case $target in
+        region) window=$(select_region) || exit 0 ;;
+        output) window=$(hyprctl -j monitors | jq -r '.[] | select(.focused).name') ;;
+        *)
+            echo "Unknown target: $target" >&2
+            exit 1
+            ;;
+    esac
+    mkdir -p "$dir"
+    local file
+    file=$dir/screencast-$(date +%Y%m%d-%H%M%S).mp4
+    local args=(-w "$window" -f 60 -k auto -fallback-cpu-encoding yes -o "$file")
+    # AAC rather than the default Opus in mp4: more players (and the Mac) play it
+    [[ $audio != audio ]] || args+=(-a "default_output|default_input" -ac aac)
+    echo "$file" >"$current"
+    setsid -f gpu-screen-recorder "${args[@]}" >"$runtime/screenrecord.log" 2>&1
+    # Running once the file exists; the bar's dot comes on
+    for _ in {1..30}; do
+        [[ -e $file ]] && break
+        recording || break
+        sleep 0.1
+    done
+    refresh_bar
+    if ! recording; then
+        rm -f "$current"
+        notify-send -a screenrecord -u critical "Screen recording failed" \
+            "$(tail -n 3 "$runtime/screenrecord.log" 2>/dev/null)"
+        exit 1
+    fi
+}
+
+if [[ ${1:-} == stop ]] || recording; then
+    recording && stop
+    exit 0
+fi
+start "${1:-region}" "${2:-}"

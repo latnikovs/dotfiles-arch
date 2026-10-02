@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# Usage: webapp install [<url> [name]]   add a site to the app launcher as an app of its own (asks with
+#                                        fuzzel for what's missing)
+#        webapp remove [name]            take one out again (picked with fuzzel without a name)
+#        webapp list                     the installed ones, "name<TAB>url"
+# Web apps, after Omarchy's omarchy-webapp-install: a launcher entry that opens the site in a
+# Chromium app window (no tabs or address bar), like Teams on SUPER + Y. Chromium's profile is
+# the one KeePassXC-Browser is set up in. The icon is the site's own (its touch icon or favicon,
+# fetched from the site itself, no third-party icon service). Entries are this machine's only:
+# ~/.local/share/applications/webapp-*.desktop.
+set -euo pipefail
+
+data=${XDG_DATA_HOME:-$HOME/.local/share}
+apps=$data/applications
+icons=$data/webapps/icons
+browser=chromium
+
+ask() {
+    fuzzel --dmenu --lines 0 --width 50 --prompt "$1   " --placeholder "$2" </dev/null
+}
+
+say() {
+    notify-send -a "Web apps" -u "${2:-low}" "$1" "${3:-}" || true
+}
+
+fail() {
+    echo "$1" >&2
+    say "Could not add the web app" critical "$1"
+    exit 1
+}
+
+slug() {
+    tr '[:upper:]' '[:lower:]' <<<"$1" | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//'
+}
+
+# One value in a desktop entry: no line breaks, backslashes doubled
+desktop_value() {
+    local v=${1//$'\n'/ }
+    printf '%s' "${v//\\/\\\\}"
+}
+
+# The URL as one quoted Exec argument: " ` $ \ escaped, % doubled
+exec_arg() {
+    printf '"%s"' "$(sed -e 's/[\\"`$]/\\&/g' -e 's/%/%%/g' <<<"$1")"
+}
+
+# Downloads an image and saves it as a 256 px PNG; fails when it isn't one
+save_icon() {
+    local url=$1 dest=$2 tmp frame
+    tmp=$(mktemp)
+    if curl -fsSL --max-time 10 -o "$tmp" "$url" && [[ -s $tmp ]] &&
+        frame=$(magick identify -format '%p %w\n' "$tmp" 2>/dev/null | sort -k2 -n | tail -n 1 | cut -d' ' -f1) &&
+        [[ -n $frame ]] &&
+        magick "${tmp}[$frame]" -background none -resize 256x256 "PNG32:$dest" 2>/dev/null; then
+        rm -f "$tmp"
+        return 0
+    fi
+    rm -f "$tmp"
+    return 1
+}
+
+# The site's icon: the touch icon its page links (the largest it usually has), the icon it
+# links, then the usual paths
+fetch_icon() {
+    local url=$1 dest=$2 origin page href
+    origin=$(sed -E 's|^(https?://[^/]+).*|\1|' <<<"$url")
+    page=$(curl -fsSL --max-time 10 "$url" 2>/dev/null | head -c 300000 | tr '\n' ' ') || true
+    for rel in 'apple-touch-icon[^"'\'']*' '(shortcut )?icon'; do
+        href=$(grep -oiE "<link[^>]*rel=[\"']${rel}[\"'][^>]*>" <<<"$page" |
+            grep -oiE "href=[\"'][^\"']+" | head -n 1 | sed -E "s/^href=[\"']//") || true
+        case $href in
+            "") continue ;;
+            http://* | https://*) ;;
+            //*) href=https:$href ;;
+            /*) href=$origin$href ;;
+            *) href=$origin/$href ;;
+        esac
+        save_icon "${href//&amp;/&}" "$dest" && return 0
+    done
+    save_icon "$origin/apple-touch-icon.png" "$dest" || save_icon "$origin/favicon.ico" "$dest"
+}
+
+# Installed web apps as "file<TAB>name<TAB>url"
+installed() {
+    local file
+    for file in "$apps"/webapp-*.desktop; do
+        [[ -e $file ]] || continue
+        printf '%s\t%s\t%s\n' "$file" "$(sed -n 's/^Name=//p' "$file" | head -n 1)" \
+            "$(sed -n 's/^X-Dotfiles-WebApp=//p' "$file" | head -n 1)"
+    done
+}
+
+install() {
+    local url=${1:-} name=${2:-} host id icon
+    if [[ -z $url ]]; then
+        url=$(ask "󰖟" "Web app address, e.g. app.slack.com") || exit 0
+    fi
+    url=${url## }
+    url=${url%% }
+    [[ -n $url ]] || exit 0
+    # Chromium would run javascript:, file: and data: addresses as pages: http(s) only
+    [[ $url =~ ^[a-zA-Z][a-zA-Z0-9+.-]*: ]] || url=https://$url
+    [[ ${url,,} =~ ^https?://[^/[:space:]]+ && ! $url =~ [[:space:]] ]] || fail "Not a web address: $url"
+    host=$(sed -E 's|^https?://([^/:]+).*|\1|' <<<"$url")
+    if [[ -z $name ]]; then
+        # Suggested: the site's name without www./app. and the domain ending, capitalised
+        local suggestion
+        suggestion=$(sed -E 's/^(www|app|web)\.//; s/\.[a-z]+$//; s/\./ /g' <<<"$host")
+        suggestion=${suggestion^}
+        name=$(ask "󰖟" "Name (Enter for \"$suggestion\")") || exit 0
+        [[ -n ${name// /} ]] || name=$suggestion
+    fi
+    id=$(slug "$name")
+    [[ -n $id ]] || fail "The name needs a letter or digit in it: $name"
+
+    mkdir -p "$apps" "$icons"
+    icon=$icons/$id.png
+    fetch_icon "$url" "$icon" || icon=web-browser
+
+    cat >"$apps/webapp-$id.desktop" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=$(desktop_value "$name")
+Comment=$(desktop_value "$host"), as an app
+Exec=$browser $(exec_arg "--app=$url")
+Icon=$(desktop_value "$icon")
+Terminal=false
+StartupNotify=true
+X-Dotfiles-WebApp=$(desktop_value "$url")
+DESKTOP
+    say "Added $name" low "Open it from the app launcher (SUPER + SPACE)"
+}
+
+remove() {
+    local name=${1:-} list line file
+    list=$(installed)
+    [[ -n $list ]] || { say "No web apps to remove"; exit 0; }
+    if [[ -z $name ]]; then
+        name=$(cut -f2 <<<"$list" | sort |
+            fuzzel --dmenu --prompt "󰖟   " --placeholder "Remove web app" --width 40 \
+                --lines "$(wc -l <<<"$list")") || exit 0
+    fi
+    line=$(awk -F'\t' -v n="$name" '$2 == n { print; exit }' <<<"$list")
+    [[ -n $line ]] || { echo "No web app called $name" >&2; exit 1; }
+    file=${line%%$'\t'*}
+    rm -f "$file" "$icons/$(basename "$file" .desktop | sed 's/^webapp-//').png"
+    say "Removed $name"
+}
+
+case ${1:-} in
+    install) shift; install "$@" ;;
+    remove)  shift; remove "$@" ;;
+    list)    installed | cut -f2,3 ;;
+    *)
+        echo "Usage: webapp install [<url> [name]] | remove [name] | list" >&2
+        exit 1
+        ;;
+esac
