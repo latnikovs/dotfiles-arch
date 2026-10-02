@@ -315,7 +315,13 @@ yay -S --needed --noconfirm brave-origin-bin
 yay -S --needed --noconfirm cliamp-bin
 # herdr: terminal workspace manager for supervising several coding agents at once
 yay -S --needed --noconfirm herdr-bin
-# gtypist: GNU Typist, touch-typing lessons in the terminal
+# gtypist: GNU Typist, touch-typing lessons in the terminal. Its tarball is signed and
+# the keyservers yay asks return the key without user IDs, so import the copy the AUR
+# package ships (the PKGBUILD pins the fingerprint)
+gtypist_key=02AEC665007301C280C5C43A0FB807D2E7C7C96C
+if ! gpg --list-keys "$gtypist_key" &>/dev/null; then
+    curl -fsSL "https://aur.archlinux.org/cgit/aur.git/plain/keys/pgp/$gtypist_key.asc?h=gtypist" | gpg --import
+fi
 yay -S --needed --noconfirm gtypist
 
 step 'Claude Code'
