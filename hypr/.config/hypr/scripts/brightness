@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Usage: brightness up|down
+#   The focused monitor's brightness, 5% at a time, shown on screen (Quickshell Osd.qml), after
+#   Omarchy's: a laptop panel through its backlight (brightnessctl), an external monitor through
+#   its own brightness setting over DDC/CI (ddcutil; DDC/CI must be on in the monitor's menu).
+set -euo pipefail
+
+step=5
+case ${1:-} in
+    up) sign=+ direction=1 ;;
+    down) sign=- direction=-1 ;;
+    *)
+        echo "Usage: brightness up|down" >&2
+        exit 1
+        ;;
+esac
+
+osd() { quickshell ipc call osd brightness "$1" >/dev/null 2>&1 || true; }
+
+monitor=$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')
+
+# Built-in panels have a backlight
+if [[ $monitor =~ ^(eDP|LVDS|DSI)- ]] || ! command -v ddcutil >/dev/null; then
+    percent=$(brightnessctl -c backlight -m -e4 -n2 set "$step%$sign" | cut -d, -f4) || exit 0
+    osd "${percent%\%}"
+    exit 0
+fi
+
+state=${XDG_RUNTIME_DIR:-/tmp}/brightness
+mkdir -p "$state"
+# Each DDC/CI read or write takes a moment, so a held key sends more presses than the monitor
+# takes: one change at a time, and the presses in between are dropped
+exec 9>"$state/lock"
+flock -n 9 || exit 0
+
+# The monitor's I2C bus (ddcutil detect is slow, so it's remembered for the session), or
+# "none" for a minute when the monitor doesn't answer, so each press doesn't wait on detect again
+bus_file=$state/$monitor.bus
+bus=''
+if [[ -f $bus_file ]] && ! { [[ $(<"$bus_file") == none ]] && (($(date +%s) - $(stat -c %Y "$bus_file") >= 60)); }; then
+    bus=$(<"$bus_file")
+fi
+if [[ -z $bus ]]; then
+    bus=$(ddcutil detect --brief 2>/dev/null | awk -v monitor="$monitor" '
+        /I2C bus:/ { bus = $NF; sub(/^.*i2c-/, "", bus) }
+        /DRM[_ ]connector:/ {
+            connector = $NF
+            sub(/^card[0-9]+-/, "", connector)
+            if (connector == monitor && bus != "") { print bus; exit }
+        }') || true
+    echo "${bus:-none}" >"$bus_file"
+    if [[ -z $bus ]]; then
+        notify-send -a brightness -u low "Can't change $monitor's brightness" \
+            "It doesn't answer over DDC/CI; turn DDC/CI on in the monitor's own menu" || true
+        exit 0
+    fi
+fi
+[[ $bus != none ]] || exit 0
+
+# The current level, from the last change when it was moments ago (saves a slow read)
+level_file=$state/$monitor.level
+current='' max=''
+if [[ -f $level_file ]] && (($(date +%s) - $(stat -c %Y "$level_file") < 30)); then
+    read -r current max <"$level_file"
+fi
+if [[ -z $current ]]; then
+    # "VCP 10 C <current> <max>"
+    read -r current max < <(ddcutil --bus "$bus" getvcp 10 --brief 2>/dev/null |
+        awk '$1 == "VCP" && $3 == "C" { print $4, $5 }') || true
+    if [[ -z $current || -z $max || $max == 0 ]]; then
+        # Plugged into another port since: detect again next time
+        rm -f "$bus_file" "$level_file"
+        exit 0
+    fi
+fi
+
+target=$((current + direction * step * max / 100))
+((target < 0)) && target=0
+((target > max)) && target=$max
+osd $((target * 100 / max))
+echo "$target $max" >"$level_file"
+ddcutil --bus "$bus" --noverify setvcp 10 "$target" >/dev/null 2>&1 || rm -f "$level_file"

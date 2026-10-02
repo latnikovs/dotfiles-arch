@@ -134,6 +134,11 @@ other, and files both have but with different contents keep both versions (one a
 - SUPER+SHIFT+R (or CTRL+Print) records a screen region into
   `~/Videos/Screencasts`; the bar shows a red dot until you press it again
   or click the dot. *Menu › Capture* also records with sound, or a whole monitor.
+- Printing: printers on the local network show up in print dialogs by
+  themselves (modern ones need no driver); *Print Settings* in the app
+  launcher adds others, such as USB printers.
+- The brightness keys dim a laptop panel, or an external monitor through
+  its own setting (DDC/CI, which has to be on in the monitor's menu).
 - SUPER+`hjkl` moves focus between windows, as in Vim; SUPER+SHIFT+`hjkl` swaps them.
 
 ## Layout

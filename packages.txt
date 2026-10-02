@@ -41,6 +41,18 @@ nm-connection-editor
 # Bluetooth: BlueZ for the bar's Bluetooth dropdown, bluetoothctl for PIN pairing
 bluez
 bluez-utils
+# Printing: CUPS with driverless printing (IPP Everywhere, AirPrint) and Ghostscript for
+# printers that need it; Print Settings (system-config-printer) to add or change printers;
+# Avahi and nss-mdns find printers on the local network (install.sh)
+cups
+cups-filters
+ghostscript
+system-config-printer
+cups-pk-helper
+avahi
+nss-mdns
+# External monitors' brightness over DDC/CI, for the brightness keys (scripts/brightness)
+ddcutil
 # Tailscale VPN; the bar's Tailscale dropdown drives it
 tailscale
 # File sync between my machines over Tailscale (syncthing/setup)

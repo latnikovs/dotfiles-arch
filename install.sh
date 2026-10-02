@@ -343,6 +343,29 @@ step 'Bluetooth'
 # Bluetooth daemon; the bar hides its icon on machines without an adapter
 sudo systemctl enable --now bluetooth.service
 
+step 'Printing (CUPS)'
+# Printing: CUPS, started when something prints. Network printers are found over mDNS by
+# Avahi, and modern ones print without drivers (IPP Everywhere, AirPrint); Print Settings
+# in the app launcher adds the rest. No cups-browsed, unlike Omarchy: print dialogs list
+# network printers through CUPS without it, and it was the way in for remote attacks
+# (CVE-2024-47176).
+# Avahi only looks: it doesn't announce this machine or its services on the network
+sudo sed -i -E 's/^#?disable-publishing=.*/disable-publishing=yes/' /etc/avahi/avahi-daemon.conf
+# systemd-resolved gives mDNS up to Avahi (two on one port miss replies), and nss-mdns
+# resolves .local names (printer.local) through Avahi instead
+if systemctl list-unit-files systemd-resolved.service &>/dev/null; then
+    sudo install -Dm644 /dev/stdin /etc/systemd/resolved.conf.d/10-mdns-avahi.conf <<'INI'
+[Resolve]
+MulticastDNS=no
+INI
+    sudo systemctl try-restart systemd-resolved.service
+fi
+if ! grep -q '^hosts:.*mdns' /etc/nsswitch.conf; then
+    sudo sed -i -E '/^hosts:/s/\<(resolve|dns)\>/mdns_minimal [NOTFOUND=return] &/' /etc/nsswitch.conf
+fi
+sudo systemctl enable --now avahi-daemon.service cups.socket
+sudo systemctl try-restart avahi-daemon.service
+
 step 'Tailscale'
 # Tailscale daemon, with the user as its operator so the bar can connect, disconnect
 # and pick exit nodes without sudo (the setting waits until tailscaled is listening)
@@ -406,6 +429,9 @@ step 'Firewall (ufw)'
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow in on tailscale0
+# mDNS replies from the local network, so Avahi can find printers: multicast only
+sudo ufw allow in proto udp to 224.0.0.251 port 5353 comment mDNS
+sudo ufw allow in proto udp to ff02::fb port 5353 comment mDNS
 sudo ufw --force enable
 sudo systemctl enable ufw.service
 sudo ufw reload

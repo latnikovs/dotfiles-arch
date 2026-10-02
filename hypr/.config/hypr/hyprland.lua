@@ -597,13 +597,10 @@ bind("XF86AudioRaiseVolume", "Volume up", hl.dsp.exec_cmd("wpctl set-volume -l 1
 bind("XF86AudioLowerVolume", "Volume down", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
 bind("XF86AudioMute",        "Mute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true, repeating = true })
 bind("XF86AudioMicMute",     "Mute microphone", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true, repeating = true })
--- The volume shows on screen by itself (Quickshell Osd.qml); brightness is passed on, in percent.
--- Backlights only (laptops): external monitors have none, and other devices would be LEDs
-local function brightness(step)
-    return "quickshell ipc call osd brightness \"$(brightnessctl -c backlight -m -e4 -n2 set " .. step .. " | cut -d, -f4 | tr -d %)\""
-end
-bind("XF86MonBrightnessUp",  "Brightness up", hl.dsp.exec_cmd(brightness("5%+")),   { locked = true, repeating = true })
-bind("XF86MonBrightnessDown","Brightness down", hl.dsp.exec_cmd(brightness("5%-")), { locked = true, repeating = true })
+-- The volume shows on screen by itself (Quickshell Osd.qml). Brightness (scripts/brightness) is
+-- a laptop panel's backlight, or an external monitor's own setting over DDC/CI.
+bind("XF86MonBrightnessUp",  "Brightness up", hl.dsp.exec_cmd("~/.config/hypr/scripts/brightness up"),     { locked = true, repeating = true })
+bind("XF86MonBrightnessDown","Brightness down", hl.dsp.exec_cmd("~/.config/hypr/scripts/brightness down"), { locked = true, repeating = true })
 
 -- Requires playerctl
 bind("XF86AudioNext",  "Next track", hl.dsp.exec_cmd("playerctl next"),       { locked = true })
