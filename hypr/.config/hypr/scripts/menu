@@ -8,16 +8,27 @@ scripts=~/.config/hypr/scripts
 bar="quickshell ipc call bar"
 
 # Picks one of the given lines: "pick <prompt icon> <title> <lines>…"; sets $label to the
-# chosen one without its icon. Esc in a submenu goes back to the main menu; Esc in the main menu,
-# or fuzzel closed by pressing the key again (killed), ends the script.
+# chosen one without its icon. A submenu ends in Back, and Esc there goes back to the main menu
+# too; Esc in the main menu, or fuzzel closed by pressing the key again (killed), ends the script.
 pick() {
     local icon=$1 title=$2 choice status=0
     shift 2
+    [[ $title == Menu ]] || set -- "$@" "󰁍  Back"
     choice=$(printf '%s\n' "$@" \
         | fuzzel --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) || status=$?
-    if (( status == 1 )) && [[ $title != Menu ]]; then exec "$0"; fi
+    if [[ $title != Menu ]] && { (( status == 1 )) || [[ $choice == *"  Back" ]]; }; then exec "$0"; fi
     (( status == 0 )) || exit 0
     label=${choice#*  }
+}
+
+# Runs another script's picker (System, Clipboard, ...). Those exit 1 on Esc (fuzzel's status),
+# and System also on its Back entry, which it shows only with DOTFILES_MENU set; then it's back
+# to the main menu.
+sub() {
+    local status=0
+    DOTFILES_MENU=1 "$@" || status=$?
+    (( status == 1 )) && exec "$0"
+    exit 0
 }
 
 # Lets fuzzel's surface go before screenshots and pickers grab the screen
@@ -35,11 +46,11 @@ main() {
         Capture)   capture ;;
         Toggle)    toggle ;;
         Remind)    remind ;;
-        Clipboard) exec $scripts/clipboard-history ;;
+        Clipboard) sub $scripts/clipboard-history ;;
         Panels)    panels ;;
         Update)    exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/updates run ;;
         Snapshots) snapshots ;;
-        System)    exec $scripts/system menu ;;
+        System)    sub $scripts/system menu ;;
     esac
 }
 
@@ -50,8 +61,8 @@ apps() { exec fuzzel --terminal "${DOTFILES_TERMINAL:-kitty} -e"; }
 webapps() {
     pick "󰖟" "Web apps" "󰐕  Add web app" "󰍴  Remove web app"
     case $label in
-        Add*)    exec $scripts/webapp install ;;
-        Remove*) exec $scripts/webapp remove ;;
+        Add*)    sub $scripts/webapp install ;;
+        Remove*) sub $scripts/webapp remove ;;
     esac
 }
 
@@ -59,7 +70,7 @@ learn() {
     pick "󰧑" Learn "󰌌  Keybindings" "  Hyprland wiki" "󰣇  Arch wiki" "  LazyVim" \
          "  Quickshell"
     case $label in
-        Keybindings) exec $scripts/keybindings ;;
+        Keybindings) sub $scripts/keybindings ;;
         Hyprland*)   exec xdg-open https://wiki.hypr.land/ ;;
         Arch*)       exec xdg-open https://wiki.archlinux.org/title/Main_page ;;
         LazyVim)     exec xdg-open https://www.lazyvim.org/keymaps ;;
@@ -107,7 +118,7 @@ toggle() {
 remind() {
     pick "󰀠" Remind "󰀠  New reminder" "󰂚  Reminders" "󰂭  Clear reminders"
     case $label in
-        New*)       exec $scripts/remind ;;
+        New*)       sub $scripts/remind ;;
         Reminders)  exec $bar toggleReminders ;;
         Clear*)     exec $scripts/remind clear ;;
     esac

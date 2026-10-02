@@ -111,7 +111,7 @@ case ${1:-} in
     "")
         pkill -x fuzzel && exit 0
         line=$(fuzzel --dmenu --lines 0 --width 50 --prompt "󰀠   " \
-            --placeholder "20m tea · 15:00 call Anna · tomorrow 9:00 dentist" </dev/null) || exit 0
+            --placeholder "20m tea · 15:00 call Anna · tomorrow 9:00 dentist" </dev/null) || exit  # Esc: 1, for scripts/menu
         [[ -n ${line// /} ]] || exit 0
         add "$line"
         ;;

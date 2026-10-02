@@ -93,7 +93,7 @@ installed() {
 install() {
     local url=${1:-} name=${2:-} host id icon
     if [[ -z $url ]]; then
-        url=$(ask "󰖟" "Web app address, e.g. app.slack.com") || exit 0
+        url=$(ask "󰖟" "Web app address, e.g. app.slack.com") || exit  # Esc: 1, for scripts/menu
     fi
     url=${url## }
     url=${url%% }
@@ -107,7 +107,7 @@ install() {
         local suggestion
         suggestion=$(sed -E 's/^(www|app|web)\.//; s/\.[a-z]+$//; s/\./ /g' <<<"$host")
         suggestion=${suggestion^}
-        name=$(ask "󰖟" "Name (Enter for \"$suggestion\")") || exit 0
+        name=$(ask "󰖟" "Name (Enter for \"$suggestion\")") || exit
         [[ -n ${name// /} ]] || name=$suggestion
     fi
     id=$(slug "$name")
@@ -138,7 +138,7 @@ remove() {
     if [[ -z $name ]]; then
         name=$(cut -f2 <<<"$list" | sort |
             fuzzel --dmenu --prompt "󰖟   " --placeholder "Remove web app" --width 40 \
-                --lines "$(wc -l <<<"$list")") || exit 0
+                --lines "$(wc -l <<<"$list")") || exit
     fi
     line=$(awk -F'\t' -v n="$name" '$2 == n { print; exit }' <<<"$list")
     [[ -n $line ]] || { echo "No web app called $name" >&2; exit 1; }
