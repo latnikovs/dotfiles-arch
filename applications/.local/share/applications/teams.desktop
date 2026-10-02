@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Microsoft Teams
+GenericName=Chat and calls (SUPER + Y)
+Comment=Show Teams, which runs hidden on its own workspace from login (hyprland.lua showSpecial)
+Keywords=teams;microsoft;chat;meeting;call;
+Exec=hyprctl eval "showSpecial('teams')"
+Icon=teams
+Type=Application
+Terminal=false

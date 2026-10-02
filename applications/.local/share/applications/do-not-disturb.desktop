@@ -4,6 +4,6 @@ GenericName=Silence notifications (SUPER + CTRL + ,)
 Comment=Toggle do-not-disturb; critical notifications still get through
 Keywords=dnd;notifications;silence;mute;quiet;focus;
 Exec=sh -c "~/.config/hypr/scripts/notifications-dnd"
-Icon=notification-disabled
+Icon=preferences-desktop-notification-bell
 Type=Application
 Terminal=false
