@@ -93,7 +93,7 @@ installed() {
 install() {
     local url=${1:-} name=${2:-} host id icon
     if [[ -z $url ]]; then
-        url=$(ask "󰖟" "Web app address, e.g. app.slack.com") || exit  # Esc: 1, for scripts/menu
+        url=$(ask "󰖟" "Web app address, e.g. app.slack.com") || exit  # Esc: 2, for scripts/menu
     fi
     url=${url## }
     url=${url%% }

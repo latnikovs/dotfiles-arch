@@ -5,7 +5,7 @@ set -euo pipefail
 pkill -x fuzzel && exit 0
 
 entry=$(cliphist list \
-    | fuzzel --dmenu --with-nth 2 --prompt "󰅌   " --placeholder Clipboard --width 70 --lines 12) || exit  # Esc: 1, for scripts/menu
+    | fuzzel --dmenu --with-nth 2 --prompt "󰅌   " --placeholder Clipboard --width 70 --lines 12) || exit  # Esc: 2, for scripts/menu
 cliphist decode <<<"$entry" | wl-copy
 
 # Paste into the window that had focus: SHIFT + Insert pastes in both GUI apps and kitty

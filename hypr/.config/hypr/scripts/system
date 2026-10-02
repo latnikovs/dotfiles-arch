@@ -21,13 +21,13 @@ power() {
 case ${1:-menu} in
     menu)
         pkill -x fuzzel && exit 0
-        # Opened from the menu (scripts/menu) it ends in Back; Back and Esc exit 1, which takes
+        # Opened from the menu (scripts/menu) it ends in Back; Back and Esc exit 2, which takes
         # the menu back to its main list
         items=("󰌾  Lock" "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown")
         [[ -z ${DOTFILES_MENU:-} ]] || items+=("󰁍  Back")
         choice=$(printf '%s\n' "${items[@]}" \
             | fuzzel --dmenu --prompt "󰐥   " --placeholder System --width 18 --lines ${#items[@]}) || exit
-        [[ $choice != *"  Back" ]] || exit 1
+        [[ $choice != *"  Back" ]] || exit 2
         exec "$0" "$(awk '{ print tolower($2) }' <<<"$choice")"
         ;;
     lock)     exec ~/.config/hypr/scripts/lock ;;

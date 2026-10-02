@@ -16,18 +16,18 @@ pick() {
     [[ $title == Menu ]] || set -- "$@" "󰁍  Back"
     choice=$(printf '%s\n' "$@" \
         | fuzzel --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) || status=$?
-    if [[ $title != Menu ]] && { (( status == 1 )) || [[ $choice == *"  Back" ]]; }; then exec "$0"; fi
+    if [[ $title != Menu ]] && { (( status == 2 )) || [[ $choice == *"  Back" ]]; }; then exec "$0"; fi
     (( status == 0 )) || exit 0
     label=${choice#*  }
 }
 
-# Runs another script's picker (System, Clipboard, ...). Those exit 1 on Esc (fuzzel's status),
+# Runs another script's picker (System, Clipboard, ...). Those exit 2 on Esc (fuzzel's status),
 # and System also on its Back entry, which it shows only with DOTFILES_MENU set; then it's back
 # to the main menu.
 sub() {
     local status=0
     DOTFILES_MENU=1 "$@" || status=$?
-    (( status == 1 )) && exec "$0"
+    (( status == 2 )) && exec "$0"
     exit 0
 }
 
