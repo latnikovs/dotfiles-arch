@@ -8,6 +8,10 @@ noto-fonts
 papirus-icon-theme
 # Colour emoji; the Nerd Font has none, so without it 🔧 and co. draw as boxes
 noto-fonts-emoji
+# Web and UI sans/serif (fontconfig/ maps sans-serif, system-ui to it, as Omarchy does)
+# and Chinese/Japanese/Korean text
+ttf-liberation
+noto-fonts-cjk
 hyprpaper
 chromium
 # makepkg, for AUR packages (yay, Brave Origin) in install.sh
