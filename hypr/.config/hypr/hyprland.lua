@@ -117,6 +117,24 @@ end)
 hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 
+-- Native Wayland first, X11 as the fallback, as in Omarchy. Qt takes its fonts,
+-- dark mode and file dialogs from GTK. KeePassXC is Qt 5 without qt5-wayland,
+-- so it stays on XWayland (its window rules match the X11 class).
+hl.env("GDK_BACKEND", "wayland,x11,*")
+hl.env("QT_QPA_PLATFORM", "wayland;xcb")
+hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
+hl.env("ELECTRON_OZONE_PLATFORM_HINT", "wayland")
+hl.env("OZONE_PLATFORM", "wayland")
+
+-- XWayland apps draw at 1x instead of being stretched (blurry) on scaled
+-- monitors. Omarchy also sets GDK_SCALE=2 for them; left out until the
+-- desktop's monitor scale is known.
+hl.config({
+    xwayland = {
+        force_zero_scaling = true,
+    },
+})
+
 
 -----------------------
 ----- PERMISSIONS -----
