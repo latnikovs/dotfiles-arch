@@ -16,6 +16,14 @@ vim.api.nvim_create_autocmd("FileType", {
     local export = require("config.db_export")
     vim.keymap.set("n", "<leader>X", export.export_paragraph, { buffer = ev.buf, desc = "Export Query to CSV" })
     vim.keymap.set("x", "<leader>X", export.export_selection, { buffer = ev.buf, desc = "Export Selection to CSV" })
+    -- <C-s> in a new query (a scratch file in the tmp dir) asks for a name and
+    -- saves it under Saved queries, as <leader>W does; dadbod-ui defines the
+    -- <Plug> map only in those buffers, so everywhere else it is a plain :w.
+    vim.keymap.set({ "i", "x", "n", "s" }, "<C-s>", function()
+      local plug = vim.fn.maparg("<Plug>(DBUI_SaveQuery)", "n", false, true)
+      local keys = plug.buffer == 1 and "<C-\\><C-n><Plug>(DBUI_SaveQuery)" or "<cmd>w<cr><esc>"
+      vim.api.nvim_feedkeys(vim.keycode(keys), "m", false)
+    end, { buffer = ev.buf, desc = "Save Query" })
   end,
 })
 
