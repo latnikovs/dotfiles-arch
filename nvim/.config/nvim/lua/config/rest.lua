@@ -15,6 +15,7 @@
 -- (secrets go in the private one, which repos gitignore), found from the
 -- file's directory upwards. "$shared" in those files applies to every
 -- environment. {{$uuid}}, {{$timestamp}} and {{$isoTimestamp}} are built in.
+-- "Authorization: Basic user password" is base64-encoded on the way out.
 local M = {}
 
 local METHODS = {
@@ -221,7 +222,14 @@ function M.resolve(req, vars)
   local out = { method = req.method, headers = {}, name = req.name }
   out.url = M.expand(req.url, vars, missing)
   for _, h in ipairs(req.headers) do
-    table.insert(out.headers, { h[1], M.expand(h[2], vars, missing) })
+    local value = M.expand(h[2], vars, missing)
+    -- "Basic user password" or "Basic user:password", as IntelliJ takes it,
+    -- is sent encoded; an already encoded value has neither space nor colon
+    local user, password = value:match("^Basic%s+([^%s:]+)[%s:]+(.+)$")
+    if h[1]:lower() == "authorization" and user then
+      value = "Basic " .. vim.base64.encode(user .. ":" .. password)
+    end
+    table.insert(out.headers, { h[1], value })
   end
   out.body = req.body and M.expand(req.body, vars, missing)
   local names = vim.tbl_keys(missing)
