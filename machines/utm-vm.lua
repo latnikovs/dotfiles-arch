@@ -50,9 +50,16 @@ hl.bind("SUPER + ALT + SLASH", function()
         out:write(m, "\n")
         out:close()
     end
-    -- Keep the scale; monitor-scale then fits it to the new mode, saves the mode with it (its state
-    -- is applied after this file) and shows the result
-    hl.dispatch(hl.dsp.exec_cmd("s=$(~/.config/hypr/scripts/monitor-scale '' Virtual-1 2>/dev/null || echo 1); "
+    -- Each mode keeps its own scale (in utm-vm-scales), as carrying one over can round it up (1.6 is
+    -- 1.75 on 3024x1890), so switching back and forth would creep. A mode never set takes the current
+    -- one. monitor-scale fits it to the mode, saves the mode with it (its state is applied after this
+    -- file) and shows the result.
+    local scales = vmModeFile:gsub("mode$", "scales")
+    hl.dispatch(hl.dsp.exec_cmd("f='" .. scales .. "'; touch \"$f\"; "
+        .. "old=$(hyprctl -j monitors | jq -r '.[] | select(.name == \"Virtual-1\") | \"\\(.width)x\\(.height) \\(.scale)\"'); "
+        .. "set -- $old; om=$1; os=$2; "
+        .. "s=$(awk -v m='" .. m:match("^[^@]+") .. "' '$1 == m { print $2 }' \"$f\"); s=${s:-$os}; "
+        .. "{ awk -v m=\"$om\" '$1 != m' \"$f\"; echo \"$om $os\"; } >\"$f.tmp\" && mv \"$f.tmp\" \"$f\"; "
         .. "hyprctl eval \"hl.monitor({ output = 'Virtual-1', mode = '" .. m .. "', position = 'auto', scale = $s })\" >/dev/null; "
         .. "~/.config/hypr/scripts/monitor-scale \"$s\" Virtual-1"))
 end, { description = "VM display: switch mode between the Dell and the MacBook screen" })
