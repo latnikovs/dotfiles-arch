@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Usage: brightness up|down
-#   The focused monitor's brightness, 5% at a time, shown on screen (Quickshell Osd.qml), after
+# Usage: brightness up|down [MONITOR]
+#   A monitor's brightness (the focused one by default), 5% at a time, shown on screen (Quickshell Osd.qml), after
 #   Omarchy's: a laptop panel through its backlight (brightnessctl), an external monitor through
 #   its own brightness setting over DDC/CI (ddcutil; DDC/CI must be on in the monitor's menu).
 set -euo pipefail
@@ -10,14 +10,14 @@ case ${1:-} in
     up) sign=+ direction=1 ;;
     down) sign=- direction=-1 ;;
     *)
-        echo "Usage: brightness up|down" >&2
+        echo "Usage: brightness up|down [MONITOR]" >&2
         exit 1
         ;;
 esac
 
 osd() { quickshell ipc call osd brightness "$1" >/dev/null 2>&1 || true; }
 
-monitor=$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')
+monitor=${2:-$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')}
 
 # Built-in panels have a backlight
 if [[ $monitor =~ ^(eDP|LVDS|DSI)- ]] || ! command -v ddcutil >/dev/null; then

@@ -1,5 +1,5 @@
 // Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, screen recording/crashed programs/pending updates/tray/keyboard layout/
-// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/notifications on the right. Mail and Teams follow the weather.
+// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/display/notifications on the right. Mail and Teams follow the weather.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -97,6 +97,7 @@ PanelWindow {
         bluetoothPanel.open = false;
         tailscalePanel.open = false;
         syncthingPanel.open = false;
+        displayPanel.open = false;
         updatesPanel.open = false;
         crashesPanel.open = false;
         remindersPanel.open = false;
@@ -131,6 +132,10 @@ PanelWindow {
     function toggleSyncthing() {
         if (syncthing.available)
             toggleDropdown(syncthingPanel);
+    }
+
+    function toggleDisplay() {
+        toggleDropdown(displayPanel);
     }
 
     function toggleUpdates() {
@@ -1086,6 +1091,14 @@ PanelWindow {
         syncthing: bar.syncthing
     }
 
+    // ---- Display: scale and brightness of this bar's monitor
+
+    DisplayPanel {
+        id: displayPanel
+        bar: bar
+        button: displayButton
+    }
+
     UpdatesPanel {
         id: updatesPanel
         bar: bar
@@ -1799,6 +1812,35 @@ PanelWindow {
                 anchors.centerIn: parent
                 text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
                 color: bar.wiredUp || bar.wifiNetwork ? bar.fg : bar.muted
+            }
+        }
+
+        // Display: left click opens scale and brightness
+        MouseArea {
+            id: displayButton
+            readonly property var monitor: Hyprland.monitorFor(bar.screen)
+            readonly property string tip: `${monitor?.name ?? "Display"} · scale ${Math.round((monitor?.scale ?? 1) * 100) / 100}×`
+
+            implicitWidth: displayIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            // A scale set by the key or the script isn't in Hyprland's monitor list until asked
+            onContainsMouseChanged: {
+                if (containsMouse)
+                    Hyprland.refreshMonitors();
+                containsMouse && !displayPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this);
+            }
+            onTipChanged: if (containsMouse && !displayPanel.open) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.toggleDisplay();
+            }
+
+            BarText {
+                id: displayIcon
+                anchors.centerIn: parent
+                text: "󰍹"
             }
         }
 

@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+# Usage: monitor-scale [cycle|SCALE] [MONITOR]
+#   A monitor's scale (the focused one by default), after Omarchy's omarchy-hyprland-monitor-scaling:
+#   no argument prints it, cycle steps through 1 → 1.25 → 1.6 → 2 and back to 1, SCALE (1–4) sets it.
+#   Changed live, and remembered in ~/.local/state/hypr/monitor-scales, which hyprland.lua applies
+#   after local.lua, so a config reload or a new session keeps it; back at 1 the line is dropped.
+set -euo pipefail
+
+scales=(1 1.25 1.6 2)
+state=${XDG_STATE_HOME:-$HOME/.local/state}/hypr/monitor-scales
+
+usage() { echo "Usage: monitor-scale [cycle|SCALE] [MONITOR]" >&2; }
+
+monitor=${2:-$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')}
+# The name goes into the Lua string eval'd below, so only a plain connector name may pass
+if [[ ! $monitor =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "Unexpected monitor name: $monitor" >&2
+    exit 1
+fi
+info=$(hyprctl -j monitors | jq -ec --arg m "$monitor" '.[] | select(.name == $m)') || {
+    echo "No monitor $monitor" >&2
+    exit 1
+}
+read -r width height refresh current < <(jq -r '"\(.width) \(.height) \(.refreshRate) \(.scale)"' <<<"$info")
+
+# Hyprland takes only scales that divide the mode into whole logical pixels (in 1/120 steps),
+# so round up to the nearest one: 1.6 on 2560x1440 stays 1.6, on other modes it may not
+clean() {
+    awk -v scale="$1" -v w="$width" -v h="$height" '
+        function gcd(a, b, t) { while (b) { t = a % b; a = b; b = t } return a }
+        BEGIN {
+            g = gcd(w * 120, h * 120)
+            k = int(scale * 120 + 0.5)
+            if (k > g) k = g
+            while (g % k != 0) k++
+            printf "%g\n", k / 120
+        }'
+}
+
+case ${1:-} in
+    "")
+        printf '%g\n' "$current"
+        exit 0
+        ;;
+    cycle)
+        # The next preset above the current scale, so an odd one (say 1.5) goes to 1.6
+        target=${scales[0]}
+        for s in "${scales[@]}"; do
+            if awk -v s="$(clean "$s")" -v c="$current" 'BEGIN { exit !(s > c + 0.001) }'; then
+                target=$s
+                break
+            fi
+        done
+        ;;
+    -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+        if [[ ! $1 =~ ^[0-9]+([.][0-9]+)?$ ]] || ! awk -v s="$1" 'BEGIN { exit !(s >= 1 && s <= 4) }'; then
+            usage
+            exit 1
+        fi
+        target=$1
+        ;;
+esac
+
+scale=$(clean "$target")
+mode=${width}x${height}@${refresh}
+hyprctl eval "hl.monitor({ output = \"$monitor\", mode = \"$mode\", position = \"auto\", scale = $scale })" >/dev/null
+
+# One "MONITOR MODE SCALE" line per monitor
+mkdir -p "${state%/*}"
+touch "$state"
+others=$(awk -v m="$monitor" '$1 != m' "$state")
+{
+    [[ -z $others ]] || printf '%s\n' "$others"
+    [[ $scale == 1 ]] || printf '%s %s %s\n' "$monitor" "$mode" "$scale"
+} >"$state.tmp"
+mv "$state.tmp" "$state"
+
+# Cycling through the scales updates one notification (replaces_id) rather than stacking them
+id_file=${XDG_RUNTIME_DIR:-/tmp}/monitor-scale.notification
+replace=()
+[[ -f $id_file && $(<"$id_file") =~ ^[0-9]+$ ]] && replace=(-r "$(<"$id_file")")
+notify-send -a monitor-scale -u low -p "${replace[@]}" "Scale ${scale}×" \
+    "$monitor · $(awk -v w="$width" -v h="$height" -v s="$scale" 'BEGIN { printf "%dx%d", w / s, h / s }') logical" \
+    >"$id_file" 2>/dev/null || true

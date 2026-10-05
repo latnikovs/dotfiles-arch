@@ -116,6 +116,10 @@ ShellRoot {
             root.focusedBar()?.toggleSyncthing();
         }
 
+        function toggleDisplay(): void {
+            root.focusedBar()?.toggleDisplay();
+        }
+
         function toggleUpdates(): void {
             root.focusedBar()?.toggleUpdates();
         }

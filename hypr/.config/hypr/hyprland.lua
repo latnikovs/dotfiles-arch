@@ -350,6 +350,7 @@ local function toggleSpecial(name, show, hide)
 end
 
 bind(mainMod .. " + SLASH", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/scripts/keybindings"))
+bind(mainMod .. " + CTRL + SLASH", "Cycle monitor scale", hl.dsp.exec_cmd("~/.config/hypr/scripts/monitor-scale cycle"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
 bind(mainMod .. " + Q", "Terminal", hl.dsp.exec_cmd(terminal))
@@ -907,4 +908,18 @@ local f = io.open(localConfig, "r")
 if f then
     f:close()
     dofile(localConfig)
+end
+
+-- Scales set with scripts/monitor-scale (SUPER + CTRL + /, the bar's display panel), one
+-- "MONITOR MODE SCALE" line each, after local.lua so a reload doesn't undo them
+local stateDir = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/hypr"
+local scales = io.open(stateDir .. "/monitor-scales", "r")
+if scales then
+    for line in scales:lines() do
+        local output, mode, scale = line:match("^(%S+) (%S+) (%S+)$")
+        if output and tonumber(scale) then
+            hl.monitor({ output = output, mode = mode, position = "auto", scale = tonumber(scale) })
+        end
+    end
+    scales:close()
 end
