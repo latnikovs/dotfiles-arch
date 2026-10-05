@@ -9,7 +9,8 @@
     "lazyvim.plugins.extras.lang.sql",
     "lazyvim.plugins.extras.lang.tailwind",
     "lazyvim.plugins.extras.lang.terraform",
-    "lazyvim.plugins.extras.lang.typescript"
+    "lazyvim.plugins.extras.lang.typescript",
+    "lazyvim.plugins.extras.util.rest"
   ],
   "install_version": 8,
   "news": {
