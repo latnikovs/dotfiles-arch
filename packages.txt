@@ -95,6 +95,8 @@ slirp4netns
 github-cli
 # psql/pg_dump only; the server runs in Docker (postgres:18)
 postgresql
+# htpasswd only; the httpd service is never enabled
+apache
 gnome-keyring
 gcr-4
 # gcr-prompter: the keyring's password dialog, for when auto-login left it locked
