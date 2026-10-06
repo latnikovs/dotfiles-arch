@@ -108,6 +108,7 @@ greetd
 greetd-tuigreet
 terminus-font
 keepassxc
+qt5-wayland
 # Mail and calendar (Gmail, iCloud); SUPER + M
 thunderbird
 nautilus

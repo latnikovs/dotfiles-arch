@@ -118,8 +118,8 @@ hl.env("XCURSOR_SIZE", "24")
 hl.env("HYPRCURSOR_SIZE", "24")
 
 -- Native Wayland first, X11 as the fallback, as in Omarchy. Qt takes its fonts,
--- dark mode and file dialogs from GTK. KeePassXC is Qt 5 without qt5-wayland,
--- so it stays on XWayland (its window rules match the X11 class).
+-- dark mode and file dialogs from GTK. KeePassXC is Qt 5 and needs qt5-wayland
+-- for this; under XWayland force_zero_scaling below would draw it at 1x.
 hl.env("GDK_BACKEND", "wayland,x11,*")
 hl.env("QT_QPA_PLATFORM", "wayland;xcb")
 hl.env("QT_QPA_PLATFORMTHEME", "gtk3")
@@ -753,7 +753,7 @@ hl.window_rule({
 -- Password manager floats and stays out of screen shares, as in Omarchy
 hl.window_rule({
     name  = "float-keepassxc",
-    match = { class = "^KeePassXC$" },
+    match = { class = "^org\\.keepassxc\\.KeePassXC$" },
 
     float           = true,
     center          = true,
@@ -771,7 +771,7 @@ hl.workspace_rule({
 -- Toggling a special workspace leaves focus behind, so typing would go to the
 -- window underneath. A freshly relaunched app takes focus as it maps.
 local specialApps = {
-    [passwords] = "class:^KeePassXC$",
+    [passwords] = "class:^org\\.keepassxc\\.KeePassXC$",
     [music]     = "class:^org\\.dotfiles\\.music$",
     [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
     [teams]     = teamsWindow,
@@ -787,7 +787,7 @@ end)
 -- It opens as "KeePassXC", or "<file>.kdbx [Locked] - KeePassXC" once a database is remembered.
 hl.window_rule({
     name  = "size-keepassxc",
-    match = { class = "^KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
+    match = { class = "^org\\.keepassxc\\.KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
 
     size  = { 1200, 800 },
 })
