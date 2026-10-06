@@ -1,6 +1,7 @@
 # Display modes for the bar's display panel and SUPER + ALT + / (scripts/monitor-mode).
 # Installed as ~/.config/hypr/display-modes by: ./install.sh utm-vm
 # The VM's window is full screen on one of the Mac's screens, so it can't tell which;
-# the MacBook's full-screen space stops below the notch.
+# the MacBook's full-screen space stops below the notch: 1800x1125 points at "More Space"
+# (1800x1169), 3600x2250 pixels with UTM in Retina mode.
 2560x1440@60 Dell
-3024x1890@60 MacBook
+3600x2250@60 MacBook
