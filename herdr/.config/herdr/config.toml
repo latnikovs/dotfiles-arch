@@ -26,5 +26,5 @@ delivery = "off"
 key = "prefix+d"
 type = "popup"
 command = 'lazygit -p "$HERDR_ACTIVE_PANE_CWD"'
-width = "90%"
-height = "90%"
+width = "99%"
+height = "99%"
