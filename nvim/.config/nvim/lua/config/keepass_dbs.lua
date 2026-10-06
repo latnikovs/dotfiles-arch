@@ -7,35 +7,14 @@
 -- Databases/WMS/Stag shows as "WMS › Stag" and a project's connections sort
 -- together (not "/": dadbod-ui makes the name a folder for saved queries).
 --
--- KeePassXC's Secret Service is left to gnome-keyring, so this goes through
--- keepassxc-cli, which asks for the master password once per nvim session.
--- The database is the one KeePassXC last had open, or $DBUI_KDBX.
+-- keepassxc-cli access is in config/keepass.lua; the master password is asked
+-- once per nvim session. The database is the one KeePassXC last had open, or
+-- $DBUI_KDBX.
+local keepass = require("config.keepass")
+
 local M = {}
 
 M.group = "Databases"
-
-local function kdbx_path()
-  if vim.env.DBUI_KDBX and vim.env.DBUI_KDBX ~= "" then
-    return vim.fs.normalize(vim.env.DBUI_KDBX)
-  end
-  local cache = vim.env.XDG_CACHE_HOME or (vim.env.HOME .. "/.cache")
-  local ini = io.open(cache .. "/keepassxc/keepassxc.ini")
-  if not ini then
-    return nil
-  end
-  local path
-  for line in ini:lines() do
-    path = path or line:match("^LastActiveDatabase=(.+)$")
-  end
-  ini:close()
-  return path
-end
-
-local function cli(args, master)
-  local cmd = { "keepassxc-cli", args[1], "-q" }
-  vim.list_extend(cmd, args, 2)
-  return vim.system(cmd, { stdin = master .. "\n", text = true })
-end
 
 local function encode(s)
   return (s:gsub("[^%w%-._~]", function(c)
@@ -62,26 +41,23 @@ end
 
 -- Returns { { name = ..., url = ... } } sorted by name, or nil and an error.
 function M.read(kdbx, master)
-  local ls = cli({ "ls", "-R", "-f", kdbx, M.group }, master):wait()
-  if ls.code ~= 0 then
-    if ls.stderr:find("Cannot find group") then
+  local paths, err = keepass.entries(kdbx, master, M.group)
+  if not paths then
+    if err:find("Cannot find group") then
       return nil,
         ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>D again'):format(
           M.group,
           vim.fn.fnamemodify(kdbx, ":t")
         )
     end
-    return nil, vim.trim(ls.stderr)
+    return nil, err
   end
   -- One keepassxc-cli per entry, all at once: each one pays the KDF on its own
   local jobs = {}
-  for path in vim.gsplit(ls.stdout, "\n", { trimempty = true }) do
-    -- Skip the group lines ("WMS/") and empty-group markers ("WMS/[empty]")
-    if not path:find("/$") and not path:find("%[empty%]$") then
-      local name = path:gsub("/", " › ")
-      local entry = M.group .. "/" .. path
-      jobs[name] = cli({ "show", "-s", "-a", "URL", "-a", "UserName", "-a", "Password", kdbx, entry }, master)
-    end
+  for _, path in ipairs(paths) do
+    local name = path:gsub("/", " › ")
+    local entry = M.group .. "/" .. path
+    jobs[name] = keepass.cli({ "show", "-s", "-a", "URL", "-a", "UserName", "-a", "Password", kdbx, entry }, master)
   end
   local dbs = {}
   for name, job in pairs(jobs) do
@@ -102,14 +78,13 @@ end
 
 -- Unlocks the database and fills g:dbs; false if that did not happen.
 function M.load()
-  local kdbx = kdbx_path()
+  local kdbx = keepass.kdbx_path("DBUI_KDBX")
   if not kdbx then
     vim.notify("No KeePassXC database: open one in KeePassXC or set $DBUI_KDBX", vim.log.levels.ERROR)
     return false
   end
-  local ok, master = pcall(vim.fn.inputsecret, "KeePassXC master password: ")
-  vim.cmd.redraw()
-  if not ok or master == "" then
+  local master = keepass.ask_master()
+  if not master then
     return false
   end
   local dbs, err = M.read(kdbx, master)

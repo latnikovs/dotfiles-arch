@@ -30,6 +30,9 @@ require("lazy").setup({
     version = false, -- always use the latest git commit
     -- version = "*", -- try installing the latest stable version for plugins that support semver
   },
+  -- My own plugins load from their clone in ~/Work/latnikovs when there is
+  -- one, and from GitHub otherwise
+  dev = { path = "~/Work/latnikovs", patterns = { "latnikovs" }, fallback = true },
   install = { colorscheme = { "tokyonight", "habamax" } },
   checker = {
     enabled = true, -- check for plugin updates periodically
