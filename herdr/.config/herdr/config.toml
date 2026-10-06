@@ -20,3 +20,11 @@ status_indicators = "symbols"
 
 [ui.toast]
 delivery = "off"
+
+# Lazygit popup over the current tab in the focused pane's repo (tmux: prefix+g)
+[[keys.command]]
+key = "prefix+d"
+type = "popup"
+command = 'lazygit -p "$HERDR_ACTIVE_PANE_CWD"'
+width = "90%"
+height = "90%"
