@@ -910,9 +910,23 @@ if f then
     dofile(localConfig)
 end
 
+local stateDir = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/hypr"
+
+-- Modes picked with scripts/monitor-mode (the bar's display panel, from a machine's display-modes),
+-- one "MONITOR MODE" line each; a saved scale below then overrides scale 1
+local modes = io.open(stateDir .. "/monitor-modes", "r")
+if modes then
+    for line in modes:lines() do
+        local output, mode = line:match("^(%S+) (%S+)$")
+        if output then
+            hl.monitor({ output = output, mode = mode, position = "auto", scale = 1 })
+        end
+    end
+    modes:close()
+end
+
 -- Scales set with scripts/monitor-scale (SUPER + CTRL + /, the bar's display panel), one
 -- "MONITOR MODE SCALE" line each, after local.lua so a reload doesn't undo them
-local stateDir = (os.getenv("XDG_STATE_HOME") or (os.getenv("HOME") .. "/.local/state")) .. "/hypr"
 local scales = io.open(stateDir .. "/monitor-scales", "r")
 if scales then
     for line in scales:lines() do

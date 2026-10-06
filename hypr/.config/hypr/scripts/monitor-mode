@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+# Usage: monitor-mode [next|MODE] [MONITOR]
+#   A monitor's mode (the focused one by default), among the presets in ~/.config/hypr/display-modes,
+#   "MODE NAME" per line (machines/<machine>.display-modes, from install.sh). No argument prints the
+#   current one, next steps to the next preset, MODE (WIDTHxHEIGHT[@HZ]) sets it. For a screen whose
+#   size Hyprland can't see, such as a VM window full screen on one of the host's monitors.
+#   Each mode keeps its own scale, as carrying one over can round it up (1.6 is 1.75 on 3024x1890),
+#   so switching back and forth would creep; a mode never set takes the current scale. Remembered in
+#   ~/.local/state/hypr/monitor-modes, which hyprland.lua applies after local.lua.
+set -euo pipefail
+
+presets=${XDG_CONFIG_HOME:-$HOME/.config}/hypr/display-modes
+state_dir=${XDG_STATE_HOME:-$HOME/.local/state}/hypr
+modes=$state_dir/monitor-modes
+scales=$state_dir/monitor-mode-scales
+
+usage() { echo "Usage: monitor-mode [next|MODE] [MONITOR]" >&2; }
+
+monitor=${2:-$(hyprctl -j monitors | jq -r '.[] | select(.focused).name')}
+# The name goes into the Lua string eval'd below, so only a plain connector name may pass
+if [[ ! $monitor =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "Unexpected monitor name: $monitor" >&2
+    exit 1
+fi
+info=$(hyprctl -j monitors | jq -ec --arg m "$monitor" '.[] | select(.name == $m)') || {
+    echo "No monitor $monitor" >&2
+    exit 1
+}
+read -r current scale < <(jq -r '"\(.width)x\(.height) \(.scale)"' <<<"$info")
+
+case ${1:-} in
+    "")
+        echo "$current"
+        exit 0
+        ;;
+    next)
+        [[ -s $presets ]] || {
+            echo "No presets in $presets" >&2
+            exit 1
+        }
+        mapfile -t list < <(awk '!/^[[:space:]]*(#|$)/ { print $1 }' "$presets")
+        target=${list[0]}
+        for i in "${!list[@]}"; do
+            if [[ ${list[i]%@*} == "$current" ]]; then
+                target=${list[(i + 1) % ${#list[@]}]}
+                break
+            fi
+        done
+        ;;
+    -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+        target=$1
+        ;;
+esac
+if [[ ! $target =~ ^[0-9]+x[0-9]+(@[0-9]+([.][0-9]+)?)?$ ]]; then
+    usage
+    exit 1
+fi
+[[ $target == *@* ]] || target=$target@60
+size=${target%@*}
+
+# This mode's scale out, the target's in
+mkdir -p "$state_dir"
+touch "$scales" "$modes"
+saved=$(awk -v m="$monitor" -v s="$size" '$1 == m && $2 == s { print $3 }' "$scales")
+{
+    awk -v m="$monitor" -v s="$current" '!($1 == m && $2 == s)' "$scales"
+    echo "$monitor $current $scale"
+} >"$scales.tmp"
+mv "$scales.tmp" "$scales"
+{
+    awk -v m="$monitor" '$1 != m' "$modes"
+    echo "$monitor $target"
+} >"$modes.tmp"
+mv "$modes.tmp" "$modes"
+
+hyprctl eval "hl.monitor({ output = \"$monitor\", mode = \"$target\", position = \"auto\", scale = ${saved:-$scale} })" >/dev/null
+# Fits the scale to the mode, saves both and shows the result
+exec "${0%/*}/monitor-scale" "${saved:-$scale}" "$monitor"

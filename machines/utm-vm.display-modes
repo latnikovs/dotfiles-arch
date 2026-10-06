@@ -1,0 +1,6 @@
+# Display modes for the bar's display panel and SUPER + ALT + / (scripts/monitor-mode).
+# Installed as ~/.config/hypr/display-modes by: ./install.sh utm-vm
+# The VM's window is full screen on one of the Mac's screens, so it can't tell which;
+# the MacBook's full-screen space stops below the notch.
+2560x1440@60 Dell
+3024x1890@60 MacBook

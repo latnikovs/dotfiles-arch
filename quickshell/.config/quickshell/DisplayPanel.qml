@@ -1,9 +1,11 @@
-// Display dropdown, from the monitor icon, after Omarchy's: this bar's monitor, its scale
+// Display dropdown, from the monitor icon, after Omarchy's: this bar's monitor, its mode when the
+// machine has presets (~/.config/hypr/display-modes, scripts/monitor-mode), its scale
 // (scripts/monitor-scale, which SUPER + CTRL + / cycles) and brightness (scripts/brightness).
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 
 Dropdown {
     id: panel
@@ -16,6 +18,26 @@ Dropdown {
     panelWidth: 300
 
     onOpenChanged: if (open) Hyprland.refreshMonitors()
+
+    // "MODE NAME" lines, from machines/<machine>.display-modes; none on most machines
+    property var modes: []
+
+    FileView {
+        path: Quickshell.env("HOME") + "/.config/hypr/display-modes"
+        watchChanges: true
+        printErrors: false
+        onFileChanged: reload()
+        onLoaded: panel.modes = text().split("\n").map(l => l.trim()).filter(l => l && !l.startsWith("#")).map(l => {
+            const [mode, ...name] = l.split(/\s+/);
+            return { mode: mode, size: mode.split("@")[0], name: name.join(" ") || mode };
+        })
+        onLoadFailed: panel.modes = []
+    }
+
+    function setMode(mode) {
+        Quickshell.execDetached([scripts + "monitor-mode", mode, monitor.name]);
+        refresh.restart();
+    }
 
     function setScale(s) {
         Quickshell.execDetached([scripts + "monitor-scale", String(s), monitor.name]);
@@ -44,6 +66,27 @@ Dropdown {
 
             Caption {
                 text: panel.monitor?.name ?? ""
+            }
+        }
+
+        Caption {
+            visible: panel.modes.length > 0
+            text: panel.monitor ? `MODE · ${panel.monitor.width}×${panel.monitor.height}` : "MODE"
+        }
+
+        RowLayout {
+            visible: panel.modes.length > 0
+            Layout.fillWidth: true
+            spacing: 6
+
+            Repeater {
+                model: panel.modes
+                delegate: Chip {
+                    required property var modelData
+                    text: modelData.name
+                    current: panel.monitor ? modelData.size === `${panel.monitor.width}x${panel.monitor.height}` : false
+                    onClicked: panel.setMode(modelData.mode)
+                }
             }
         }
 
