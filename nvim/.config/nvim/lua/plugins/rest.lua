@@ -19,6 +19,7 @@ vim.api.nvim_create_autocmd("FileType", {
     map(ev.buf, "<leader>Rr", "replay", "Replay Last Request")
     map(ev.buf, "<leader>Re", "select_env", "Select Environment")
     map(ev.buf, "<leader>Rv", "set_var", "Set Variable")
+    map(ev.buf, "<leader>Rn", "new_request", "New Request")
     map(ev.buf, "<leader>Rt", "view", "Cycle Response View")
     map(ev.buf, "<leader>Rc", "copy_curl", "Copy as cURL")
     map(ev.buf, "<leader>Rq", "close", "Close Response")
