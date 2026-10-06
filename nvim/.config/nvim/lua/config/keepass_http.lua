@@ -3,7 +3,9 @@
 -- holds the "stag/toplog" credentials of the wms project (the folder that
 -- contains http/). Its UserName and Password become {{username}} and
 -- {{password}}; extra attributes (Advanced › Additional attributes) become
--- variables under their own names.
+-- variables under their own names. A service's own credentials go under a
+-- group named like its folder: HTTP/master-data/integration/stag/toplog is
+-- used for requests in http/integration only (http.nvim sorts that out).
 --
 -- The master password is asked on the first request that needs a secret, the
 -- values are kept for the nvim session (by http.nvim), the password is not.
