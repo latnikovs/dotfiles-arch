@@ -9,6 +9,15 @@
 -- arrow key in a query buffer). Drop those maps.
 vim.g.omni_sql_no_default_maps = 1
 
+-- Connecting in the drawer (and completion's table list) waits for psql with
+-- Neovim blocked, and a host that drops the packets (IP not whitelisted)
+-- would hold it for the kernel's TCP timeout, about two minutes. libpq gives
+-- up after this many seconds instead; it covers every psql and pg_dump that
+-- Neovim starts, and a connect_timeout in a connection URL still wins.
+if not vim.env.PGCONNECT_TIMEOUT then
+  vim.env.PGCONNECT_TIMEOUT = "5"
+end
+
 -- Export to CSV next to dadbod-ui's <leader>W/E/S (config/db_export.lua)
 vim.api.nvim_create_autocmd("FileType", {
   pattern = { "sql", "mysql", "plsql" },
