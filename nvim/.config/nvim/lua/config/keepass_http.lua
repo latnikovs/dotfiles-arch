@@ -7,7 +7,8 @@
 -- group named like its folder: HTTP/master-data/integration/stag/toplog is
 -- used for requests in http/integration only (http.nvim sorts that out).
 --
--- The master password is asked on the first request that needs a secret, the
+-- The master password is asked when the sidebar opens (<leader>H, then the
+-- environment picker follows) or on the first request that needs a secret; the
 -- values are kept for the nvim session (by http.nvim), the password is not.
 -- The database is the one KeePassXC last had open, or $HTTP_KDBX.
 local keepass = require("config.keepass")
