@@ -241,7 +241,9 @@ set -x
 # ── Install ──────────────────────────────────────────────────────────────────
 section packages Packages
 step 'System packages'
-sudo pacman -S --needed --noconfirm - < <(grep -vE '^\s*(#|$)' packages.txt)
+# -Syu: sync first, or a package the mirror updated since the last sync 404s; the upgrade
+# comes with it, as Arch does not support partial upgrades (-Sy alone)
+sudo pacman -Syu --needed --noconfirm - < <(grep -vE '^\s*(#|$)' packages.txt)
 
 # Hardware-specific packages, only on machines that have the hardware.
 # AMD CPU: microcode updates, loaded early by mkinitcpio's microcode hook.
