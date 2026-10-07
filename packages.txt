@@ -81,6 +81,8 @@ tree-sitter-cli
 gcc
 make
 unzip
+# 7z and other archives (7z, rar, iso, ...)
+7zip
 tmux
 lazygit
 zoxide
