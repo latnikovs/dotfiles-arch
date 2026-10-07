@@ -312,8 +312,10 @@ hl.config({
         accel_profile = "flat", -- no pointer acceleration
         sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
 
+        -- Natural (macOS-style) scrolling: content follows the fingers / wheel
+        natural_scroll = true,
         touchpad = {
-            natural_scroll = false,
+            natural_scroll = true,
         },
     },
 })
