@@ -17,6 +17,8 @@ folders="notes:Notes:$HOME/notes documents:Documents:$HOME/Documents"
 # only from these, on top of the firewall on Linux.
 tailnet="--allowed-networks 100.64.0.0/10 --allowed-networks fd7a:115c:a1e0::/48"
 
+# Not grep -q: it exits at the first match, the CLI then dies of SIGPIPE, and with
+# pipefail the pipeline fails, so an existing folder or device reads as missing
 st() { syncthing cli "$@"; }
 my_id() { st show system | sed -n 's/.*"myID": *"\([^"]*\)".*/\1/p'; }
 
@@ -30,13 +32,13 @@ st show system >/dev/null || { echo "Syncthing isn't running" >&2; exit 1; }
 if [[ ${1:-} == pair ]]; then
     host=${2:?usage: setup pair <host> <device-id>}
     id=${3:?usage: setup pair <host> <device-id>}
-    if ! st config devices list | grep -qx "$id"; then
+    if ! st config devices list | grep -x "$id" >/dev/null; then
         # shellcheck disable=SC2086
         st config devices add --device-id "$id" --name "$host" --addresses "tcp://$host:22000" $tailnet
     fi
     for folder in $folders; do
         folder=${folder%%:*}
-        st config folders "$folder" devices list | grep -qx "$id" ||
+        st config folders "$folder" devices list | grep -x "$id" >/dev/null ||
             st config folders "$folder" devices add --device-id "$id"
     done
     # This device's Tailscale name (the Mac's CLI may not be on PATH)
@@ -71,7 +73,7 @@ for folder in $folders; do
 *.swo
 .obsidian/workspace*.json
 EOF
-    if ! st config folders list | grep -qx "$id"; then
+    if ! st config folders list | grep -x "$id" >/dev/null; then
         st config folders add --id "$id" --label "$label" --path "$path"
         # Replaced and deleted files are kept in .stversions for 90 days
         st config folders "$id" versioning type set staggered
