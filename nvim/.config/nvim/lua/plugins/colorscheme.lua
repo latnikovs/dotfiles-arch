@@ -10,7 +10,16 @@ return {
     "rmehri01/onenord.nvim",
     lazy = false,
     priority = 1000,
-    opts = {},
+    opts = {
+      -- OneNord Light's selection (#EAEBED on #F7F8FA) is barely visible: use
+      -- a pale Nord blue instead, keeping syntax colours on top of it.
+      custom_highlights = {
+        light = {
+          Visual = { bg = "#C5D6EA" },
+          VisualNOS = { bg = "#C5D6EA" },
+        },
+      },
+    },
   },
   {
     "LazyVim/LazyVim",
