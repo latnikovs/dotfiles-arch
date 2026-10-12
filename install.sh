@@ -336,6 +336,9 @@ claude_settings=$HOME/.claude/settings.json
 [[ -s $claude_settings ]] || echo '{}' >"$claude_settings"
 jq '.statusLine = {"type": "command", "command": "~/.claude/statusline.sh"}' "$claude_settings" >"$claude_settings.new"
 mv "$claude_settings.new" "$claude_settings"
+# herdr's hook (~/.claude/hooks/herdr-agent-state.sh, registered in settings.json), which tells
+# herdr each pane's conversation so it resumes it after a restart (resume_agents_on_restore)
+herdr integration status | grep '^claude: installed' >/dev/null || herdr integration install claude
 
 section services Services
 step 'Audio (PipeWire)'
