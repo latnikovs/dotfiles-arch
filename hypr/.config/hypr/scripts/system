@@ -2,20 +2,27 @@
 # Usage: system menu|lock|suspend|logout|reboot|shutdown   power actions, after Omarchy's omarchy-system-*
 set -euo pipefail
 
-# Close every window so apps (Chromium) shut down cleanly instead of being killed
+# Close every window and wait for the apps behind them to exit, so they shut down cleanly instead
+# of being killed: Chromium-based browsers keep writing their session and prefs for a while after
+# the window is gone, and Brave then reports it "didn't shut down correctly". Gives up after 15s
+# (an app asking to save, say) and goes ahead anyway
 close_all() {
-    hyprctl clients -j | jq -r '.[].address' | while read -r addr; do
+    local clients pids
+    clients=$(hyprctl clients -j)
+    mapfile -t pids < <(jq -r '.[].pid | select(. > 0)' <<<"$clients" | sort -u)
+    jq -r '.[].address' <<<"$clients" | while read -r addr; do
         hyprctl dispatch "hl.dsp.window.close({ window = 'address:$addr' })" >/dev/null
     done
-    sleep 1
+    (( ${#pids[@]} )) || return 0
+    for _ in {1..150}; do
+        kill -0 "${pids[@]}" 2>/dev/null || break
+        sleep 0.1
+    done
 }
 
-# Scheduled in the systemd user manager, so closing the window this was run from can't cancel it
-power() {
-    systemd-run --user --collect --quiet --on-active=2s --timer-property=AccuracySec=100ms \
-        systemctl "$1" --no-wall
-    notify-send -a system -u low "$2"
-    close_all
+# Run in the systemd user manager, so closing the window this was run from can't cancel it
+detach() {
+    systemd-run --user --collect --quiet "$(realpath "$0")" "_$1"
 }
 
 case ${1:-menu} in
@@ -35,13 +42,24 @@ case ${1:-menu} in
         ;;
     lock)     exec ~/.config/hypr/scripts/lock ;;
     suspend)  systemctl suspend ;;
-    logout)
-        setsid -f bash -c "sleep 2; hyprctl dispatch 'hl.dsp.exit()'" </dev/null >/dev/null 2>&1
+    logout)   detach logout ;;
+    reboot)   detach reboot ;;
+    shutdown) detach shutdown ;;
+    _logout)
         notify-send -a system -u low "Logging out"
         close_all
+        hyprctl dispatch 'hl.dsp.exit()' >/dev/null
         ;;
-    reboot)   power reboot "Rebooting" ;;
-    shutdown) power poweroff "Shutting down" ;;
+    _reboot)
+        notify-send -a system -u low "Rebooting"
+        close_all
+        systemctl reboot --no-wall
+        ;;
+    _shutdown)
+        notify-send -a system -u low "Shutting down"
+        close_all
+        systemctl poweroff --no-wall
+        ;;
     *)
         echo "Usage: system menu|lock|suspend|logout|reboot|shutdown" >&2
         exit 1
