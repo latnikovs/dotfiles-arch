@@ -23,7 +23,10 @@ case ${1:-menu} in
         pkill -x fuzzel && exit 0
         # Opened from the menu (scripts/menu) it ends in Back, and Left goes back too; Back and
         # Esc exit 2, Left 10, which take the menu back to its main list
-        items=("󰌾  Lock" "󰒲  Suspend" "󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown")
+        # DOTFILES_NO_SUSPEND hides Suspend on machines that can't wake from it (machines/utm-vm.lua)
+        items=("󰌾  Lock")
+        [[ -n ${DOTFILES_NO_SUSPEND:-} ]] || items+=("󰒲  Suspend")
+        items+=("󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown")
         [[ -z ${DOTFILES_MENU:-} ]] || items+=("󰁍  Back")
         choice=$(printf '%s\n' "${items[@]}" \
             | fuzzel ${DOTFILES_MENU:+--config=$HOME/.config/fuzzel/menu.ini} --dmenu --prompt "󰐥   " --placeholder System --width 18 --lines ${#items[@]}) || exit

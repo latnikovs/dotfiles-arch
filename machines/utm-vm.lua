@@ -33,3 +33,8 @@ hl.bind("SUPER + ALT + SLASH", hl.dsp.exec_cmd("~/.config/hypr/scripts/monitor-m
 -- macOS swallows Cmd + Esc (system menu) and Cmd + Option + Space (menu, Finder search there)
 -- before they reach the VM, so open the menu on SUPER + ALT + M too; System is in it.
 hl.bind("SUPER + ALT + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"), { description = "Menu (commands, as Omarchy's)" })
+
+-- The VM suspends but never wakes: QEMU's virt machine has only s2idle and no wake source that
+-- reaches the guest, so it just hangs. Hide Suspend in the system menu (scripts/system); UTM's
+-- Pause, or the Mac sleeping, does the job instead.
+hl.env("DOTFILES_NO_SUSPEND", "1")
