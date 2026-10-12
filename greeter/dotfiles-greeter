@@ -9,7 +9,9 @@ export HOME=/var/lib/dotfiles-greeter
 
 failed=${XDG_RUNTIME_DIR:-$HOME}/greeter-failed
 rm -f "$failed"
-start-hyprland -- --config /etc/greetd/hyprland.lua || touch "$failed"
+# Its output to a file, not the console: Hyprland logs to stdout until it has read its
+# config, and that would show on screen until the login screen appears
+start-hyprland -- --config /etc/greetd/hyprland.lua >"$HOME/hyprland.out" 2>&1 || touch "$failed"
 [ -e "$failed" ] || exit 0
 
 # tuigreet in Nord: the console palette (console/vtrgb) maps these names to it

@@ -642,7 +642,8 @@ step 'Login screen (greetd)'
 # when started from a tty login.
 sudo install -Dm755 /dev/stdin /usr/local/bin/hyprland-session <<'SH'
 #!/bin/sh
-exec zsh -lc start-hyprland
+# Hyprland's early log (stdout, until it has read its config) to a file, not the console
+exec zsh -lc 'state=${XDG_STATE_HOME:-$HOME/.local/state}; mkdir -p "$state"; exec start-hyprland >"$state/hyprland-session.log" 2>&1'
 SH
 sudo install -Dm755 greeter/dotfiles-greeter /usr/local/bin/dotfiles-greeter
 sudo install -Dm644 greeter/hyprland.lua /etc/greetd/hyprland.lua
