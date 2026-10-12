@@ -13,6 +13,12 @@ close_all() {
     jq -r '.[].address' <<<"$clients" | while read -r addr; do
         hyprctl dispatch "hl.dsp.window.close({ window = 'address:$addr' })" >/dev/null
     done
+    # herdr's server outlives its window, with the agents in it; stopped the same way, or systemd
+    # SIGKILLs it at shutdown
+    if pgrep -x herdr >/dev/null; then
+        mapfile -t -O "${#pids[@]}" pids < <(pgrep -x herdr)
+        timeout 5 herdr server stop >/dev/null 2>&1 || true
+    fi
     (( ${#pids[@]} )) || return 0
     for _ in {1..150}; do
         kill -0 "${pids[@]}" 2>/dev/null || break
