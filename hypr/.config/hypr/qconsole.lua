@@ -3,11 +3,12 @@
 -- the first time it opens empty it starts Claude Code (scripts/agent) in ~/Work.
 
 -- How much of the usable screen height the console covers, from the top
-local share = 0.5
+local share = 0.65
 
--- A single window is boxed into a centered panel this many times wider than tall;
--- a second tiled window gets the full width back
-local box = 2
+-- A single window is boxed into a centered panel this wide, as a share of the usable
+-- screen height (so the height above doesn't change it); a second tiled window gets
+-- the full width back
+local span = 1
 
 local SCRATCHPAD = "special:scratchpad"
 
@@ -77,7 +78,7 @@ local function fit(monitor)
     local tall = math.floor(height * share)
     local wide = width
     if alone() then
-        wide = math.min(width, tall * box)
+        wide = math.min(width, math.floor(height * span))
     end
 
     return cover(math.floor((width - wide) / 2), math.floor(height - tall))
