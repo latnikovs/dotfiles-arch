@@ -594,6 +594,44 @@ CONF
 fi
 
 section desktop Desktop
+step 'Quiet boot'
+# No kernel or systemd messages on screen during boot: black until the disk password
+# prompt or the login screen. systemd's status lines still show when a unit fails or
+# startup stalls, and the journal keeps everything. Options already on the kernel
+# command line, with any value, stay as they are. From the next boot.
+quiet_opts=(quiet loglevel=3 systemd.show_status=auto rd.udev.log_level=3 vt.global_cursor_default=0)
+# add_quiet_opts <file> <regex for the command line's lines>: appends the missing
+# options to those lines (inside the closing quote, if there is one)
+add_quiet_opts() {
+    local opt key
+    for opt in "${quiet_opts[@]}"; do
+        key=${opt%%=*}
+        sudo sed -i -E "/$2/{/[[:space:]\"]${key//./\\.}(=|[[:space:]\"]|\$)/!s/(\"?)[[:space:]]*\$/ $opt\1/}" "$1"
+    done
+}
+esp=''
+for dir in /boot /efi /boot/efi; do
+    [[ $(findmnt -no FSTYPE "$dir" 2>/dev/null) == vfat ]] && { esp=$dir; break; }
+done
+if [[ -f /etc/default/limine ]]; then
+    # Limine with limine-mkinitcpio-hook (Snapshots above): the entries come from here
+    limine_before=$(cat /etc/default/limine)
+    add_quiet_opts /etc/default/limine '^KERNEL_CMDLINE\[default\]='
+    [[ $(cat /etc/default/limine) == "$limine_before" ]] || sudo limine-update
+elif [[ -n $esp ]] && sudo test -d "$esp/loader/entries"; then
+    # systemd-boot
+    while IFS= read -r entry; do
+        add_quiet_opts "$entry" '^options[[:space:]]'
+    done < <(sudo find "$esp/loader/entries" -maxdepth 1 -name '*.conf')
+elif [[ -n $esp ]] && pacman -Q limine &>/dev/null; then
+    # Limine with its entries written by hand (archinstall's)
+    while IFS= read -r conf; do
+        add_quiet_opts "$conf" '^[[:space:]]*(kernel_)?cmdline:'
+    done < <(sudo find "$esp" -maxdepth 3 -name limine.conf)
+else
+    warn "Unknown bootloader: add ${quiet_opts[*]} to the kernel command line by hand"
+fi
+
 step 'Login screen (greetd)'
 # Login: greetd on tty1. With the root filesystem on LUKS, the disk password at boot
 # already proved who is there, so the first session of each boot starts without a
