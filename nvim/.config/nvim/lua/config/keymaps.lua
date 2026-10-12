@@ -30,6 +30,13 @@ end, { desc = "Find Note" })
 vim.keymap.set("n", "<leader>jg", function()
   Snacks.picker.grep({ cwd = notes.dir })
 end, { desc = "Grep Notes" })
+vim.keymap.set("n", "]j", function()
+  notes.step(1)
+end, { desc = "Next Daily Note" })
+vim.keymap.set("n", "[j", function()
+  notes.step(-1)
+end, { desc = "Prev Daily Note" })
+vim.keymap.set("n", "<leader>jd", notes.delete, { desc = "Delete Note" })
 
 -- Buffer-local counterpart to LazyVim's <leader>ud, which hides diagnostics in
 -- every buffer. Meant for reading prose (markdownlint nagging about a README)

@@ -24,4 +24,61 @@ function M.daily(offset_days)
   end
 end
 
+-- The daily notes on disk, oldest first (the YYYY-MM-DD names sort by date).
+local function daily_notes()
+  local notes = vim.fn.glob(M.dir .. "/daily/*.md", false, true)
+  table.sort(notes)
+  return notes
+end
+
+-- Steps to the next (1) or previous (-1) daily note that exists, skipping the
+-- days without one. Outside a daily note it steps from today. Returns whether
+-- there was one; quiet leaves out the message when there wasn't.
+function M.step(direction, quiet)
+  local current = vim.api.nvim_buf_get_name(0)
+  if vim.fs.dirname(current) ~= M.dir .. "/daily" then
+    current = M.dir .. "/daily/" .. os.date("%Y-%m-%d") .. ".md"
+  end
+  local notes = daily_notes()
+  local first, last, step = 1, #notes, 1
+  if direction < 0 then
+    first, last, step = #notes, 1, -1
+  end
+  for i = first, last, step do
+    if (direction > 0 and notes[i] > current) or (direction < 0 and notes[i] < current) then
+      pcall(vim.cmd.edit, vim.fn.fnameescape(notes[i]))
+      return true
+    end
+  end
+  if not quiet then
+    vim.notify(direction > 0 and "No newer note" or "No older note", vim.log.levels.INFO)
+  end
+  return false
+end
+
+-- Deletes the current note after asking. A daily note is replaced by the one
+-- before it (or after, if it was the first), so the notes window stays on a note.
+-- Images it pasted into assets/ are left alone: another note may link them too.
+function M.delete()
+  local path = vim.api.nvim_buf_get_name(0)
+  if not vim.startswith(path, M.dir .. "/") or vim.fn.filereadable(path) == 0 then
+    vim.notify("Not a note in " .. M.dir, vim.log.levels.WARN)
+    return
+  end
+  local name = path:sub(#M.dir + 2)
+  if vim.fn.confirm("Delete " .. name .. "?", "&Yes\n&No", 2) ~= 1 then
+    return
+  end
+  local buf = vim.api.nvim_get_current_buf()
+  if vim.fs.dirname(path) == M.dir .. "/daily" then
+    local _ = M.step(-1, true) or M.step(1, true)
+  end
+  if vim.fn.delete(path) ~= 0 then
+    vim.notify("Could not delete " .. name, vim.log.levels.ERROR)
+    return
+  end
+  Snacks.bufdelete({ buf = buf, force = true })
+  vim.notify("Deleted " .. name, vim.log.levels.INFO)
+end
+
 return M
