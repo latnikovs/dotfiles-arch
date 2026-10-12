@@ -88,7 +88,7 @@ hl.on("hyprland.start", function ()
     -- Clipboard history for SUPER + CTRL + V (scripts/clipboard-history)
     hl.exec_cmd("wl-paste --type text --watch ~/.config/hypr/scripts/clipboard-store")
     hl.exec_cmd("wl-paste --type image --watch ~/.config/hypr/scripts/clipboard-store")
-    -- Locks after 5 idle minutes and before suspend (hypridle.conf)
+    -- Locks after 15 idle minutes and before suspend (hypridle.conf)
     hl.exec_cmd("hypridle")
     -- Night light on a schedule (hyprsunset.conf); SUPER + CTRL + N toggles it
     hl.exec_cmd("hyprsunset")
