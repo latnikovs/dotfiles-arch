@@ -21,6 +21,8 @@ less
 man-db
 # System summary in the terminal
 fastfetch
+# fsck for the FAT boot partition (systemd checks /boot with it at boot)
+dosfstools
 git-delta
 grim
 slurp
