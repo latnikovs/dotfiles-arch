@@ -439,6 +439,32 @@ sudo ufw --force enable
 sudo systemctl enable ufw.service
 sudo ufw reload
 
+step 'Public network hygiene'
+# No LLMNR: a mistyped name would be asked of the whole local network, and on public
+# Wi-Fi anyone can answer (Responder-style spoofing). Tailscale's MagicDNS and mDNS
+# cover the names that matter.
+if systemctl list-unit-files systemd-resolved.service &>/dev/null; then
+    sudo install -Dm644 /dev/stdin /etc/systemd/resolved.conf.d/20-no-llmnr.conf <<'INI'
+[Resolve]
+LLMNR=no
+INI
+    sudo systemctl try-restart systemd-resolved.service
+fi
+# Wi-Fi gets a MAC address of its own per network (the same one each time on that
+# network, so home DHCP reservations keep working after the first connect) and keeps
+# the hostname out of DHCP, so hotspots can't follow the machine or learn its name.
+# Wired connections keep the real MAC and hostname.
+sudo install -Dm644 /dev/stdin /etc/NetworkManager/conf.d/20-wifi-privacy.conf <<'INI'
+[connection-wifi-privacy]
+match-device=type:wifi
+wifi.cloned-mac-address=stable
+ipv4.dhcp-send-hostname=false
+ipv6.dhcp-send-hostname=false
+INI
+if systemctl is-active --quiet NetworkManager.service; then
+    sudo nmcli general reload conf
+fi
+
 step 'SSH server'
 # SSH server, reachable only over Tailscale (the firewall above): keys only, no
 # root. The Mac's key goes in ~/.ssh/authorized_keys by hand.
