@@ -21,7 +21,7 @@ Scope {
     readonly property int maxLife: 30000
 
     property bool dnd: false
-    // Marks new mail and Teams messages, and brings their app up when a notification is clicked
+    // Marks new mail, Teams and WhatsApp messages, and brings their app up when a notification is clicked
     required property Messaging messaging
 
     // History: the last 30 notifications that left the screen (expired or dismissed) or
@@ -97,7 +97,7 @@ Scope {
     }
 
     // Left click runs the sender's default action (e.g. focus the chat), otherwise just closes.
-    // Mail and Teams live on hidden special workspaces, which that can't bring up by itself.
+    // Mail, Teams and WhatsApp live on hidden special workspaces, which that can't bring up by itself.
     function activate(n) {
         messaging.reveal(n);
         for (let i = 0; i < n.actions.length; i++) {

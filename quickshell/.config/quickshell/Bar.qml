@@ -757,7 +757,7 @@ PanelWindow {
         }
     }
 
-    // ---- Mail and Teams, right of the weather (of the clock while there's no weather)
+    // ---- Mail, Teams and WhatsApp, right of the weather (of the clock while there's no weather)
 
     RowLayout {
         anchors {
@@ -819,6 +819,31 @@ PanelWindow {
                 id: teamsIcon
                 anchors.centerIn: parent
                 text: parent.unread > 0 ? `󰊻 ${parent.unread}` : "󰊻"
+                color: parent.alert ? bar.warning : parent.containsMouse ? bar.fg : Theme.dim
+            }
+        }
+
+        // WhatsApp: click shows or hides it (SUPER + U); unread count from its window title, as Teams
+        MouseArea {
+            readonly property int unread: bar.messaging.whatsappUnread
+            readonly property bool alert: unread > 0 || bar.messaging.whatsappNew
+            readonly property string tip: unread > 0 ? `WhatsApp · ${unread} unread` : bar.messaging.whatsappNew ? "WhatsApp · new messages" : "WhatsApp"
+
+            implicitWidth: whatsappIcon.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.messaging.show("whatsapp", true);
+            }
+
+            BarText {
+                id: whatsappIcon
+                anchors.centerIn: parent
+                text: parent.unread > 0 ? `󰖣 ${parent.unread}` : "󰖣"
                 color: parent.alert ? bar.warning : parent.containsMouse ? bar.fg : Theme.dim
             }
         }

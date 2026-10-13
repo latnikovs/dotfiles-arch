@@ -1,7 +1,8 @@
-// Mail (Thunderbird, special:mail) and Teams (a Chromium app window, special:teams) for the bar.
-// Teams puts its unread count in the window title, "(3) Chat | … | Microsoft Teams". Thunderbird
-// shares no count, so mail is only "new since you last looked": set by its notifications and
-// cleared when the mail workspace shows. Teams notifications do the same when the title has no count.
+// Mail (Thunderbird, special:mail), Teams and WhatsApp (Chromium app windows, special:teams and
+// special:whatsapp) for the bar. Teams and WhatsApp put their unread count in the window title,
+// "(3) Chat | … | Microsoft Teams" and "(3) WhatsApp". Thunderbird shares no count, so mail is
+// only "new since you last looked": set by its notifications and cleared when the mail workspace
+// shows. Teams and WhatsApp notifications do the same when the title has no count.
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
@@ -11,10 +12,15 @@ Scope {
 
     property bool mailNew: false
     property bool teamsNew: false
-    readonly property int teamsUnread: {
+    property bool whatsappNew: false
+    readonly property int teamsUnread: unread(/^\((\d+)\) .*Microsoft Teams$/)
+    readonly property int whatsappUnread: unread(/^\((\d+)\) WhatsApp$/)
+
+    // The count from the first window whose title matches, 0 without one
+    function unread(title: var): int {
         let count = 0;
         for (const t of Hyprland.toplevels.values) {
-            const m = /^\((\d+)\) .*Microsoft Teams$/.exec(t.title);
+            const m = title.exec(t.title);
             if (m)
                 count = Math.max(count, Number(m[1]));
         }
@@ -28,13 +34,15 @@ Scope {
         return Object.values(shownSpecial).includes("special:" + app);
     }
 
-    // "mail", "teams" or "" for a notification (or a history entry, which has the same fields).
+    // "mail", "teams", "whatsapp" or "" for a notification (or a history entry, which has the same fields).
     // Chromium names itself as the app and puts the site in the body.
     function appOf(n): string {
         if (/thunderbird/i.test(n.appName))
             return "mail";
         if (/teams/i.test(n.appName) || /teams\.(microsoft\.com|cloud\.microsoft)/.test(n.summary + " " + n.body))
             return "teams";
+        if (/web\.whatsapp\.com/.test(n.summary + " " + n.body))
+            return "whatsapp";
         return "";
     }
 
@@ -44,6 +52,8 @@ Scope {
             mailNew = true;
         else if (app === "teams" && !shown("teams"))
             teamsNew = true;
+        else if (app === "whatsapp" && !shown("whatsapp"))
+            whatsappNew = true;
     }
 
     // Runs showSpecial() from hyprland.lua, which animates like SUPER + M / SUPER + Y
@@ -75,6 +85,8 @@ Scope {
                 messaging.mailNew = false;
             else if (name === "special:teams")
                 messaging.teamsNew = false;
+            else if (name === "special:whatsapp")
+                messaging.whatsappNew = false;
         }
     }
 }
