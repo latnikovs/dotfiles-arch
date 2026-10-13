@@ -69,7 +69,9 @@ The UTM virtual machine I use for testing installs with
 - Add the Mac's public key to `~/.ssh/authorized_keys`. The SSH server only
   accepts keys, and the firewall only lets it in over Tailscale.
 - `gh auth login`
-- Sign in to Thunderbird (SUPER+M) and Teams (SUPER+Y)
+- Create the Chromium profiles in this order: Work first, then Personal
+  (`hyprland.lua` starts Teams in the first, WhatsApp and ChatGPT in the second)
+- Sign in to Thunderbird (SUPER+M), Teams (SUPER+Y) and WhatsApp (SUPER+U)
 - Pair Syncthing with the other machines (below)
 
 ### Syncthing

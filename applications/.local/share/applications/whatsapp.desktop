@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=WhatsApp
+GenericName=Messages (SUPER + U)
+Comment=Show WhatsApp, which runs hidden on its own workspace from login (hyprland.lua showSpecial)
+Keywords=whatsapp;chat;messages;
+Exec=hyprctl eval "showSpecial('whatsapp')"
+Icon=whatsapp
+Type=Application
+Terminal=false

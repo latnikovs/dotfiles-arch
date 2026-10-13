@@ -36,8 +36,17 @@ local passwords   = "special:passwords"
 local music       = "special:music"
 local mail        = "special:mail"
 local teams       = "special:teams"
--- Teams as a Chromium app window; Microsoft has no Linux client
-local teamsApp    = browser .. " --app=https://teams.microsoft.com/"
+local whatsapp    = "special:whatsapp"
+-- Web apps as Chromium app windows, each in its own profile: work accounts in Work,
+-- personal ones in Personal. Without --profile-directory Chromium would use whichever
+-- profile was used last. These are the profiles' folder names, not their display names:
+-- the first profile created is "Default", the next "Profile 1" (chrome://version shows it).
+local workApp     = browser .. " --profile-directory=Default --app="
+local personalApp = browser .. " --profile-directory='Profile 1' --app="
+-- Teams: Microsoft has no Linux client
+local teamsApp    = workApp .. "https://teams.microsoft.com/"
+local whatsappApp = personalApp .. "https://web.whatsapp.com/"
+local chatgptApp  = personalApp .. "https://chatgpt.com/"
 
 
 ------------------------
@@ -102,9 +111,10 @@ hl.on("hyprland.start", function ()
     hl.exec_cmd("command -v limine-snapper-notify >/dev/null && limine-snapper-notify")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
-    -- Mail and Teams only notify while running, so they start hidden too
+    -- Mail, Teams and WhatsApp only notify while running, so they start hidden too
     hl.exec_cmd("[workspace " .. mail .. " silent] thunderbird")
     hl.exec_cmd(teamsApp)
+    hl.exec_cmd(whatsappApp)
 end)
 
 
@@ -469,6 +479,17 @@ end
 
 bind(mainMod .. " + Y", "Toggle Teams (in call mode: focus it / go back)", function() showSpecial("teams", true) end)
 bind(mainMod .. " + SHIFT + Y", "Teams call mode (pinned, top right)", toggleTeamsCall)
+bind(mainMod .. " + U", "Toggle WhatsApp", toggleSpecial("whatsapp", "fade", "fade"))
+
+-- ChatGPT (SUPER + SHIFT + A, Omarchy's key): one window; pressed again it jumps to it
+local chatgptWindow = "class:^chrome-chatgpt\\.com__.*$"
+bind(mainMod .. " + SHIFT + A", "ChatGPT", function()
+    if hl.get_window(chatgptWindow) then
+        hl.dispatch(hl.dsp.focus({ window = chatgptWindow }))
+    else
+        hl.dispatch(hl.dsp.exec_cmd(chatgptApp))
+    end
+end)
 
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
 bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
@@ -777,6 +798,7 @@ local specialApps = {
     [music]     = "class:^org\\.dotfiles\\.music$",
     [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
     [teams]     = teamsWindow,
+    [whatsapp]  = "class:^chrome-web\\.whatsapp\\.com__.*$",
 }
 hl.on("workspace.special_active", function(ws)
     local window = ws and specialApps[ws.name]
@@ -840,6 +862,19 @@ hl.window_rule({
     match = { class = "^chrome-teams\\..*$" },
 
     workspace = teams .. " silent",
+})
+
+-- WhatsApp (SUPER + U) the same way, in the Personal profile
+hl.workspace_rule({
+    workspace        = whatsapp,
+    on_created_empty = whatsappApp,
+})
+
+hl.window_rule({
+    name  = "whatsapp-workspace",
+    match = { class = "^chrome-web\\.whatsapp\\.com__.*$" },
+
+    workspace = whatsapp .. " silent",
 })
 
 -- Nautilus, as in Omarchy: the PDF viewer floats, as do the GTK portal's pickers
