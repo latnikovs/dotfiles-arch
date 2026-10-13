@@ -725,7 +725,7 @@ pam_add /etc/pam.d/passwd "password   optional     pam_gnome_keyring.so"
 # the keyring. .zprofile points SSH_AUTH_SOCK at it.
 systemctl --user enable --now gcr-ssh-agent.socket
 
-step 'KeePassXC and browser policies'
+step 'KeePassXC, browser profiles and policies'
 # KeePassXC rewrites its settings and native messaging files in place, so they
 # are seeded rather than stowed. The ini turns on browser integration and the
 # SSH agent, and leaves Secret Service to gnome-keyring.
@@ -753,6 +753,40 @@ for profile in chromium BraveSoftware/Brave-Origin; do
 }
 JSON
 done
+# Browser profiles, made before the browser first starts so their folders are known:
+# hyprland.lua opens Teams in Chromium's Default (Work), WhatsApp and ChatGPT in
+# Profile 1 (Personal). Each is "folder|name|avatar|theme colour" (the avatar and
+# colour as in chrome://settings/manageProfile; an empty colour is the default theme).
+# Skipped once the browser has a Local State, so existing profiles stay as they are.
+seed_profiles() {
+    local root=$1 profile dir name avatar colour state='{}'
+    shift
+    [[ -e "$root/Local State" ]] && return
+    for profile in "$@"; do
+        IFS='|' read -r dir name avatar colour <<<"$profile"
+        mkdir -p "$root/$dir"
+        jq -n --arg name "$name" --argjson avatar "$avatar" --arg colour "$colour" '
+            { profile: { name: $name, avatar_index: $avatar, using_default_name: false,
+                         using_default_avatar: false } }
+            + if $colour == "" then {} else
+                { browser: { theme: { color_variant2: 1, user_color2: ($colour | tonumber) } },
+                  extensions: { theme: { id: "user_color_theme_id" } } } end' \
+            >"$root/$dir/Preferences"
+        state=$(jq --arg dir "$dir" --arg name "$name" --argjson avatar "$avatar" '
+            .profile.info_cache[$dir] = { name: $name, is_using_default_name: false,
+                avatar_icon: "chrome://theme/IDR_PROFILE_AVATAR_\($avatar)" }
+            | .profile.profiles_order += [$dir]
+            | .profile.last_used //= $dir' <<<"$state")
+    done
+    printf '%s\n' "$state" >"$root/Local State"
+}
+seed_profiles "$HOME/.config/chromium" \
+    'Default|Work|26|' \
+    'Profile 1|Personal|26|-4776932'
+seed_profiles "$HOME/.config/BraveSoftware/Brave-Origin" \
+    'Default|Personal|26|' \
+    'Profile 1|Work|81|-16748936' \
+    'Profile 2|Misc|89|-1714692'
 # KeePassXC-Browser, installed into Chromium from the Web Store on next start
 sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
     <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
