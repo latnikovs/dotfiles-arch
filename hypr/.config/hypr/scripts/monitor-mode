@@ -78,5 +78,10 @@ mv "$scales.tmp" "$scales"
 mv "$modes.tmp" "$modes"
 
 hyprctl eval "hl.monitor({ output = \"$monitor\", mode = \"$target\", position = \"auto\", scale = ${saved:-$scale} })" >/dev/null
+# The mode lands a moment later; monitor-scale reads it back, and on the old one it would set that again
+for _ in {1..20}; do
+    [[ $(hyprctl -j monitors | jq -r --arg m "$monitor" '.[] | select(.name == $m) | "\(.width)x\(.height)"') == "$size" ]] && break
+    sleep 0.1
+done
 # Fits the scale to the mode, saves both and shows the result
 exec "${0%/*}/monitor-scale" "${saved:-$scale}" "$monitor"

@@ -3,7 +3,7 @@
 -- UTM's virtual display defaults to 1280x800; the same mode as the desktop session (utm-vm.lua)
 hl.monitor({
     output   = "Virtual-1",
-    mode     = "2560x1440@60",
+    mode     = "5120x2880@60",
     position = "auto",
-    scale    = 1,
+    scale    = 2,
 })

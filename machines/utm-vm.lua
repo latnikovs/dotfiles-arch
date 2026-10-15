@@ -23,9 +23,9 @@ end
 -- steps through them (scripts/monitor-mode), and the choice is applied after this file.
 hl.monitor({
     output   = "Virtual-1",
-    mode     = "2560x1440@60",
+    mode     = "5120x2880@60",
     position = "auto",
-    scale    = 1,
+    scale    = 2,
 })
 hl.bind("SUPER + ALT + SLASH", hl.dsp.exec_cmd("~/.config/hypr/scripts/monitor-mode next Virtual-1"),
     { description = "VM display: next mode (Dell / MacBook)" })
