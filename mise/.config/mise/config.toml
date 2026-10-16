@@ -8,6 +8,7 @@ go = "latest"
 java = "temurin-25"
 terraform = "latest"
 gcloud = "latest"
+shellcheck = "0.11.0"
 
 [settings]
 # mise up must not delete the version a running process is executing from
