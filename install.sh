@@ -804,8 +804,9 @@ for browser in chromium:/etc/chromium/policies/managed brave:/etc/brave/policies
 done
 
 step 'Default apps'
-# Links and web pages open in Brave Origin, in the profile last used
-xdg-mime default brave-origin.desktop x-scheme-handler/http x-scheme-handler/https \
+# Links and web pages open in Brave Origin, always in its Personal profile
+# (brave-origin-links.desktop; the launcher's Brave keeps the profile last used)
+xdg-mime default brave-origin-links.desktop x-scheme-handler/http x-scheme-handler/https \
     text/html application/xhtml+xml
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
