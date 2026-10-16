@@ -1,4 +1,4 @@
-// Mail (Thunderbird, special:mail), Teams and WhatsApp (Chromium app windows, special:teams and
+// Mail (Thunderbird, special:mail), Teams and WhatsApp (Brave app windows, special:teams and
 // special:whatsapp) for the bar. Teams and WhatsApp put their unread count in the window title,
 // "(3) Chat | … | Microsoft Teams" and "(3) WhatsApp". Thunderbird shares no count, so mail is
 // only "new since you last looked": set by its notifications and cleared when the mail workspace
@@ -35,7 +35,7 @@ Scope {
     }
 
     // "mail", "teams", "whatsapp" or "" for a notification (or a history entry, which has the same fields).
-    // Chromium names itself as the app and puts the site in the body.
+    // Brave names itself as the app and puts the site in the body.
     function appOf(n): string {
         if (/thunderbird/i.test(n.appName))
             return "mail";

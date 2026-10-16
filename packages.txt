@@ -13,7 +13,6 @@ noto-fonts-emoji
 ttf-liberation
 noto-fonts-cjk
 hyprpaper
-chromium
 # makepkg, for AUR packages (yay, Brave Origin) in install.sh
 base-devel
 less

@@ -34,7 +34,7 @@ Rectangle {
     readonly property string fontFamily: Theme.fontFamily
 
     readonly property bool critical: urgency === NotificationUrgency.Critical
-    // Chromium starts a web notification's body with the site, "teams.microsoft.com\n\n…"
+    // Brave starts a web notification's body with the site, "teams.microsoft.com\n\n…"
     // (as a link when the server takes hyperlinks). Show the site in the header instead.
     readonly property var webOrigin: /^(?:<a [^>]*>)?([\w-]+(?:\.[\w-]+)+(?::\d+)?)(?:<\/a>)?\n\n/.exec(body)
     readonly property string sender: webOrigin ? webOrigin[1].replace(/^www\./, "") : appName

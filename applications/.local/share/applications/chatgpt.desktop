@@ -1,9 +1,9 @@
 [Desktop Entry]
 Name=ChatGPT
 GenericName=AI chat (SUPER + SHIFT + A)
-Comment=ChatGPT as a Chromium app window in the Personal profile
+Comment=ChatGPT as a Brave app window in the Personal profile
 Keywords=chatgpt;openai;ai;chat;
-Exec=chromium "--profile-directory=Profile 1" --app=https://chatgpt.com/
+Exec=brave-origin --profile-directory=Default --app=https://chatgpt.com/
 Icon=web-browser
 Type=Application
 Terminal=false

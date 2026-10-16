@@ -30,19 +30,19 @@ hl.monitor({
 -- Set programs that you use
 local terminal    = "kitty"
 local fileManager = "~/.config/hypr/scripts/files"
-local browser     = "chromium"
+local browser     = "brave-origin"
 local menu        = "pkill -x fuzzel || fuzzel"
 local passwords   = "special:passwords"
 local music       = "special:music"
 local mail        = "special:mail"
 local teams       = "special:teams"
 local whatsapp    = "special:whatsapp"
--- Web apps as Chromium app windows, each in its own profile: work accounts in Work,
--- personal ones in Personal. Without --profile-directory Chromium would use whichever
--- profile was used last. These are the profiles' folder names, not their display names:
--- the first profile created is "Default", the next "Profile 1" (chrome://version shows it).
-local workApp     = browser .. " --profile-directory=Default --app="
-local personalApp = browser .. " --profile-directory='Profile 1' --app="
+-- Web apps as Brave app windows, each in its own profile: work accounts in Work,
+-- personal ones in Personal, so their links open in that profile too. Without
+-- --profile-directory Brave would use whichever profile was used last. These are the
+-- profiles' folder names, not their display names (brave://version shows it).
+local workApp     = browser .. " --profile-directory='Profile 1' --app="
+local personalApp = browser .. " --profile-directory=Default --app="
 -- Teams: Microsoft has no Linux client
 local teamsApp    = workApp .. "https://teams.microsoft.com/"
 local whatsappApp = personalApp .. "https://web.whatsapp.com/"
@@ -382,7 +382,6 @@ bind(mainMod .. " + G", "herdr (coding agents)", function()
     end
 end)
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
-bind(mainMod .. " + SHIFT + B", "Brave Origin", hl.dsp.exec_cmd("brave-origin"))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
 -- terminal's directory (home for any other window), the Alt one always opens home.
 bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
@@ -408,7 +407,7 @@ end)
 -- floating window in the top right corner, pinned so it stays in view on every workspace
 -- while you share another window. Pressed again, it goes back. Global for Quickshell
 -- (right click on the bar's Teams icon): `hyprctl eval 'toggleTeamsCall()'`.
-local teamsWindow = "class:^chrome-teams\\..*$"
+local teamsWindow = "class:^brave-teams\\..*$"
 
 local function teamsInCall()
     local window = hl.get_window(teamsWindow)
@@ -482,7 +481,7 @@ bind(mainMod .. " + SHIFT + Y", "Teams call mode (pinned, top right)", toggleTea
 bind(mainMod .. " + U", "Toggle WhatsApp", toggleSpecial("whatsapp", "fade", "fade"))
 
 -- ChatGPT (SUPER + SHIFT + A, Omarchy's key): one window; pressed again it jumps to it
-local chatgptWindow = "class:^chrome-chatgpt\\.com__.*$"
+local chatgptWindow = "class:^brave-chatgpt\\.com__.*$"
 bind(mainMod .. " + SHIFT + A", "ChatGPT", function()
     if hl.get_window(chatgptWindow) then
         hl.dispatch(hl.dsp.focus({ window = chatgptWindow }))
@@ -798,7 +797,7 @@ local specialApps = {
     [music]     = "class:^org\\.dotfiles\\.music$",
     [mail]      = "class:^(org\\.mozilla\\.Thunderbird|thunderbird)$",
     [teams]     = teamsWindow,
-    [whatsapp]  = "class:^chrome-web\\.whatsapp\\.com__.*$",
+    [whatsapp]  = "class:^brave-web\\.whatsapp\\.com__.*$",
 }
 hl.on("workspace.special_active", function(ws)
     local window = ws and specialApps[ws.name]
@@ -850,8 +849,8 @@ hl.workspace_rule({
     on_created_empty = "thunderbird",
 })
 
--- A Chromium launch hands the window to a browser that's already running, so
--- Teams is pinned by its app window class (chrome-<host>__<path>-<profile>) instead.
+-- A Brave launch hands the window to a browser that's already running, so
+-- Teams is pinned by its app window class (brave-<host>__<path>-<profile>) instead.
 hl.workspace_rule({
     workspace        = teams,
     on_created_empty = teamsApp,
@@ -859,7 +858,7 @@ hl.workspace_rule({
 
 hl.window_rule({
     name  = "teams-workspace",
-    match = { class = "^chrome-teams\\..*$" },
+    match = { class = "^brave-teams\\..*$" },
 
     workspace = teams .. " silent",
 })
@@ -872,7 +871,7 @@ hl.workspace_rule({
 
 hl.window_rule({
     name  = "whatsapp-workspace",
-    match = { class = "^chrome-web\\.whatsapp\\.com__.*$" },
+    match = { class = "^brave-web\\.whatsapp\\.com__.*$" },
 
     workspace = whatsapp .. " silent",
 })

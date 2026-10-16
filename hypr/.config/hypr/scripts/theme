@@ -5,7 +5,7 @@
 # `darkman toggle` (the bar's sun/moon button) runs it by hand. Most apps follow
 # the freedesktop color-scheme setting by themselves once it changes: GTK 4 and
 # libadwaita (gtk-4.0/gtk.css), kitty (*-theme.auto.conf), nvim
-# (auto-dark-mode.nvim), Chromium, Brave, Thunderbird and the Quickshell bar
+# (auto-dark-mode.nvim), Brave, Thunderbird and the Quickshell bar
 # (Theme.qml). The rest are switched here. The lock screen stays dark.
 set -euo pipefail
 

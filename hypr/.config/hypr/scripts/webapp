@@ -4,8 +4,8 @@
 #        webapp remove [name]            take one out again (picked with fuzzel without a name)
 #        webapp list                     the installed ones, "name<TAB>url"
 # Web apps, after Omarchy's omarchy-webapp-install: a launcher entry that opens the site in a
-# Chromium app window (no tabs or address bar), like Teams on SUPER + Y. Chromium's profile is
-# the one KeePassXC-Browser is set up in. The icon is the site's own (its touch icon or favicon,
+# Brave app window (no tabs or address bar), like Teams on SUPER + Y, in the Work profile, where
+# its links open too (the default browser). The icon is the site's own (its touch icon or favicon,
 # fetched from the site itself, no third-party icon service). Entries are this machine's only:
 # ~/.local/share/applications/webapp-*.desktop.
 set -euo pipefail
@@ -13,7 +13,7 @@ set -euo pipefail
 data=${XDG_DATA_HOME:-$HOME/.local/share}
 apps=$data/applications
 icons=$data/webapps/icons
-browser=chromium
+browser=brave-origin
 
 ask() {
     fuzzel --dmenu --lines 0 --width 50 --prompt "$1   " --placeholder "$2" </dev/null
@@ -98,7 +98,7 @@ install() {
     url=${url## }
     url=${url%% }
     [[ -n $url ]] || exit 0
-    # Chromium would run javascript:, file: and data: addresses as pages: http(s) only
+    # Brave would run javascript:, file: and data: addresses as pages: http(s) only
     [[ $url =~ ^[a-zA-Z][a-zA-Z0-9+.-]*: ]] || url=https://$url
     [[ ${url,,} =~ ^https?://[^/[:space:]]+ && ! $url =~ [[:space:]] ]] || fail "Not a web address: $url"
     host=$(sed -E 's|^https?://([^/:]+).*|\1|' <<<"$url")
@@ -122,7 +122,7 @@ install() {
 Type=Application
 Name=$(desktop_value "$name")
 Comment=$(desktop_value "$host"), as an app
-Exec=$browser $(exec_arg "--app=$url")
+Exec=$browser $(exec_arg "--profile-directory=Profile 1") $(exec_arg "--app=$url")
 Icon=$(desktop_value "$icon")
 Terminal=false
 StartupNotify=true

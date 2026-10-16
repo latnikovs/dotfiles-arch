@@ -130,7 +130,7 @@ other, and files both have but with different contents keep both versions (one a
   light, light/dark), reminders, the bar's panels, updates, snapshots and the
   system menu. Esc in a submenu goes back.
 - *Menu › Web apps* adds a site to the app launcher as an app of its own (a
-  Chromium app window with the site's icon), as Omarchy does.
+  Brave app window with the site's icon), as Omarchy does.
 - SUPER+SHIFT+R (or CTRL+Print) records a screen region into
   `~/Videos/Screencasts`; the bar shows a red dot until you press it again
   or click the dot. *Menu › Capture* also records with sound, or a whole monitor.

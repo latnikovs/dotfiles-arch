@@ -734,11 +734,9 @@ if [[ ! -e $kpxc_ini ]]; then
     mkdir -p "${kpxc_ini%/*}"
     cp keepassxc/keepassxc.ini "$kpxc_ini"
 fi
-# Chromium and Brave Origin connect to KeePassXC only while this manifest
-# exists; KeePassXC refreshes Chromium's on every start.
-for profile in chromium BraveSoftware/Brave-Origin; do
-    kpxc_host=$HOME/.config/$profile/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json
-    [[ -e $kpxc_host ]] && continue
+# Brave Origin connects to KeePassXC only while this manifest exists
+kpxc_host=$HOME/.config/BraveSoftware/Brave-Origin/NativeMessagingHosts/org.keepassxc.keepassxc_browser.json
+if [[ ! -e $kpxc_host ]]; then
     mkdir -p "${kpxc_host%/*}"
     cat >"$kpxc_host" <<'JSON'
 {
@@ -752,11 +750,12 @@ for profile in chromium BraveSoftware/Brave-Origin; do
     "type": "stdio"
 }
 JSON
-done
+fi
 # Browser profiles, made before the browser first starts so their folders are known:
-# hyprland.lua opens Teams in Chromium's Default (Work), WhatsApp and ChatGPT in
-# Profile 1 (Personal). Each is "folder|name|avatar|theme colour" (the avatar and
-# colour as in chrome://settings/manageProfile; an empty colour is the default theme).
+# hyprland.lua opens Teams in Profile 1 (Work), WhatsApp and ChatGPT in Default
+# (Personal), and links open in Work. Each is "folder|name|avatar|theme colour"
+# (the avatar and colour as in brave://settings/manageProfile; an empty colour is
+# the default theme).
 # Skipped once the browser has a Local State, so existing profiles stay as they are.
 seed_profiles() {
     local root=$1 profile dir name avatar colour state='{}'
@@ -780,28 +779,18 @@ seed_profiles() {
     done
     printf '%s\n' "$state" >"$root/Local State"
 }
-seed_profiles "$HOME/.config/chromium" \
-    'Default|Work|26|' \
-    'Profile 1|Personal|26|-4776932'
 seed_profiles "$HOME/.config/BraveSoftware/Brave-Origin" \
     'Default|Personal|26|' \
     'Profile 1|Work|81|-16748936' \
     'Profile 2|Misc|89|-1714692'
-# KeePassXC-Browser, installed into Chromium from the Web Store on next start
-sudo install -Dm644 /dev/stdin /usr/share/chromium/extensions/oboonakemofpalcgghocfoadofidjkkk.json \
-    <<<'{ "external_update_url": "https://clients2.google.com/service/update2/crx" }'
-# Browser policies (browser-policies/), merged by the browser from its managed dir.
-# common.json, for both: Google's AI features off (Gemini, AI Mode, Lens, Help me
+# Browser policies (browser-policies/), merged by Brave from its managed dir.
+# common.json: Google's AI features off (Gemini, AI Mode, Lens, Help me
 # write, the on-device model), no telemetry or Privacy Sandbox ad tracking, no
 # promotions, and no password manager of their own since KeePassXC is it.
-# chromium.json: it stops asking to be the default browser.
-# brave.json: the same, and KeePassXC-Browser and Vimium from the Web Store
-# (removable only here).
-for browser in chromium:/etc/chromium/policies/managed brave:/etc/brave/policies/managed; do
-    dir=${browser#*:}
-    sudo install -Dm644 browser-policies/common.json "$dir/dotfiles-common.json"
-    sudo install -Dm644 "browser-policies/${browser%%:*}.json" "$dir/dotfiles.json"
-done
+# brave.json: it stops asking to be the default browser, and KeePassXC-Browser and
+# Vimium from the Web Store (removable only here).
+sudo install -Dm644 browser-policies/common.json /etc/brave/policies/managed/dotfiles-common.json
+sudo install -Dm644 browser-policies/brave.json /etc/brave/policies/managed/dotfiles.json
 
 step 'Default apps'
 # Links and web pages open in Brave Origin, always in its Work profile
@@ -814,7 +803,7 @@ exec brave-origin '--profile-directory=Profile 1' "$@"
 SH
 xdg-mime default brave-origin-links.desktop x-scheme-handler/http x-scheme-handler/https \
     text/html application/xhtml+xml
-# Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
+# Folders open in Nautilus (xdg-open, Brave's "Show in folder")
 xdg-mime default org.gnome.Nautilus.desktop inode/directory
 # PDFs open in Papers (GNOME's GTK 4 viewer, so it takes the Nord gtk.css)
 xdg-mime default org.gnome.Papers.desktop application/pdf
