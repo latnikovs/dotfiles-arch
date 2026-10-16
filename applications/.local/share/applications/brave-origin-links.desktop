@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=Brave Origin (Personal)
-Comment=Opens links in Brave Origin's Personal profile; the default browser
-Exec=brave-origin --profile-directory=Default %U
+Name=Brave Origin (Work)
+Comment=Opens links in Brave Origin's Work profile; the default browser
+Exec=brave-origin "--profile-directory=Profile 1" %U
 Icon=brave-origin
 MimeType=text/html;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
 NoDisplay=true
