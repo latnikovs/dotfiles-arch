@@ -805,7 +805,13 @@ done
 
 step 'Default apps'
 # Links and web pages open in Brave Origin, always in its Work profile
-# (brave-origin-links.desktop; the launcher's Brave keeps the profile last used)
+# (brave-origin-links.desktop; the launcher's Brave keeps the profile last used).
+# The profile goes through this wrapper: xdg-open, outside a desktop it knows,
+# splits Exec= on spaces and ignores quotes, so "Profile 1" can't be passed there.
+sudo install -Dm755 /dev/stdin /usr/local/bin/brave-origin-work <<'SH'
+#!/bin/sh
+exec brave-origin '--profile-directory=Profile 1' "$@"
+SH
 xdg-mime default brave-origin-links.desktop x-scheme-handler/http x-scheme-handler/https \
     text/html application/xhtml+xml
 # Folders open in Nautilus (xdg-open, Chromium's "Show in folder")
