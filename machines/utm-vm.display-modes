@@ -3,6 +3,9 @@
 # The VM's window is full screen on one of the Mac's screens, so it can't tell which;
 # with UTM in Retina mode these are pixels, as macOS draws them at 2x (then use scale 2).
 # The Dell (4K) at "Larger Text" looks like 2560x1440, drawn at 5120x2880 and scaled down to the panel.
+# "Dell fast" is the same 2560x1440 drawn 1:1 (scale 1) and upscaled by macOS: softer, but a quarter
+# of the pixels through virgl, so much smoother.
 # The MacBook's full-screen space stops below the notch: 1800x1125 points at "More Space" (1800x1169).
 5120x2880@60 Dell
 3600x2250@60 MacBook
+2560x1440@60 Dell fast
