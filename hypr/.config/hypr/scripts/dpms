@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Usage: dpms on|off   turn the screens on or off (hypridle's blanking)
+set -euo pipefail
+
+# DOTFILES_NO_DPMS keeps the screens on where turning them off can hang the display (machines/utm-vm.lua)
+[[ -n ${DOTFILES_NO_DPMS:-} ]] && exit 0
+
+case ${1:-} in
+    on) action=enable ;;
+    off) action=disable ;;
+    *) echo "Usage: dpms on|off" >&2; exit 1 ;;
+esac
+hyprctl dispatch "hl.dsp.dpms({ action = \"$action\" })" >/dev/null

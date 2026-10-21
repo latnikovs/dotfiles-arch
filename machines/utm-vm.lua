@@ -38,3 +38,8 @@ hl.bind("SUPER + ALT + M", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"), { des
 -- reaches the guest, so it just hangs. Hide Suspend in the system menu (scripts/system); UTM's
 -- Pause, or the Mac sleeping, does the job instead.
 hl.env("DOTFILES_NO_SUSPEND", "1")
+
+-- Turning the display off and on can hang the VM's display for good: the screen sat on a stuck
+-- virtio-gpu fence, with no cursor or input, once the Mac's own display had slept and stopped
+-- rendering for UTM. Keep the screen on when idle (scripts/dpms); the lock still happens.
+hl.env("DOTFILES_NO_DPMS", "1")
