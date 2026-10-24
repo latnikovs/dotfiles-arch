@@ -6,6 +6,10 @@ set -euo pipefail
 mkdir -p "$HOME/Work"
 cd "$HOME/Work"
 
+# Space numbers in herdr's sidebar; the lock keeps it to one helper at a time
+setsid -f flock -n "${XDG_RUNTIME_DIR:-/tmp}/herd-numbers.lock" "$HOME/.config/hypr/scripts/herd-numbers" \
+    >/dev/null 2>&1 </dev/null
+
 # DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
 # so it can carry "env VAR=… kitty". A fixed class lets window rules single herdr out.
 exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.herdr herdr
