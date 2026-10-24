@@ -171,7 +171,7 @@ hl.config({
 
 -- Refer to https://wiki.hypr.land/Configuring/Basics/Variables/
 -- Gaps, border and rounding; SUPER + SHIFT + BACKSPACE turns them off and back to these
-local frame = { gaps_in = 3, gaps_out = 6, border_size = 2, rounding = 10 }
+local frame = { gaps_in = 3, gaps_out = 3, border_size = 2, rounding = 5 }
 
 hl.config({
     general = {
