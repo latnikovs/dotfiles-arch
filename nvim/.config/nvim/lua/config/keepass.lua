@@ -11,8 +11,10 @@ function M.kdbx_path(override)
   if forced and forced ~= "" then
     return vim.fs.normalize(forced)
   end
+  -- KeePassXC 2.8 keeps it in the state dir, 2.7 in the cache dir
+  local state = vim.env.XDG_STATE_HOME or (vim.env.HOME .. "/.local/state")
   local cache = vim.env.XDG_CACHE_HOME or (vim.env.HOME .. "/.cache")
-  local ini = io.open(cache .. "/keepassxc/keepassxc.ini")
+  local ini = io.open(state .. "/keepassxc/keepassxc.ini") or io.open(cache .. "/keepassxc/keepassxc.ini")
   if not ini then
     return nil
   end
