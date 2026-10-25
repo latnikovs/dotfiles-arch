@@ -62,6 +62,8 @@ ddcutil
 tailscale
 # File sync between my machines over Tailscale (syncthing/setup)
 syncthing
+# Clock sync, replacing systemd-timesyncd (install.sh: steps the clock after any jump)
+chrony
 # SSH server (install.sh: keys only, no root; the firewall lets it in over Tailscale only)
 openssh
 hyprlock

@@ -388,6 +388,21 @@ systemctl --user enable --now syncthing.service
 syncthing_id=$(syncthing/setup | sed -n 's/^Syncthing device ID: //p')
 note "Device ID: $syncthing_id"
 
+step 'Clock (chrony)'
+# chrony instead of systemd-timesyncd: timesyncd corrects a big offset only when it
+# starts and after that only slews, so a clock that jumps behind (a paused VM, a
+# long suspend, a reset hardware clock) stays wrong for hours. makestep 1 -1 steps
+# it whenever it is off by over a second; rtcsync keeps the hardware clock in line.
+sudo install -Dm644 /dev/stdin /etc/chrony.conf <<'CONF'
+pool 2.arch.pool.ntp.org iburst
+driftfile /var/lib/chrony/drift
+makestep 1 -1
+rtcsync
+CONF
+sudo systemctl disable --now systemd-timesyncd.service
+sudo systemctl enable chronyd.service
+sudo systemctl restart chronyd.service
+
 step 'Swap on zram'
 # Swap: zram, compressed in RAM, half its size. The sysctls are the usual ones for
 # swap this fast: swap before dropping file cache, one page at a time.
