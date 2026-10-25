@@ -1,6 +1,7 @@
 -- Databases: dadbod, dadbod-ui and completion come from LazyVim's lang.sql
 -- extra (lazyvim.json). Connections come from KeePassXC (config/keepass_dbs.lua):
--- the first <leader>D asks for the master password and fills the drawer.
+-- the first <leader>D asks for the master password and fills the drawer with
+-- the connections of the project nvim runs in.
 -- Connections added with DBUIAddConnection go to connections.json in
 -- plain text, so keep the ones with passwords in KeePassXC.
 
@@ -199,9 +200,18 @@ return {
       {
         "<leader>D",
         function()
-          if not close_db_windows() and (keepass_dbs().loaded or keepass_dbs().load()) then
-            open_db_windows()
+          if close_db_windows() then
+            return
           end
+          if not keepass_dbs().loaded then
+            if not keepass_dbs().load() then
+              return
+            end
+          elseif keepass_dbs().apply() then
+            -- Another folder than last time: the drawer is for its project
+            vim.fn["db_ui#reset_state"]()
+          end
+          open_db_windows()
         end,
         desc = "Toggle Databases",
       },
@@ -214,16 +224,39 @@ return {
       vim.g.db_ui_save_location = vim.fn.expand("~/notes/queries")
       -- DDL entry under each Postgres table: pg_dump's full definition
       require("config.db_ddl").setup()
-      -- Re-read KeePassXC after adding or changing an entry there
-      vim.api.nvim_create_user_command("DBUIKeepass", function()
-        if not keepass_dbs().load() then
-          return
-        end
+      local function redraw_drawer()
         pcall(vim.cmd, "DBUIClose")
         replace_dashboard()
         vim.fn["db_ui#reset_state"]()
         vim.cmd("DBUI")
+      end
+      -- Re-read KeePassXC after adding or changing an entry there
+      vim.api.nvim_create_user_command("DBUIKeepass", function()
+        if keepass_dbs().load() then
+          redraw_drawer()
+        end
       end, { desc = "Reload database connections from KeePassXC" })
+      -- a in the drawer: all connections or just the project's
+      -- (config/keepass_dbs.lua), without asking for the master password
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = "dbui",
+        callback = function(ev)
+          vim.keymap.set("n", "a", function()
+            if keepass_dbs().loaded and keepass_dbs().toggle_all() then
+              redraw_drawer()
+            end
+          end, { buffer = ev.buf, desc = "Toggle All Connections" })
+          -- dadbod-ui's A would save the URL, password and all, in plain
+          -- text in connections.json
+          vim.keymap.set("n", "A", function()
+            vim.notify(
+              ("New connection: an entry under %s/<project>/ in KeePassXC (URL, username, password), then :DBUIKeepass"):format(
+                keepass_dbs().group
+              )
+            )
+          end, { buffer = ev.buf, desc = "Add Connection (KeePassXC)" })
+        end,
+      })
     end,
   },
 }

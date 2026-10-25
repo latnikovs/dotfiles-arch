@@ -39,7 +39,9 @@ function M.name(buf)
   if by_url[url] then
     return by_url[url]
   end
-  for _, conn in ipairs(type(vim.g.dbs) == "table" and vim.g.dbs or {}) do
+  -- Every connection, not just the project's in g:dbs (config/keepass_dbs.lua)
+  local conns = package.loaded["config.keepass_dbs"] and package.loaded["config.keepass_dbs"].all
+  for _, conn in ipairs(conns or (type(vim.g.dbs) == "table" and vim.g.dbs) or {}) do
     local ok, resolved = pcall(vim.fn["db#resolve"], conn.url)
     if ok and resolved == url then
       by_url[url] = conn.name
