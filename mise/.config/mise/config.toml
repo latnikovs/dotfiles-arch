@@ -4,6 +4,8 @@
 node = "lts"
 pnpm = "latest"
 go = "latest"
+# Rebuilds Go on file changes (make dev / pnpm run dev)
+air = "latest"
 # Temurin: jdk.java.net's plain openjdk-25 build never gets security updates
 java = "temurin-25"
 terraform = "latest"

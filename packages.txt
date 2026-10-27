@@ -29,6 +29,8 @@ wl-clipboard
 cliphist
 hyprpicker
 jq
+# Which process holds a port (make dev stops leftover servers on 8080/8081 with it)
+lsof
 quickshell
 libnotify
 # Audio: PipeWire's session manager (wpctl, default devices, the bar's mixer)
