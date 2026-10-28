@@ -109,6 +109,9 @@ hl.on("hyprland.start", function ()
     -- notification offers to restore it; the other reports problems keeping the entries
     hl.exec_cmd("command -v limine-snapper-restore >/dev/null && limine-snapper-restore --notify")
     hl.exec_cmd("command -v limine-snapper-notify >/dev/null && limine-snapper-notify")
+    -- Polkit agent: answers password prompts from apps (KeePassXC Quick Unlock, GUI admin tools);
+    -- without one every polkit request fails straight away
+    hl.exec_cmd("systemctl --user start hyprpolkitagent")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail, Teams and WhatsApp only notify while running, so they start hidden too
