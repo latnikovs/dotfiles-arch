@@ -13,6 +13,11 @@ close_all() {
     jq -r '.[].address' <<<"$clients" | while read -r addr; do
         hyprctl dispatch "hl.dsp.window.close({ window = 'address:$addr' })" >/dev/null
     done
+    # tmux's server outlives its windows too, and is killed with everything in it at shutdown;
+    # saving first means its workspaces come back from now, not from the last 15-minute save
+    if tmux has-session 2>/dev/null; then
+        timeout 5 ~/.tmux/plugins/tmux-resurrect/scripts/save.sh quiet >/dev/null 2>&1 || true
+    fi
     # herdr's server outlives its window, with the agents in it; stopped the same way, or systemd
     # SIGKILLs it at shutdown
     if pgrep -x herdr >/dev/null; then

@@ -384,6 +384,15 @@ bind(mainMod .. " + G", "herdr (coding agents)", function()
         hl.dispatch(hl.dsp.exec_cmd("~/.config/hypr/scripts/herd"))
     end
 end)
+-- The same for the "agents" tmux session (scripts/agents) on SUPER + SHIFT + G
+local agentsWindow = "class:^org\\.dotfiles\\.agents$"
+bind(mainMod .. " + SHIFT + G", "Coding agents (tmux)", function()
+    if hl.get_window(agentsWindow) then
+        hl.dispatch(hl.dsp.focus({ window = agentsWindow }))
+    else
+        hl.dispatch(hl.dsp.exec_cmd("~/.config/hypr/scripts/agents"))
+    end
+end)
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
 -- terminal's directory (home for any other window), the Alt one always opens home.
