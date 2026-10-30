@@ -68,9 +68,22 @@ if [ "$state" = notify ]; then
 	esac
 fi
 
+# The conversation and its permission mode go along with the state, for
+# claude-resume.sh to pick the conversation back up after a restore. Every event
+# carries them, and /clear starts a new conversation, so they are rewritten each
+# time rather than once at SessionStart.
+field() {
+	printf '%s' "$input" |
+		sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p"
+}
+session="$(field session_id)"
+mode="$(field permission_mode)"
+
 case "$state" in
 busy | wait | idle)
-	tmux set-option -p -t "$TMUX_PANE" @claude_state "$state" 2>/dev/null || exit 0
+	tmux set-option -p -t "$TMUX_PANE" @claude_state "$state" \; \
+		set-option -p -t "$TMUX_PANE" @claude_session "$session" \; \
+		set-option -p -t "$TMUX_PANE" @claude_mode "$mode" 2>/dev/null || exit 0
 	;;
 clear)
 	tmux set-option -p -u -t "$TMUX_PANE" @claude_state 2>/dev/null || exit 0
@@ -96,11 +109,13 @@ fi
 # status-interval is 5s; without this the chip would lag a turn ending by up to
 # that long, which is exactly the moment the indicator exists for.
 #
-# Every client, not just this pane's: the agents pill in status-left reports on
-# *other* sessions, so a state change here is news to every other kitty tab's
-# status line. refresh-client with no -t only reaches the client tmux infers
+# Every client, not just this pane's: an agent can be on the window chips of
+# more than one kitty tab's status line. refresh-client with no -t only reaches the client tmux infers
 # from this command's context, which leaves the tabs that actually needed
 # telling waiting for their next tick.
+#
+# And the sidebars, which list every agent on the server: they sleep until told.
+tmux wait-for -S sidebar 2>/dev/null || true
 tmux list-clients -F '#{client_name}' 2>/dev/null | while IFS= read -r client; do
 	[ -n "$client" ] || continue
 	tmux refresh-client -S -t "$client" 2>/dev/null || true

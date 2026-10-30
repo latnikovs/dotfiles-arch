@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Jump to whatever was clicked on the status bar: an agent's dot, or a session
-# name in the agents pill.
+# name, and from the sidebar.
 #
 # The status formats wrap each clickable piece in `#[range=user|...]`, and tmux
 # hands back the name of the range under the pointer as #{mouse_status_range}.

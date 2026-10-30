@@ -336,6 +336,19 @@ claude_settings=$HOME/.claude/settings.json
 [[ -s $claude_settings ]] || echo '{}' >"$claude_settings"
 jq '.statusLine = {"type": "command", "command": "~/.claude/statusline.sh"}' "$claude_settings" >"$claude_settings.new"
 mv "$claude_settings.new" "$claude_settings"
+# The hooks that publish each Claude's state to the tmux bar and the Prefix + a picker
+# (tmux/.tmux/scripts/claude-state.sh). Only their own entries are replaced, so other
+# hooks on an event (herdr's below) stay.
+jq '
+    def state($event; $state):
+        .hooks[$event] = ((.hooks[$event] // [])
+            | map(select(any(.hooks[]?; .command | test("claude-state\\.sh")) | not)))
+            + [{"hooks": [{"type": "command", "command": "~/.tmux/scripts/claude-state.sh \($state)", "timeout": 5}]}];
+    state("SessionStart"; "idle") | state("UserPromptSubmit"; "busy")
+    | state("PreToolUse"; "busy") | state("PostToolUse"; "busy")
+    | state("Notification"; "notify") | state("Stop"; "idle") | state("SessionEnd"; "clear")
+' "$claude_settings" >"$claude_settings.new"
+mv "$claude_settings.new" "$claude_settings"
 # herdr's hook (~/.claude/hooks/herdr-agent-state.sh, registered in settings.json), which tells
 # herdr each pane's conversation so it resumes it after a restart (resume_agents_on_restore)
 herdr integration status | grep '^claude: installed' >/dev/null || herdr integration install claude

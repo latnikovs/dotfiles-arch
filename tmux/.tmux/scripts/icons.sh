@@ -41,7 +41,7 @@ tmux set -g @ico_claude $'\U000f1545'   # md-shimmer
 tmux set -g @ico_default $'\U000f0349'  # md-magnify
 
 # Claude Code state, appended to a window chip by @claude_dot and listed in the
-# agents pill. One family on purpose: all three are the same MDI circle with a
+# sidebar. One family on purpose: all four are the same MDI circle with a
 # different interior, so they read as three values of one thing rather than as
 # three unrelated pictures -- and the interior says which without needing the
 # colour, which the window chip's mauve badge does not always give enough
@@ -49,3 +49,4 @@ tmux set -g @ico_default $'\U000f0349'  # md-magnify
 tmux set -g @ico_claude_busy $'\U000f0996'  # md-progress_clock: a turn is running
 tmux set -g @ico_claude_wait $'\U000f02d7'  # md-help_circle: it is asking you something
 tmux set -g @ico_claude_idle $'\U000f0133'  # md-checkbox_marked_circle: turn finished
+tmux set -g @ico_claude_jobs $'\U000f07c3'  # md-dots_horizontal_circle: finished, a background command still running
