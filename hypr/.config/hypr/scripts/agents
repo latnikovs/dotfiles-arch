@@ -8,7 +8,7 @@ cd "$HOME/Work"
 
 # DOTFILES_TERMINAL is set per machine (e.g. kitty with software GL in the UTM VM), unquoted
 # so it can carry "env VAR=… kitty". A fixed class lets window rules single the window out.
-# With no server, a plain new-session is what tmux-continuum restores the saved workspaces
+# With no server, a plain new-session is what persist.sh restores the saved workspaces
 # over: it replaces that first unnamed session with them (see tmux.conf).
 exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.agents \
     sh -c 'tmux attach 2>/dev/null || exec tmux new-session'
