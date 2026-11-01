@@ -311,13 +311,11 @@ if ! command -v yay >/dev/null; then
     (cd "$yay_build" && makepkg -si --noconfirm)
     rm -rf "$yay_build"
 fi
-step 'Brave Origin, cliamp, herdr, gtypist (AUR)'
+step 'Brave Origin, cliamp, gtypist (AUR)'
 # Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
 yay -S --needed --noconfirm brave-origin-bin
 # cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
 yay -S --needed --noconfirm cliamp-bin
-# herdr: terminal workspace manager for supervising several coding agents at once
-yay -S --needed --noconfirm herdr-bin
 # gtypist: GNU Typist, touch-typing lessons in the terminal. Its tarball is signed and
 # the keyservers yay asks return the key without user IDs, so import the copy the AUR
 # package ships (the PKGBUILD pins the fingerprint)
@@ -338,7 +336,7 @@ jq '.statusLine = {"type": "command", "command": "~/.claude/statusline.sh"}' "$c
 mv "$claude_settings.new" "$claude_settings"
 # The hooks that publish each Claude's state to the tmux bar and the Prefix + a picker
 # (tmux/.tmux/scripts/claude-state.sh). Only their own entries are replaced, so other
-# hooks on an event (herdr's below) stay.
+# hooks on an event stay.
 jq '
     def state($event; $state):
         .hooks[$event] = ((.hooks[$event] // [])
@@ -349,9 +347,14 @@ jq '
     | state("Notification"; "notify") | state("Stop"; "idle") | state("SessionEnd"; "clear")
 ' "$claude_settings" >"$claude_settings.new"
 mv "$claude_settings.new" "$claude_settings"
-# herdr's hook (~/.claude/hooks/herdr-agent-state.sh, registered in settings.json), which tells
-# herdr each pane's conversation so it resumes it after a restart (resume_agents_on_restore)
-herdr integration status | grep '^claude: installed' >/dev/null || herdr integration install claude
+# herdr, the agent workspace manager the tmux workspaces replaced: its Claude hook
+# (~/.claude/hooks/herdr-agent-state.sh and its settings.json entry), the package, and its
+# config and sessions
+if pacman -Q herdr-bin &>/dev/null; then
+    herdr integration uninstall claude || true
+    sudo pacman -Rns --noconfirm herdr-bin
+    rm -rf "$HOME/.config/herdr"
+fi
 
 section services Services
 step 'Audio (PipeWire)'

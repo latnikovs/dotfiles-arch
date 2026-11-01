@@ -375,18 +375,10 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
 bind(mainMod .. " + CTRL + N", "Toggle night light", hl.dsp.exec_cmd("~/.config/hypr/scripts/nightlight"))
--- herdr (scripts/herd) on SUPER + G: one window; pressed again it jumps to that window
-local herdrWindow = "class:^org\\.dotfiles\\.herdr$"
-bind(mainMod .. " + G", "herdr (coding agents)", function()
-    if hl.get_window(herdrWindow) then
-        hl.dispatch(hl.dsp.focus({ window = herdrWindow }))
-    else
-        hl.dispatch(hl.dsp.exec_cmd("~/.config/hypr/scripts/herd"))
-    end
-end)
--- The same for the "agents" tmux session (scripts/agents) on SUPER + SHIFT + G
+-- The coding agents' tmux (scripts/agents) on SUPER + G: one window; pressed again it jumps
+-- to that window
 local agentsWindow = "class:^org\\.dotfiles\\.agents$"
-bind(mainMod .. " + SHIFT + G", "Coding agents (tmux)", function()
+bind(mainMod .. " + G", "Coding agents (tmux)", function()
     if hl.get_window(agentsWindow) then
         hl.dispatch(hl.dsp.focus({ window = agentsWindow }))
     else

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: agents   tmux in a terminal, on the workspace last used (SUPER + SHIFT + G)
+# Usage: agents   tmux in a terminal, on the workspace last used (SUPER + G)
 set -euo pipefail
 
 # Started in ~/Work like the agent script, so Claude inside it has a trusted directory

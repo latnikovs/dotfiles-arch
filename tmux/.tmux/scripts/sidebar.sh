@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The workspaces sidebar: a narrow pane down the left of every window listing
-# each session (a workspace, as herdr has them: one per project), the branch it
+# each session (a workspace: one per project), the branch it
 # is on and the Claudes in it, by state and conversation title. A click on a
 # workspace or an agent goes there.
 #

@@ -18,12 +18,6 @@ close_all() {
     if tmux has-session 2>/dev/null; then
         timeout 5 ~/.tmux/plugins/tmux-resurrect/scripts/save.sh quiet >/dev/null 2>&1 || true
     fi
-    # herdr's server outlives its window, with the agents in it; stopped the same way, or systemd
-    # SIGKILLs it at shutdown
-    if pgrep -x herdr >/dev/null; then
-        mapfile -t -O "${#pids[@]}" pids < <(pgrep -x herdr)
-        timeout 5 herdr server stop >/dev/null 2>&1 || true
-    fi
     (( ${#pids[@]} )) || return 0
     for _ in {1..150}; do
         kill -0 "${pids[@]}" 2>/dev/null || break
