@@ -20,5 +20,5 @@ have="$(tmux show -gqv @theme_mode 2>/dev/null)"
 [ "$want" = "$have" ] && exit 0
 
 # reload.sh, not source-file: the palette will not budge otherwise. See there.
-"$dir/reload.sh" 2>/dev/null
+"$dir/reload.sh" --if-idle 2>/dev/null
 exit 0
