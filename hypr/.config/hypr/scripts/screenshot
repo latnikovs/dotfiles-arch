@@ -38,6 +38,9 @@ case $mode in
             trap 'kill $freeze 2>/dev/null || true; rm -f "$raw"' EXIT
             grim -g "$geom" "$raw"
             kill $freeze 2>/dev/null || true
+            # Satty's canvas is OpenGL; DOTFILES_SOFTWARE_GL puts it on Mesa's software renderer
+            # where the GPU's EGL can't run it (machines/utm-vm.lua)
+            [[ -n ${DOTFILES_SOFTWARE_GL:-} ]] && export LIBGL_ALWAYS_SOFTWARE=1
             # Enter writes $file; Esc leaves nothing behind
             satty --filename "$raw" --output-filename "$file" --disable-notifications || true
             [[ -f $file ]] || exit 0
