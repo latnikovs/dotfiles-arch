@@ -11,6 +11,8 @@ java = "temurin-25"
 terraform = "latest"
 gcloud = "latest"
 shellcheck = "latest"
+# Lua formatter for the Neovim config (make lint)
+stylua = "latest"
 
 [settings]
 # mise up must not delete the version a running process is executing from

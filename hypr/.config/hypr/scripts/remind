@@ -96,6 +96,7 @@ add() {
     read -ra words <<<"$*"
     set -- "${words[@]}"
     if ! parse_when "$@"; then
+        # shellcheck disable=SC1111  # typographic quotes, meant for the notification
         say "Reminder not set" "Couldn't read a time from “$*”"
         echo "remind: couldn't read a time from: $*" >&2
         exit 1

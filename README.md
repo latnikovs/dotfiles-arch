@@ -165,3 +165,12 @@ other, and files both have but with different contents keep both versions (one a
 
 Shared config must work on its own on a real machine; workarounds for a
 particular machine go in `machines/`.
+
+## Checks
+
+`make lint` (or plain `make`) is the check to run before committing:
+shellcheck on every shell script, `qmllint` on the bar and greeter (failing
+only on syntax errors; its other warnings are mostly noise about Quickshell's
+types), `hyprland --verify-config` on both Hyprland configs, `luac -p` on all
+Lua and stylua on the Neovim config, `zsh -n` on the zsh config, and `jq` on
+the JSON files. Each runs alone too, e.g. `make shellcheck`.
