@@ -91,8 +91,12 @@ if scheme then scheme:close() end
 --   hl.exec_cmd("waybar & hyprpaper & firefox")
 -- end)
 
+-- The bar, notifications and OSD; a global so local.lua can change how it starts
+-- (read when Hyprland starts, after local.lua has run)
+quickshellCmd = "quickshell"
+
 hl.on("hyprland.start", function ()
-    hl.exec_cmd("quickshell")
+    hl.exec_cmd(quickshellCmd)
     hl.exec_cmd("~/.config/hypr/scripts/wallpaper init; hyprpaper")
     -- Clipboard history for SUPER + CTRL + V (scripts/clipboard-history)
     hl.exec_cmd("wl-paste --type text --watch ~/.config/hypr/scripts/clipboard-store")

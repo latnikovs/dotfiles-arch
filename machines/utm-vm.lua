@@ -17,6 +17,11 @@ for _, key in ipairs({ "SUPER + SPACE", "SUPER + R" }) do
     hl.bind(key, launcher, { description = "App launcher" })
 end
 
+-- Under virgl, Qt gets only an EGL config without alpha, so Quickshell's transparent surfaces
+-- are drawn black. The full-screen notification overlay turned the whole screen black for
+-- as long as a toast showed. Mesa's software renderer keeps the alpha channel.
+quickshellCmd = "env LIBGL_ALWAYS_SOFTWARE=1 quickshell"
+
 -- UTM's virtual display defaults to 1280x800 and doesn't follow a macOS full-screen window, so the mode
 -- is set to match the screen the VM is full screen on; neither is advertised, so Hyprland generates a
 -- custom mode. The presets are in utm-vm.display-modes: the bar's display panel picks one, SUPER + ALT + /
