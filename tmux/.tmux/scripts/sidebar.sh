@@ -75,13 +75,22 @@ render() {
 		# One call for everything: this pane's own size and visibility, then a
 		# line per session (S) and per live agent in it (A), in the same index
 		# order the Alt + 1..9 numbers follow.
-		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{@ico_claude_busy}	#{@ico_claude_wait}	#{@ico_claude_idle}	#{@ico_claude_jobs}
+		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{@ico_claude_busy}	#{@ico_claude_wait}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@theme_mode}	#{@thm_surface_1}	#{@thm_blue}
 #{S/i:S	#{session_id}	#{session_name}	#{@ws_git}
 #{W:#{P:#{?#{E:@claude_live},A	#{pane_id}	#{E:@claude_shown}	#{pane_title}
 ,}}}}") || exit 0
 
-		local width height own visible ico_busy ico_wait ico_idle ico_jobs
-		IFS=$'\t' read -r width height own visible ico_busy ico_wait ico_idle ico_jobs <<<"${data%%$'\n'*}"
+		local width height own visible ico_busy ico_wait ico_idle ico_jobs mode band accent
+		IFS=$'\t' read -r width height own visible ico_busy ico_wait ico_idle ico_jobs mode band accent <<<"${data%%$'\n'*}"
+		# On dark, mauve text alone is too quiet for the selected workspace, so its
+		# row is drawn in the theme's blue on a surface band, with a blue bar in
+		# the left column. Light keeps plain mauve.
+		local sel_bg="" sel_bar=" " sel_fg=$'\033[35m'
+		if [ "$mode" = dark ] && [[ $band == \#?????? && $accent == \#?????? ]]; then
+			sel_bg=$(printf '\033[48;2;%d;%d;%dm' "0x${band:1:2}" "0x${band:3:2}" "0x${band:5:2}")
+			sel_fg=$(printf '\033[38;2;%d;%d;%dm' "0x${accent:1:2}" "0x${accent:3:2}" "0x${accent:5:2}")
+			sel_bar="$sel_fg▌"$'\033[39m'
+		fi
 
 		if [ "$visible" = 1 ]; then
 			# Back to its width whenever it is off it: tmux scales every pane
@@ -100,17 +109,19 @@ render() {
 					n=$((n + 1))
 					name=${name:0:$((width - 7))}
 					# The workspace this sidebar is in, in the active window
-					# chip's mauve; the rest plain.
+					# chip's mauve (blue on a band on dark); the rest plain. No full
+					# reset inside the line, so the band runs to the right edge
+					# through the trailing erase.
 					if [ "$id" = "$own" ]; then
-						line=$(printf ' \033[2m%d\033[22m \033[1;35m%s\033[0m' "$n" "$name")
+						line=$(printf '%s%s\033[2m%d\033[22m \033[1m%s%s\033[22;39m' "$sel_bg" "$sel_bar" "$n" "$sel_fg" "$name")
 					else
 						line=$(printf ' \033[2m%d\033[22m %s' "$n" "$name")
 					fi
 					# The close button, a column in from the right edge; 'x'
 					# entries in the map are the clicks that land on it.
 					pad=$((width - 2 - (3 + ${#n} + ${#name})))
-					line+=$(printf '%*s\033[2m×\033[0m' "$((pad > 0 ? pad : 0))" '')
-					out+="$line"$'\033[K\n'
+					line+=$(printf '%*s\033[2m×\033[22m' "$((pad > 0 ? pad : 0))" '')
+					out+="$line"$'\033[K\033[0m\n'
 					map+=" $y=$id x$y=$id"
 					y=$((y + 1))
 					if [ -n "$branch" ]; then
