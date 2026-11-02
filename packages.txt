@@ -150,6 +150,8 @@ hunspell-ru
 zram-generator
 # paccache and its weekly timer, which trims the package cache
 pacman-contrib
+# checkrebuild: AUR packages built against libraries an update changed (scripts/healthcheck)
+rebuild-detector
 # Keeps the running kernel's modules after a kernel update until the reboot, so USB
 # sticks, new devices and the like still work (install.sh enables its cleanup)
 kernel-modules-hook

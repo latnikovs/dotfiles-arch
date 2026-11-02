@@ -5,7 +5,8 @@
 #            machines/<machine>.greeter.lua, if any, as /etc/greetd/local.lua, and
 #            machines/<machine>.wireplumber.conf, if any, as ~/.config/wireplumber/wireplumber.conf.d/50-machine.conf,
 #            machines/<machine>.hwdb, if any, as /etc/udev/hwdb.d/90-machine.hwdb,
-#            machines/<machine>.display-modes, if any, as ~/.config/hypr/display-modes)
+#            machines/<machine>.display-modes, if any, as ~/.config/hypr/display-modes, and
+#            machines/<machine>.healthcheck-ignore, if any, as ~/.config/healthcheck/ignore)
 #
 # On a fresh Arch install, straight from GitHub (add `-s -- <machine>` after bash for a machine):
 #   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
@@ -902,6 +903,10 @@ if [[ -n $machine ]]; then
     # Display modes to pick from in the bar, for a screen Hyprland can't see the size of
     if [[ -f machines/$machine.display-modes ]]; then
         cp "machines/$machine.display-modes" "$HOME/.config/hypr/display-modes"
+    fi
+    # Log lines the health check (scripts/healthcheck) leaves out: the machine's known noise
+    if [[ -f machines/$machine.healthcheck-ignore ]]; then
+        install -Dm644 "machines/$machine.healthcheck-ignore" "$HOME/.config/healthcheck/ignore"
     fi
     # The login screen's monitors, if the machine needs them set
     if [[ -f machines/$machine.greeter.lua ]]; then

@@ -129,6 +129,13 @@ other, and files both have but with different contents keep both versions (one a
   screenshots and screen recordings, toggles (caffeine, do not disturb, night
   light, light/dark), reminders, the bar's panels, updates, snapshots and the
   system menu. Esc in a submenu goes back.
+- Updates: the bar's update icon lists what's pending; *Install* (or *Menu ›
+  Update*) runs them in a terminal, then checks that the desktop still works
+  (`healthcheck`: the config the new Hyprland reads, the bar's QML errors,
+  failed services, crashes, programs that no longer start, AUR packages to
+  rebuild) and offers a Claude review of the update: the release notes of
+  what changed, checked against these dotfiles. The check runs again a minute
+  after every login and sends a notification only if something is wrong.
 - *Menu › Web apps* adds a site to the app launcher as an app of its own (a
   Brave app window with the site's icon), as Omarchy does.
 - SUPER+SHIFT+R (or CTRL+Print) records a screen region into

@@ -1,0 +1,8 @@
+# Log lines the health check (hypr/scripts/healthcheck) leaves out in the UTM VM: errors of
+# virtio-gpu's DRM and virgl, which has no colour transform, gamma or desktop GL. Regexes, one
+# per line. Installed as ~/.config/healthcheck/ignore by: ./install.sh utm-vm
+atomic drm: failed to commit ctm: no ctm prop support
+Couldn't get the gamma_size prop
+eglCreateContext (errored out with EGL_BAD_MATCH|failed with GLES 3\.2)
+drm: Cannot commit when a page-flip is awaiting
+your system is too slow

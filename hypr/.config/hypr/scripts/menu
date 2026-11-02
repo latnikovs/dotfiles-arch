@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|snapshots|system]
+# Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|update|snapshots|system]
 #   the desktop's commands in nested fuzzel menus (SUPER + ALT + SPACE), after Omarchy's
 #   omarchy-menu; Esc in a submenu goes back to the main one
 set -euo pipefail
@@ -54,7 +54,7 @@ main() {
         Remind)    remind ;;
         Clipboard) sub $scripts/clipboard-history ;;
         Panels)    panels ;;
-        Update)    exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/updates run ;;
+        Update)    update ;;
         Snapshots) snapshots ;;
         System)    sub $scripts/system menu ;;
     esac
@@ -146,8 +146,20 @@ panels() {
     esac
 }
 
-# System snapshots (scripts/snapshot), in the floating terminal updates use; restoring is for
-# after booting a snapshot from the boot menu
+# Installing updates (scripts/updates), checking that the desktop still works (scripts/healthcheck)
+# and Claude's review of the last update (scripts/update-review)
+update() {
+    pick "󰚰" Update "󰚰  Install updates" "󰗠  Health check" "󰚩  Review last update"
+    case $label in
+        Install*) exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/updates run ;;
+        Health*)  exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.healthcheck \
+                      bash -c "$scripts/healthcheck; printf '\nPress any key to close.'; read -rsn1" ;;
+        Review*)  exec $scripts/update-review ;;
+    esac
+}
+
+# System snapshots (scripts/snapshot), in a floating terminal; restoring is for after booting a
+# snapshot from the boot menu
 snapshots() {
     pick "󰁯" Snapshots "󰁯  Snapshot now" "󰋚  List snapshots" "󰦛  Restore booted snapshot"
     local action
@@ -156,16 +168,16 @@ snapshots() {
         List*)     action=list ;;
         Restore*)  action=restore ;;
     esac
-    SNAPSHOT_PAUSE=1 exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.updates $scripts/snapshot $action
+    SNAPSHOT_PAUSE=1 exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.snapshots $scripts/snapshot $action
 }
 
 pkill -x fuzzel && exit 0
 
 case ${1:-main} in
-    main|apps|webapps|learn|capture|toggle|remind|panels|snapshots) "${1:-main}" ;;
+    main|apps|webapps|learn|capture|toggle|remind|panels|update|snapshots) "${1:-main}" ;;
     system) exec $scripts/system menu ;;
     *)
-        echo "Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|snapshots|system]" >&2
+        echo "Usage: menu [apps|webapps|learn|capture|toggle|remind|panels|update|snapshots|system]" >&2
         exit 1
         ;;
 esac

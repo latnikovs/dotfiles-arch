@@ -1510,6 +1510,46 @@ PanelWindow {
             }
         }
 
+        // An update's health check or Claude review running (Updates.qml tasks): a spinner while
+        // they work, a still icon while the review waits for you. Left click shows the review.
+        MouseArea {
+            id: updateActivity
+            readonly property bool spinning: bar.updates.check !== null || bar.updates.review?.state === "busy"
+            readonly property string tip: [
+                bar.updates.check ? "Health check running" : "",
+                bar.updates.review?.state === "busy" ? "Claude is reviewing the update"
+                    : bar.updates.review ? "Claude's review is waiting for you" : ""
+            ].filter(t => t !== "").join("\n")
+            property int frame: 0
+
+            visible: bar.updates.active
+            implicitWidth: activityText.implicitWidth
+            Layout.fillHeight: true
+            hoverEnabled: true
+            cursorShape: bar.updates.review ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse) bar.showTooltip(this, tip)
+            onClicked: {
+                bar.hideTooltip(this);
+                bar.updates.showReview();
+            }
+
+            Timer {
+                interval: 100
+                repeat: true
+                running: updateActivity.visible && updateActivity.spinning
+                onTriggered: updateActivity.frame = (updateActivity.frame + 1) % 10
+            }
+
+            BarText {
+                id: activityText
+                anchors.centerIn: parent
+                text: (updateActivity.spinning ? "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"[updateActivity.frame] : "󰚩")
+                    + (bar.updates.check ? " check" : " review")
+                color: updateActivity.spinning ? bar.accent : bar.warning
+            }
+        }
+
         // Pending package updates (Updates.qml), shown only when there are some: left click lists
         // them (UpdatesPanel.qml), right click installs them
         MouseArea {

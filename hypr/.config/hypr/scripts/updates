@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Usage: updates list   pending package updates, "name old -> new" per line, AUR ones last
-#        updates run    install them (yay -Syu, one password, one confirmation), offer to merge .pacnew files, say when
-#                       a reboot is needed, then refresh the bar's update icon
+#        updates run    install them (yay -Syu, one password, one confirmation), offer to merge .pacnew files,
+#                       run the health check (scripts/healthcheck) and offer a Claude review of the update
+#                       (scripts/update-review), then refresh the bar's update icon
 # The bar (Quickshell Updates.qml) checks with `list` every 6 hours and opens `run` in a
-# terminal when the icon is clicked.
+# terminal when the icon is clicked. What an update changed is saved, as "upgraded name (old -> new)"
+# lines from pacman's log, to ~/.local/state/dotfiles/last-update for update-review.
 set -euo pipefail
 
 case ${1:-} in
@@ -15,14 +17,40 @@ case ${1:-} in
         { yay -Qua --color never || true; } | sed 's/$/ (AUR)/'
         ;;
     run)
+        state=~/.local/state/dotfiles
+        started=$(date '+%F %T')
+        logged=$(wc -l </var/log/pacman.log)
+
+        # A header as install.sh's: what this window is, before anything asks for a password
+        b=$'\e[1m' d=$'\e[90m' blue=$'\e[34m' cyan=$'\e[36m' r=$'\e[0m'
+        if [[ ${TERM:-} == xterm-kitty ]]; then
+            title=$'\uf303' lock=$'\uf023' section=$'\uf105' sep=·
+        else
+            title=◆ lock=› section=▸ sep=·
+        fi
+        heading() { printf '\n %s %s\n' "$cyan$section$r" "$b$1$r"; }
+        printf '\n %s %s\n' "$blue$title$r" "${b}System update$r $d$sep $(uname -n)$r"
+        pending=$("$0" list 2>/dev/null || true)
+        count=$(grep -c . <<<"$pending" || true)
+        aur=$(grep -c ' (AUR)$' <<<"$pending" || true)
+        if (( count == 0 )); then
+            printf '   %s\n' "${d}Nothing pending that the bar knows of; yay checks again.$r"
+        else
+            printf '   %s\n' "$d$count package$( (( count == 1 )) || echo s) to update$( (( aur == 0 )) || echo ", $aur from the AUR")$r"
+        fi
+        printf '   %s\n\n' "${d}Then a health check, and Claude's review if you want it.$r"
+        # The password, once, for pacman; yay's --sudoloop keeps it fresh from here on
+        sudo -v -p "   $lock sudo password for %u (to install the packages): " || exit 1
+
+        heading "Installing"
         # --answerupgrade None skips yay's "Packages to exclude" menu (the bar already
         # listed them, and excluding some is a partial upgrade). --sudoloop asks for the
         # password once and keeps it fresh, so a slow answer or long AUR build doesn't
         # run past sudo's timeout and ask again.
         if yay -Syu --answerupgrade None --sudoloop; then
-            echo "Up to date."
+            printf '\n   %s\n' "Up to date."
         else
-            echo "yay failed; see above."
+            printf '\n   %s\n' "yay failed; see above."
         fi
         # Configs you changed get the package's new version saved next to them as
         # .pacnew (or yours kept as .pacsave); pacdiff merges them, through sudo.
@@ -33,13 +61,30 @@ case ${1:-} in
             echo
             if [[ $answer == [yY] ]]; then pacdiff --sudo || true; fi
         fi
-        # A kernel upgrade removes the running kernel's modules, so new devices can't
-        # load drivers until a reboot
-        if [[ ! -d /usr/lib/modules/$(uname -r) ]]; then
-            printf '\nThe kernel was updated: reboot recommended.\n'
-        fi
         quickshell ipc call updates refresh >/dev/null 2>&1 || true
-        read -rsn1 -p "Press any key to close."
+
+        # What changed: this run's lines of pacman's log, without the timestamps
+        changed=$(tail -n +"$((logged + 1))" /var/log/pacman.log \
+            | sed -nE 's/^\[[^]]*\] \[ALPM\] ((upgraded|downgraded|installed|removed) .*)$/\1/p')
+        if [[ -z $changed ]]; then
+            read -rsn1 -p "Press any key to close."
+            exit 0
+        fi
+        mkdir -p "$state"
+        printf '# Updated %s on %s\n%s\n' "$started" "$(uname -n)" "$changed" >"$state/last-update"
+
+        # Does everything still work? (also at the next login, where more of the update takes effect)
+        heading "Health check"
+        printf '\n'
+        "${BASH_SOURCE[0]%/*}/healthcheck" --since "$started" | sed 's/^/   /' || true
+        heading "Review"
+        printf '   %s\n' "${d}Claude reads the release notes of what changed, checks them against the dotfiles,$r" \
+            "${d}and looks into the problems above. It opens in a window of its own.$r"
+        read -rn1 -p "   Review now? [y/N] " answer
+        echo
+        if [[ $answer == [yY] ]]; then
+            setsid -f "${BASH_SOURCE[0]%/*}/update-review" >/dev/null 2>&1
+        fi
         ;;
     *)
         echo "Usage: updates list|run" >&2

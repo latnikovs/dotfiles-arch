@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Usage: update-review   Claude in a terminal, asked to review the last update (the update-review
+#                        skill): the release notes of what changed against the dotfiles, and the
+#                        health check's problems. Offered by `updates run` and the login health
+#                        check's notification; Menu › Update › Review last update.
+set -euo pipefail
+
+state=~/.local/state/dotfiles
+if [[ ! -f $state/last-update ]]; then
+    notify-send --app-name "Update review" "Nothing to review" "No update has been installed with Menu › Update yet."
+    exit 1
+fi
+
+# The facts go in as plain text: what changed, and the latest health check (after the update,
+# or at the login since)
+prompt="Review the last system update on this machine: what it broke or will break.
+
+What it changed ($state/last-update):
+$(cat "$state/last-update")
+
+The latest health check ($state/healthcheck.log):
+$(cat "$state/healthcheck.log" 2>/dev/null || echo "none yet")
+
+Use the update-review skill (~/.claude/skills/update-review/SKILL.md)."
+
+# The bar shows a spinner while Claude works on it (Updates.qml): the Claude Code hooks
+# (claude-state.sh) report its state for this PID, which stays the terminal's through the execs
+export DOTFILES_UPDATE_REVIEW_PID=$$
+quickshell ipc call updates task review "$$" busy >/dev/null 2>&1 || true
+
+exec "${BASH_SOURCE[0]%/*}/agent" "$prompt"

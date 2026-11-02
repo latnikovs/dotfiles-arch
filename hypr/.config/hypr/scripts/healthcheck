@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+# Usage: healthcheck [--since TIME]   check that the desktop still works, print a report
+#        healthcheck --login          at login (hyprland.lua): wait a minute, check what happened
+#                                     since, and send a notification only if something is wrong
+#        healthcheck --show           print the last report again
+# Run by `updates run` after an update (with --since its start) and at every login, since
+# much of an update only takes effect then. Finds what used to be found by stumbling on it:
+# a config the new Hyprland rejects, QML errors in the bar, failed services, crashes,
+# programs that no longer start (missing libraries), AUR packages to rebuild.
+#
+# ✗ is a problem to fix (exit status 1), · a note. The report is saved to
+# ~/.local/state/dotfiles/healthcheck.log for update-review (the Claude review) to read.
+# Log lines matching a regex in ~/.config/healthcheck/ignore (one per line, # comments; machines/
+# <machine>.healthcheck-ignore installs one) are left out: known noise of that machine.
+set -uo pipefail
+
+state=~/.local/state/dotfiles
+report=$state/healthcheck.log
+ignore=~/.config/healthcheck/ignore
+[[ -f $ignore ]] || ignore=/dev/null
+scripts=${BASH_SOURCE[0]%/*}
+
+since=
+mode=print
+case ${1:-} in
+    --since) since=${2:?--since needs a time, e.g. "2026-11-03 09:00"} ;;
+    --login) mode=login ;;
+    --show)
+        if [[ -f $report ]]; then cat "$report"; else echo "No health check has run yet." >&2; exit 1; fi
+        exit 0
+        ;;
+    "") ;;
+    *) sed -n '2,5s/^# \{0,1\}//p' "${BASH_SOURCE[0]}" >&2; exit 2 ;;
+esac
+
+if [[ $mode == login ]]; then
+    # What the session's start logs counts, so let it settle first
+    since=$(date '+%F %T')
+    sleep 60
+fi
+# By default since boot: the boot's first journal entry, as the logs read the clock (uptime -s
+# moves when chrony steps the clock, e.g. after a suspend)
+[[ -n $since ]] || since=$(journalctl -b -o json --no-pager 2>/dev/null | head -n1 \
+    | jq -r '.__REALTIME_TIMESTAMP | tonumber / 1000000 | floor' | xargs -I{} date -d @{} '+%F %T')
+[[ -n $since ]] || since=$(uptime -s)
+
+problems=0
+notes=0
+out=$(mktemp)
+
+# The bar's spinner while the checks run (Updates.qml), cleared however the script ends
+bar_task() { quickshell ipc call updates task check "$$" "$1" >/dev/null 2>&1 || true; }
+bar_task busy
+trap 'bar_task ""; rm -f "$out"' EXIT
+
+# ok <check> | bad <check> [details] | note <check> [details]; details are lines, the first 12 shown
+ok()   { printf '✓ %s\n' "$1" >>"$out"; }
+bad()  { problems=$((problems + 1)); printf '✗ %s\n' "$1" >>"$out"; details "${2:-}"; }
+note() { notes=$((notes + 1)); printf '· %s\n' "$1" >>"$out"; details "${2:-}"; }
+details() { [[ -z $1 ]] || printf '    %s\n' "${1//$'\n'/$'\n'    }" | head -n 12 >>"$out"; }
+
+# Noise on every machine: Hyprland tries a nested Wayland backend first, then falls back to DRM
+noise='Wayland backend cannot start|Requested backend \(wayland\) could not start|Implementation wayland failed'
+
+# Drops known noise (above, and the ignore file) and colour codes, collapses repeats into "N× line"
+clean() {
+    sed 's/\x1b\[[0-9;]*m//g' | grep -vE "$noise" | grep -vEf <(sed '/^#/d; /^$/d' "$ignore") \
+        | sort | uniq -c | sort -rn | sed -E 's/^ *1 //; s/^ *([0-9]+) /\1× /'
+}
+
+in_hyprland=false
+[[ -n ${HYPRLAND_INSTANCE_SIGNATURE:-} ]] && in_hyprland=true
+
+# --- Hyprland -------------------------------------------------------------------------------
+
+# The installed Hyprland reads the config without starting. After an update that's the new
+# version, which the running session only becomes after logging out and back in.
+if command -v Hyprland >/dev/null; then
+    status=0
+    result=$(timeout 30 Hyprland --verify-config 2>&1) || status=$?
+    result=$(printf '%s\n' "$result" | sed 's/\x1b\[[0-9;]*m//g' | sed -n '/Config parsing result/,$p' \
+        | sed '1d; /^$/d; /^config ok$/d')
+    if (( status == 0 )) && [[ -z $result ]]; then
+        ok "Hyprland config ($(Hyprland --version 2>/dev/null | sed -n '1s/^Hyprland \([^ ]*\).*/\1/p'))"
+    else
+        bad "Hyprland config: the installed Hyprland reports errors (Hyprland --verify-config)" "${result:-exit status $status}"
+    fi
+fi
+
+if $in_hyprland; then
+    errors=$(hyprctl configerrors 2>&1 | sed '/^\s*$/d')
+    if [[ -z $errors ]]; then ok "Hyprland config errors in this session"
+    else bad "Hyprland config errors in this session (hyprctl configerrors)" "$errors"; fi
+
+    log=$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/hyprland.log
+    if [[ -f $log ]]; then
+        deprecated=$(grep -i 'deprecat' "$log" | clean)
+        if [[ -n $deprecated ]]; then bad "Hyprland log: deprecated config in use" "$deprecated"; fi
+        errors=$(grep -E '^(ERR|CRIT)' "$log" | clean)
+        if [[ -n $errors ]]; then note "Hyprland log: errors (hyprland.log)" "$errors"; fi
+    fi
+fi
+
+# --- Session --------------------------------------------------------------------------------
+
+if $in_hyprland; then
+    # Started by hyprland.lua; one that isn't running failed to start or died
+    missing=()
+    for program in quickshell hyprpaper hypridle hyprsunset darkman; do
+        command -v "$program" >/dev/null && ! pgrep -xu "$USER" "$program" >/dev/null && missing+=("$program")
+    done
+    systemctl --user is-active --quiet hyprpolkitagent || missing+=(hyprpolkitagent)
+    if (( ${#missing[@]} == 0 )); then ok "Session programs running"
+    else bad "Not running: ${missing[*]} (started at login by hyprland.lua)"; fi
+
+    # QML errors in the bar: errors, and warnings that point at a line of a .qml file
+    # (TypeError, ReferenceError, bindings to properties that are gone)
+    pid=$(pgrep -xou "$USER" quickshell)
+    log=$XDG_RUNTIME_DIR/quickshell/by-pid/$pid/log.log
+    if [[ -n $pid && -f $log ]]; then
+        errors=$(grep -E ' (ERROR|CRIT|FATAL) |\.qml:[0-9]|TypeError|ReferenceError|[Dd]eprecat' "$log" \
+            | sed -E 's/^[0-9-]+ [0-9:.]+ +//' | clean)
+        if [[ -z $errors ]]; then ok "Quickshell (bar) log"
+        else bad "Quickshell (bar) log: QML errors" "$errors"; fi
+    fi
+fi
+
+# Programs still running from files an update replaced: they are the old version, so the
+# checks above test that until they restart (log out and back in, or reboot)
+stale=$(for proc in /proc/[0-9]*; do
+    [[ -O $proc ]] || continue
+    exe=$(readlink "$proc/exe" 2>/dev/null) || continue
+    if [[ $exe == *" (deleted)" ]] || grep -qE '\.so[.0-9]* \(deleted\)$' "$proc/maps" 2>/dev/null; then
+        printf '%s\n' "${exe% (deleted)}"
+    fi
+done | xargs -rn1 basename | sort -u | paste -sd ' ')
+if [[ -n $stale ]]; then
+    note "Running the version from before the update (restart them, or log out and back in): $stale"
+fi
+
+# --- System ---------------------------------------------------------------------------------
+
+failed=$(systemctl --failed --plain --no-legend 2>/dev/null | awk '{print $1}')
+failed_user=$(systemctl --user --failed --plain --no-legend 2>/dev/null | awk '{print $1 " (user)"}')
+failed=$(printf '%s\n%s\n' "$failed" "$failed_user" | sed '/^$/d')
+if [[ -z $failed ]]; then ok "Services"
+else bad "Failed services (systemctl status <unit>)" "$failed"; fi
+
+crashes=$(coredumpctl list --since "$since" --json=short --no-pager 2>/dev/null \
+    | jq -r '.[] | .exe' 2>/dev/null | clean)
+if [[ -z $crashes ]]; then ok "Crashes since $since"
+else bad "Crashed since $since (the bar's crash list diagnoses them)" "$crashes"; fi
+
+# Errors in the journal, by program, without the core dumps already counted above
+errors=$(journalctl --since "$since" -p err -o json --no-pager -q 2>/dev/null \
+    | jq -r 'select((.SYSLOG_IDENTIFIER // ._COMM) != "systemd-coredump")
+             | "\(.SYSLOG_IDENTIFIER // ._COMM // "?"): \(.MESSAGE | if type == "string" then .[:160] else "(binary)" end)"' \
+    | clean)
+if [[ -n $errors ]]; then note "Journal errors since $since (journalctl -p err --since '$since')" "$errors"; fi
+
+# The running kernel's modules belong to a package until a kernel update replaces them
+# (kernel-modules-hook keeps a copy so it still works until the reboot)
+if ! pacman -Qqo "/usr/lib/modules/$(uname -r)/modules.builtin" >/dev/null 2>&1; then
+    note "The kernel was updated: reboot to run it"
+fi
+
+# --- Programs -------------------------------------------------------------------------------
+
+# Each one starts at all: a library an update removed or changed stops it before main()
+broken=$(for cmd in "Hyprland --version" "hyprlock --version" "hypridle --version" "hyprpaper --version" \
+        "hyprsunset --version" "quickshell --version" "kitty --version" "nvim --version" "tmux -V" \
+        "zsh --version" "fuzzel --version" "satty --version" "darkman --version" "yay --version"; do
+    command -v "${cmd%% *}" >/dev/null || continue
+    # shellcheck disable=SC2086 # the command and its flag
+    output=$(timeout 10 $cmd 2>&1) || printf '%s: %s\n' "$cmd" "$(tail -n1 <<<"$output")"
+done)
+if [[ -z $broken ]]; then ok "Programs start"
+else bad "Programs that don't start" "$broken"; fi
+
+# Neovim with every plugin loaded (not only the ones a plain start loads)
+if command -v nvim >/dev/null; then
+    errors=$(timeout 60 nvim --headless "+Lazy! load all" +qa 2>&1 | sed '/^\s*$/d')
+    if [[ -z $errors ]]; then ok "Neovim plugins load"
+    else bad "Neovim: errors loading the plugins (nvim, :Lazy)" "$errors"; fi
+fi
+
+# An interactive zsh, as a terminal starts it (zle can't start without a terminal: not an error)
+errors=$(timeout 20 zsh -i -c exit 2>&1 </dev/null | grep -v "can't change option: zle")
+if [[ -z $errors ]]; then ok "zsh starts"
+else bad "zsh: errors at start (~/.zshrc)" "$errors"; fi
+
+# --- Packages -------------------------------------------------------------------------------
+
+# AUR packages built against libraries that have changed since (rebuild-detector)
+if command -v checkrebuild >/dev/null; then
+    rebuild=$(checkrebuild 2>/dev/null | awk '{print $2}')
+    if [[ -z $rebuild ]]; then ok "AUR packages up to date with their libraries"
+    else bad "AUR packages to rebuild (yay -S --rebuild <package>)" "$rebuild"; fi
+fi
+
+pacnew=$(pacdiff --output --nocolor 2>/dev/null)
+if [[ -n $pacnew ]]; then note "Config files to merge (pacdiff --sudo)" "$pacnew"; fi
+
+# --- Report ---------------------------------------------------------------------------------
+
+# The first check since an update (its list is newer than the last report) says so even when it
+# passes, so a quiet login after an update means it ran
+after_update=false
+[[ -f $state/last-update && ( ! -f $report || $state/last-update -nt $report ) ]] && after_update=true
+
+summary="$problems problem$( (( problems == 1 )) || echo s), $notes note$( (( notes == 1 )) || echo s)"
+mkdir -p "$state"
+{
+    printf 'Health check, %s (since %s)\n\n' "$(date '+%F %T')" "$since"
+    cat "$out"
+    printf '\n%s\n' "$summary"
+} >"$report"
+
+if [[ $mode == login ]]; then
+    bar_task ""
+    if (( problems == 0 )); then
+        if $after_update; then
+            notify-send --app-name "Health check" --urgency low \
+                "Health check passed after the update" "$summary (Menu › Update › Health check)"
+        fi
+        exit 0
+    fi
+    first=$(grep -m3 '^✗' "$report" | cut -c5- | cut -c1-90)
+    action=$(notify-send --app-name "Health check" --urgency critical --wait \
+        --action show="Show report" --action review="Review with Claude" \
+        "Health check: $summary" "$first") || exit 1
+    # shellcheck disable=SC2016 # $1 is for the inner shell
+    case $action in
+        show)   exec ${DOTFILES_TERMINAL:-kitty} --class org.dotfiles.healthcheck \
+                    bash -c '"$1" --show; printf "\nPress any key to close."; read -rsn1' bash "$0" ;;
+        review) exec "$scripts/update-review" ;;
+    esac
+    exit 1
+fi
+
+cat "$report"
+(( problems == 0 ))

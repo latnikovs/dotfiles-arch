@@ -50,6 +50,17 @@ case "$input" in
 	;;
 esac
 
+# A Claude reviewing an update (hypr/scripts/update-review) also shows in the Quickshell bar:
+# a spinner while busy, a still icon while it waits for you (Updates.qml)
+if [ -n "${DOTFILES_UPDATE_REVIEW_PID:-}" ]; then
+	case "$state" in
+	busy) bar_state=busy ;;
+	idle | notify) bar_state=waiting ;;
+	*) bar_state="" ;;
+	esac
+	quickshell ipc call updates task review "$DOTFILES_UPDATE_REVIEW_PID" "$bar_state" >/dev/null 2>&1 || true
+fi
+
 [ -n "${TMUX:-}" ] || exit 0
 [ -n "${TMUX_PANE:-}" ] || exit 0
 command -v tmux >/dev/null 2>&1 || exit 0

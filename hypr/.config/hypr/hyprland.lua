@@ -116,6 +116,9 @@ hl.on("hyprland.start", function ()
     -- Polkit agent: answers password prompts from apps (KeePassXC Quick Unlock, GUI admin tools);
     -- without one every polkit request fails straight away
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
+    -- A minute after login, check that the desktop works (scripts/healthcheck): a notification
+    -- only if something doesn't. Much of an update only takes effect at the next login.
+    hl.exec_cmd("~/.config/hypr/scripts/healthcheck --login")
     -- Running (locked) from login, so KeePassXC-Browser always has something to talk to
     hl.exec_cmd("[workspace " .. passwords .. " silent] keepassxc")
     -- Mail, Teams and WhatsApp only notify while running, so they start hidden too
@@ -846,10 +849,11 @@ hl.window_rule({
     size   = "monitor_w*0.6 monitor_h*0.7",
 })
 
--- Installing updates (the bar's update icon, scripts/updates run) in a floating terminal
+-- Snapshots (Menu › Snapshots, scripts/snapshot) in a floating terminal. Installing updates
+-- (org.dotfiles.updates) and the health check's report get a regular, tiled window.
 hl.window_rule({
-    name  = "float-updates",
-    match = { class = "^org\\.dotfiles\\.updates$" },
+    name  = "float-snapshots",
+    match = { class = "^org\\.dotfiles\\.snapshots$" },
 
     float  = true,
     center = true,
