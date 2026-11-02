@@ -25,7 +25,6 @@ PopupWindow {
     implicitHeight: body.childrenRect.height + 2 * padding + 6
 
     anchor {
-        id: dropdownAnchor
         window: dropdown.bar
         adjustment: PopupAdjustment.Slide
         rect.width: 1
@@ -35,8 +34,8 @@ PopupWindow {
         onAnchoring: {
             const b = dropdown.button;
             const p = dropdown.bar.contentItem.mapFromItem(b, b.width / 2 - dropdown.implicitWidth / 2, 0);
-            dropdownAnchor.rect.x = Math.round(p.x);
-            dropdownAnchor.rect.y = dropdown.bar.height;
+            dropdown.anchor.rect.x = Math.round(p.x);
+            dropdown.anchor.rect.y = dropdown.bar.height;
         }
     }
 
