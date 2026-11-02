@@ -9,5 +9,16 @@
             "installation_mode": "normal_installed",
             "update_url": "https://clients2.google.com/service/update2/crx"
         }
-    }
+    },
+    "CookiesAllowedForUrls": [
+        "[*.]microsoftonline.com",
+        "[*.]microsoft.com",
+        "[*.]cloud.microsoft",
+        "[*.]office.com",
+        "[*.]live.com"
+    ],
+    "PopupsAllowedForUrls": [
+        "https://teams.microsoft.com",
+        "https://teams.cloud.microsoft"
+    ]
 }

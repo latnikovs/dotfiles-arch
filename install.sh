@@ -820,6 +820,9 @@ seed_profiles "$HOME/.config/BraveSoftware/Brave-Origin" \
 # promotions, and no password manager of their own since KeePassXC is it.
 # brave.json: it stops asking to be the default browser, and KeePassXC-Browser and
 # Vimium from the Web Store (removable only here).
+# Also Microsoft's sign-in cookies across sites and Teams' popups: Shields would
+# block Teams' background token renewal, which stops incoming messages and keeps
+# asking to sign in again, with a Sign in button whose popup never opens.
 sudo install -Dm644 browser-policies/common.json /etc/brave/policies/managed/dotfiles-common.json
 sudo install -Dm644 browser-policies/brave.json /etc/brave/policies/managed/dotfiles.json
 
