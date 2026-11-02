@@ -38,8 +38,6 @@ local function cover(side, bottom)
         gaps_in   = 0,
         gaps_out  = { top = 0, right = side, bottom = bottom, left = side },
         no_border = true,
-
-        on_created_empty = seed,
     })
 
     return true
@@ -103,6 +101,12 @@ local function refit(monitor)
         hl.exec_scheduled_prop_refresh_immediately()
     end
 end
+
+hl.on("workspace.created", function(ws)
+    if ws.name == SCRATCHPAD and ws.is_empty then
+        hl.exec_cmd(seed)
+    end
+end)
 
 -- Cover the whole work area until a monitor can be read, so the seed never lacks its rule
 cover(0, 0)

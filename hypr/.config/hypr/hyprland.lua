@@ -790,13 +790,25 @@ hl.window_rule({
     no_screen_share = true,
 })
 
--- KeePassXC lives on its own special workspace (SUPER + SHIFT + /); opened empty,
--- because it was closed, the workspace starts it again. Only launches are pinned
--- there, so dialogs raised from the browser (unlock) appear where you are.
-hl.workspace_rule({
-    workspace        = passwords,
-    on_created_empty = "keepassxc",
-})
+-- A special workspace opened empty, because its app was closed, starts the app again.
+-- Only is_empty tells a toggle from a launch or a window moved in, which arrive with
+-- the workspace already holding the window. Pinned to the workspace, not silently, so
+-- the app takes focus as it maps.
+local specialLaunchers = {
+    -- KeePassXC (SUPER + SHIFT + /): only launches are pinned there, so dialogs raised
+    -- from the browser (unlock) appear where you are
+    [passwords] = "keepassxc",
+    [music]     = "~/.config/hypr/scripts/music",
+    [mail]      = "thunderbird",
+    [teams]     = teamsApp,
+    [whatsapp]  = whatsappApp,
+}
+hl.on("workspace.created", function(ws)
+    local app = specialLaunchers[ws.name]
+    if app and ws.is_empty then
+        hl.exec_cmd(app, { workspace = ws.name })
+    end
+end)
 
 -- Toggling a special workspace leaves focus behind, so typing would go to the
 -- window underneath. A freshly relaunched app takes focus as it maps.
@@ -825,11 +837,6 @@ hl.window_rule({
 
 -- The music player (cliamp, scripts/music) works the same way on SUPER + SHIFT + M:
 -- a floating window on its own special workspace, started again when it was quit.
-hl.workspace_rule({
-    workspace        = music,
-    on_created_empty = "~/.config/hypr/scripts/music",
-})
-
 hl.window_rule({
     name  = "float-music",
     match = { class = "^org\\.dotfiles\\.music$" },
@@ -852,18 +859,9 @@ hl.window_rule({
 -- Mail (Thunderbird, SUPER + M) and Teams (SUPER + Y) get special workspaces too,
 -- tiled full size. Thunderbird's launches are pinned there, so a compose window
 -- opened from a mailto: link appears where you are.
-hl.workspace_rule({
-    workspace        = mail,
-    on_created_empty = "thunderbird",
-})
 
 -- A Brave launch hands the window to a browser that's already running, so
 -- Teams is pinned by its app window class (brave-<host>__<path>-<profile>) instead.
-hl.workspace_rule({
-    workspace        = teams,
-    on_created_empty = teamsApp,
-})
-
 hl.window_rule({
     name  = "teams-workspace",
     match = { class = "^brave-teams\\..*$" },
@@ -872,11 +870,6 @@ hl.window_rule({
 })
 
 -- WhatsApp (SUPER + U) the same way, in the Personal profile
-hl.workspace_rule({
-    workspace        = whatsapp,
-    on_created_empty = whatsappApp,
-})
-
 hl.window_rule({
     name  = "whatsapp-workspace",
     match = { class = "^brave-web\\.whatsapp\\.com__.*$" },
