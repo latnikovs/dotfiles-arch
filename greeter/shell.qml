@@ -78,12 +78,16 @@ ShellRoot {
         }
     }
 
-    // A wrong password ends greetd's session, so a new one starts for the next try
+    // A wrong password ends greetd's session, so a new one starts for the next try.
+    // Not from inside the signal: Quickshell emits authFailure and error before it
+    // cancels and resets its own session, so a session created there is cancelled
+    // straight away, and the next right password reaches a greeter that no longer
+    // expects it and never launches.
     function fail(why) {
         wrong = true;
         message = why;
         shake.restart();
-        start();
+        Qt.callLater(start);
     }
 
     function switchUser() {
