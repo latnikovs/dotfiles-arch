@@ -546,6 +546,22 @@ step 'Maintenance timers'
 # tells the SSD which blocks are free, fwupd refreshes the firmware list (updates
 # themselves stay manual: fwupdmgr update)
 sudo systemctl enable --now paccache.timer fstrim.timer fwupd-refresh.timer
+# Colour in pacman's output
+sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
+# Mirrors: reflector picks the fastest recently synced HTTPS mirrors near Latvia, weekly.
+# x86_64 only: Arch Linux ARM (the VM) has its own mirrors, which reflector doesn't know.
+if [[ $(uname -m) == x86_64 ]]; then
+    sudo pacman -S --needed --noconfirm reflector
+    sudo install -Dm644 /dev/stdin /etc/xdg/reflector/reflector.conf <<'CONF'
+--save /etc/pacman.d/mirrorlist
+--protocol https
+--country LV,LT,EE,FI,SE,PL,DE
+--latest 10
+--sort rate
+CONF
+    sudo systemctl enable reflector.timer
+    sudo systemctl start reflector.service
+fi
 # kernel-modules-hook, as in Omarchy: a kernel update keeps the running kernel's modules,
 # and this removes them at the next boot. Arch Linux ARM kernels (the VM) don't install
 # vmlinuz where its pacman hook looks, so there it does nothing.
