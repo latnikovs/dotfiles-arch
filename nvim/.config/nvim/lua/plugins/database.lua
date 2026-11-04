@@ -1,9 +1,17 @@
 -- Databases: dadbod, dadbod-ui and completion come from LazyVim's lang.sql
 -- extra (lazyvim.json). Connections come from KeePassXC (config/keepass_dbs.lua):
--- the first <leader>D asks for the master password and fills the drawer with
+-- the first <leader>Dd asks for the master password and fills the drawer with
 -- the connections of the project nvim runs in.
 -- Connections added with DBUIAddConnection go to connections.json in
 -- plain text, so keep the ones with passwords in KeePassXC.
+--
+-- Everything is under <leader>D, as http.nvim's is under <leader>H:
+-- <leader>Dd toggles the database view; in a query buffer <CR> (or
+-- <leader>Ds) executes, <leader>Dw saves, <leader>De edits bind parameters,
+-- <leader>Dx exports to CSV; in a result <leader>Dr toggles the layout.
+-- dadbod-ui's own <leader>W/E/S in query buffers are off, and its <leader>R in
+-- results is removed.
+vim.g.db_ui_disable_mappings_sql = 1
 
 -- The extra turns off Vim's sqlcomplete for blink, but the SQL ftplugin still
 -- maps <Left>/<Right> in insert mode to sqlcomplete functions (E117 on every
@@ -19,15 +27,32 @@ if not vim.env.PGCONNECT_TIMEOUT then
   vim.env.PGCONNECT_TIMEOUT = "5"
 end
 
--- Export to CSV next to dadbod-ui's <leader>W/E/S (config/db_export.lua)
+-- Query buffer keys. dadbod-ui defines its <Plug> maps only in the buffers it
+-- opens, so elsewhere these do nothing (and <CR> in other sql files stays a
+-- plain <CR>). Execute in normal mode runs the whole buffer, or the query with
+-- bind parameters; in visual mode the selection. Export to CSV is
+-- config/db_export.lua.
 vim.api.nvim_create_autocmd("FileType", {
   pattern = { "sql", "mysql", "plsql" },
   callback = function(ev)
+    local function plug(modes, lhs, name, desc)
+      vim.keymap.set(modes, lhs, "<Plug>(DBUI_" .. name .. ")", { buffer = ev.buf, remap = true, desc = desc })
+    end
+    -- After dadbod-ui's buffer setup, which runs once the filetype is set
+    vim.schedule(function()
+      if not vim.api.nvim_buf_is_valid(ev.buf) or not vim.b[ev.buf].dbui_db_key_name then
+        return
+      end
+      plug({ "n", "x" }, "<CR>", "ExecuteQuery", "Execute Query")
+    end)
+    plug({ "n", "x" }, "<leader>Ds", "ExecuteQuery", "Execute Query")
+    plug("n", "<leader>Dw", "SaveQuery", "Save Query")
+    plug("n", "<leader>De", "EditBindParameters", "Edit Bind Parameters")
     local export = require("config.db_export")
-    vim.keymap.set("n", "<leader>X", export.export_paragraph, { buffer = ev.buf, desc = "Export Query to CSV" })
-    vim.keymap.set("x", "<leader>X", export.export_selection, { buffer = ev.buf, desc = "Export Selection to CSV" })
+    vim.keymap.set("n", "<leader>Dx", export.export_paragraph, { buffer = ev.buf, desc = "Export Query to CSV" })
+    vim.keymap.set("x", "<leader>Dx", export.export_selection, { buffer = ev.buf, desc = "Export Selection to CSV" })
     -- <C-s> in a new query (a scratch file in the tmp dir) asks for a name and
-    -- saves it under Saved queries, as <leader>W does; dadbod-ui defines the
+    -- saves it under Saved queries, as <leader>Dw does; dadbod-ui defines the
     -- <Plug> map only in those buffers, so everywhere else it is a plain :w.
     vim.keymap.set({ "i", "x", "n", "s" }, "<C-s>", function()
       local plug = vim.fn.maparg("<Plug>(DBUI_SaveQuery)", "n", false, true)
@@ -79,6 +104,15 @@ vim.api.nvim_create_autocmd("FileType", {
       vim.keymap.set("n", "cc", function()
         require("config.db_edit").edit()
       end, { buffer = ev.buf, desc = "Edit Cell" })
+      -- dadbod-ui's <leader>R, moved under <leader>D with the rest; its other
+      -- result keys (<C-]>, vic, yh) are not leader keys and stay
+      pcall(vim.keymap.del, "n", "<leader>R", { buffer = ev.buf })
+      vim.keymap.set(
+        "n",
+        "<leader>Dr",
+        "<Plug>(DBUI_ToggleResultLayout)",
+        { buffer = ev.buf, remap = true, desc = "Toggle Result Layout" }
+      )
     end)
   end,
 })
@@ -90,7 +124,7 @@ require("config.db_sticky").setup()
 -- windows, and their line in the drawer (config/db_env.lua)
 require("config.db_env").setup()
 
--- Closing a result pane (gq, <leader>D) runs dadbod's BufUnload, which stops
+-- Closing a result pane (gq, <leader>Dd) runs dadbod's BufUnload, which stops
 -- psql at once; this one is defined earlier so it runs first and lets psql
 -- cancel on the server, waiting up to a second for it.
 vim.api.nvim_create_autocmd("BufUnload", {
@@ -129,10 +163,10 @@ end
 
 local last_query, last_file
 
--- <leader>D toggles the whole database view: when any dadbod window is up it
+-- <leader>Dd toggles the whole database view: when any dadbod window is up it
 -- closes the drawer, the result panes and the query windows (the query
 -- buffers stay loaded and listed under the drawer's Buffers), and remembers
--- the query so the next <leader>D brings it back next to the drawer.
+-- the query so the next <leader>Dd brings it back next to the drawer.
 local function close_db_windows()
   local wins = vim.tbl_filter(function(win)
     return is_db_buf(vim.api.nvim_win_get_buf(win))
@@ -159,7 +193,7 @@ local function close_db_windows()
     if #vim.api.nvim_tabpage_list_wins(0) > 1 then
       vim.api.nvim_win_close(win, false)
     else
-      -- The last window: show the file from before <leader>D opened them instead
+      -- The last window: show the file from before <leader>Dd opened them instead
       vim.wo[win].previewwindow = false
       vim.api.nvim_win_call(win, function()
         if last_file and vim.api.nvim_buf_is_valid(last_file) and vim.bo[last_file].buflisted then
@@ -186,7 +220,7 @@ local function open_db_windows()
   end
   last_query = nil
   vim.cmd("DBUI")
-  -- Back in the query it brought back, ready for <leader>S, not in the drawer
+  -- Back in the query it brought back, ready for <CR>, not in the drawer
   if query_win and vim.api.nvim_win_is_valid(query_win) then
     vim.api.nvim_set_current_win(query_win)
   end
@@ -197,8 +231,10 @@ return {
     "kristijanhusak/vim-dadbod-ui",
     cmd = { "DBUIKeepass" },
     keys = {
+      -- The extra's <leader>D (DBUIToggle) would shadow the <leader>D group
+      { "<leader>D", false },
       {
-        "<leader>D",
+        "<leader>Dd",
         function()
           if close_db_windows() then
             return
@@ -217,7 +253,7 @@ return {
       },
     },
     config = function()
-      -- Saved queries (<leader>W) live with the notes, which Syncthing syncs
+      -- Saved queries (<leader>Dw) live with the notes, which Syncthing syncs
       -- and versions; one folder per connection. Scratch buffers stay in the
       -- extra's tmp dir under stdpath("data"). DBUIAddConnection would write
       -- its plain-text connections.json here too, another reason not to use it.
@@ -258,5 +294,9 @@ return {
         end,
       })
     end,
+  },
+  {
+    "folke/which-key.nvim",
+    opts = { spec = { { "<leader>D", group = "databases", icon = { icon = " ", color = "yellow" } } } },
   },
 }

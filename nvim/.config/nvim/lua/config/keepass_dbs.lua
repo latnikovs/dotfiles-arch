@@ -52,7 +52,7 @@ function M.read(kdbx, master)
   if not paths then
     if err:find("Cannot find group") then
       return nil,
-        ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>D again'):format(
+        ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>Dd again'):format(
           M.group,
           vim.fn.fnamemodify(kdbx, ":t")
         )

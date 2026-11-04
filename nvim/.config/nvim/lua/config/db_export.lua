@@ -1,4 +1,4 @@
--- <leader>X in a DBUI query buffer: export the query under the cursor (its
+-- <leader>Dx in a DBUI query buffer: export the query under the cursor (its
 -- paragraph, as vip picks it) or the visual selection to a CSV file. It runs
 -- psql's \copy, so the rows go straight to the file on this machine without
 -- passing through nvim, which suits big exports too. Postgres only.
