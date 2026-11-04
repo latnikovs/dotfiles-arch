@@ -1,8 +1,10 @@
 -- REST client: my http.nvim (latnikovs/http.nvim, loaded from its clone in
 -- ~/Work/latnikovs while I work on it, see config/lazy.lua). Requests in
 -- .http files, environments in http-client.env.json, credentials from
--- KeePassXC (config/keepass_http.lua). <leader>H opens the sidebar for the
--- current directory's http/ folder.
+-- KeePassXC (config/keepass_http.lua). Everything is under <leader>H:
+-- <leader>Hh opens the sidebar for the current directory's http/ folder,
+-- <leader>He picks the environment, the rest work in .http buffers, where
+-- <CR> sends the request under the cursor.
 local function map(buf, lhs, fn, desc)
   vim.keymap.set("n", lhs, function()
     require("httpnvim")[fn]()
@@ -15,15 +17,15 @@ vim.api.nvim_create_autocmd("FileType", {
     if vim.bo[ev.buf].buftype ~= "" then
       return -- the response pane's headers view
     end
-    map(ev.buf, "<leader>Rs", "send_at", "Send Request")
-    map(ev.buf, "<leader>Rr", "replay", "Replay Last Request")
-    map(ev.buf, "<leader>Re", "select_env", "Select Environment")
-    map(ev.buf, "<leader>Rv", "set_var", "Set Variable")
-    map(ev.buf, "<leader>Rn", "new_request", "New Request")
-    map(ev.buf, "<leader>Rt", "view", "Cycle Response View")
-    map(ev.buf, "<leader>Rc", "copy_curl", "Copy as cURL")
-    map(ev.buf, "<leader>Rq", "close", "Close Response")
-    map(ev.buf, "<leader>Rx", "cancel", "Cancel Request")
+    map(ev.buf, "<CR>", "send_at", "Send Request")
+    map(ev.buf, "<leader>Hs", "send_at", "Send Request")
+    map(ev.buf, "<leader>Hr", "replay", "Replay Last Request")
+    map(ev.buf, "<leader>Hv", "set_var", "Set Variable")
+    map(ev.buf, "<leader>Hn", "new_request", "New Request")
+    map(ev.buf, "<leader>Ht", "view", "Cycle Response View")
+    map(ev.buf, "<leader>Hc", "copy_curl", "Copy as cURL")
+    map(ev.buf, "<leader>Hq", "close", "Close Response")
+    map(ev.buf, "<leader>Hx", "cancel", "Cancel Request")
     map(ev.buf, "gd", "goto_var", "Go to Variable Definition")
     vim.keymap.set("n", "]r", function()
       require("httpnvim").jump(true)
@@ -40,7 +42,8 @@ return {
     ft = "http",
     cmd = { "HttpToggle", "HttpEnv", "HttpSend" },
     keys = {
-      { "<leader>H", "<cmd>HttpToggle<cr>", desc = "HTTP Requests" },
+      { "<leader>Hh", "<cmd>HttpToggle<cr>", desc = "Toggle Sidebar" },
+      { "<leader>He", "<cmd>HttpEnv<cr>", desc = "Select Environment" },
     },
     opts = {
       secrets = function(project, callback)
@@ -54,6 +57,6 @@ return {
   },
   {
     "folke/which-key.nvim",
-    opts = { spec = { { "<leader>R", group = "rest", icon = { icon = "󰖟 ", color = "blue" } } } },
+    opts = { spec = { { "<leader>H", group = "http", icon = { icon = "󰖟 ", color = "blue" } } } },
   },
 }
