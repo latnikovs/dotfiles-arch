@@ -443,6 +443,31 @@ sudo sysctl -q --load /etc/sysctl.d/99-zram.conf
 sudo systemctl daemon-reload
 sudo systemctl start systemd-zram-setup@zram0.service
 
+step 'Out-of-memory killer (earlyoom)'
+# When both RAM and swap are under 10% free, earlyoom stops the process using the most
+# memory, before the kernel thrashes for minutes and the desktop freezes. systemd-oomd
+# can't do this here: it kills whole cgroups, and every app Hyprland starts shares the
+# session's. Prefer: browser tabs and mail, which reload. Avoid: the desktop itself, and
+# terminals and tmux, which hold work and agents. -n notifies (systembus-notify, started
+# by hyprland.lua); -r 0 turns off the hourly memory report. No quotes or spaces in the
+# regexes: systemd splits the arguments at whitespace.
+sudo install -Dm644 /dev/stdin /etc/default/earlyoom <<'CONF'
+EARLYOOM_ARGS="-r 0 -n --prefer (^|/)(brave|chrome|chromium|thunderbird)$ --avoid (^|/)(init|systemd.*|sshd|greetd|Hyprland|Xwayland|quickshell|hypridle|hyprlock|pipewire.*|wireplumber|kitty|tmux.*|keepassxc)$"
+CONF
+sudo systemctl enable earlyoom.service
+sudo systemctl restart earlyoom.service
+
+step 'Disk health (smartd)'
+# smartd checks every disk's SMART status every 30 minutes and runs a short self-test
+# daily at noon (when the machine is likely on); problems go to the journal, where
+# scripts/healthcheck reports them. -n standby leaves sleeping hard disks asleep. Its
+# unit skips itself in a virtual machine, which has no SMART disks.
+sudo install -Dm644 /dev/stdin /etc/smartd.conf <<'CONF'
+DEVICESCAN -a -n standby,q -s S/../.././12
+CONF
+sudo systemctl enable smartd.service
+sudo systemctl restart smartd.service
+
 step 'Docker, rootless'
 # Docker, rootless: the daemon is a user service, so containers can do no more than
 # you can. (The docker group would hand out root without a password.) Published

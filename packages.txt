@@ -159,6 +159,12 @@ kernel-modules-hook
 fwupd
 # Firewall (install.sh: nothing comes in except over Tailscale)
 ufw
+# Out of memory: earlyoom stops the biggest program before the desktop freezes, and
+# systembus-notify shows its notification (install.sh, hyprland.lua)
+earlyoom
+systembus-notify
+# Disk health: smartd watches the disks' SMART status (install.sh, scripts/healthcheck)
+smartmontools
 # Crash diagnosis (the bar's crash list, claude/ diagnose-crash skill): backtraces from core
 # dumps, with symbols from Arch's debuginfod
 gdb

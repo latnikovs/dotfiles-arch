@@ -116,6 +116,8 @@ hl.on("hyprland.start", function ()
     -- Polkit agent: answers password prompts from apps (KeePassXC Quick Unlock, GUI admin tools);
     -- without one every polkit request fails straight away
     hl.exec_cmd("systemctl --user start hyprpolkitagent")
+    -- Notifications from system services: earlyoom says which program it stopped (install.sh)
+    hl.exec_cmd("command -v systembus-notify >/dev/null && systembus-notify")
     -- A minute after login, check that the desktop works (scripts/healthcheck): a notification
     -- only if something doesn't. Much of an update only takes effect at the next login.
     hl.exec_cmd("~/.config/hypr/scripts/healthcheck --login")
