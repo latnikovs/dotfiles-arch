@@ -27,6 +27,16 @@ resurrect="$HOME/.tmux/plugins/tmux-resurrect/scripts"
 
 now=$(date +%s)
 
+saves_dir() {
+	local saves
+	saves=$(tmux show-options -gqv @resurrect-dir)
+	if [ -z "$saves" ]; then
+		saves="$HOME/.tmux/resurrect"
+		[ -d "$saves" ] || saves="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect"
+	fi
+	echo "$saves"
+}
+
 case "${1:-}" in
 save)
 	last=$(tmux show-options -gqv @persist_last)
@@ -50,15 +60,25 @@ restore)
 	# started for still being made: resurrect restores over that session only
 	# once it exists, as the server's one pane.
 	sleep 1
+	startup=$(tmux list-sessions -F '#{session_id}' | head -n 1)
 	"$resurrect/restore.sh"
+	# Resurrect drops that session itself only when it counts exactly one pane
+	# on the server, and a sidebar the session-created hooks were already
+	# adding when sidebar.sh suspend ran makes it two. It then stays, as
+	# workspace 1 named 0. So it goes here, once the saved ones are back.
+	[ -n "$startup" ] || exit 0
+	name=$(tmux display-message -p -t "$startup" '#{session_name}' 2>/dev/null) || exit 0
+	file=$(readlink -f "$(saves_dir)/last") || exit 0
+	# Not when the save has a session by that name: then it is one of them.
+	! cut -f 2 "$file" | grep -qxF -- "$name" || exit 0
+	other=$(tmux list-sessions -F '#{session_id}' | grep -vxF -- "$startup" | head -n 1)
+	[ -n "$other" ] || exit 0
+	tmux list-clients -t "$startup" -F '#{client_name}' |
+		while read -r client; do tmux switch-client -c "$client" -t "$other"; done
+	tmux kill-session -t "$startup"
 	;;
 order)
-	saves=$(tmux show-options -gqv @resurrect-dir)
-	if [ -z "$saves" ]; then
-		saves="$HOME/.tmux/resurrect"
-		[ -d "$saves" ] || saves="${XDG_DATA_HOME:-$HOME/.local/share}/tmux/resurrect"
-	fi
-	file=$(readlink -f "$saves/last") || exit 0
+	file=$(readlink -f "$(saves_dir)/last") || exit 0
 	[ -f "$file" ] || exit 0
 	sessions=$(tmux display-message -p '#{S/i:#{session_name}	}')
 	# Stable, so a session's panes keep their order; anything not in the list
