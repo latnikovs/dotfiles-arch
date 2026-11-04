@@ -330,10 +330,15 @@ step 'Claude Code'
 # Claude Code: Anthropic's native installer, which keeps it updated itself
 command -v claude >/dev/null || curl -fsSL https://claude.ai/install.sh | bash
 # Its status line (claude/.claude/statusline.sh). settings.json also holds what
-# each machine sets for itself (plugins, permissions), so only this key is set.
+# each machine sets for itself (plugins, permissions), so only its own keys are set.
 claude_settings=$HOME/.claude/settings.json
 [[ -s $claude_settings ]] || echo '{}' >"$claude_settings"
 jq '.statusLine = {"type": "command", "command": "~/.claude/statusline.sh"}' "$claude_settings" >"$claude_settings.new"
+mv "$claude_settings.new" "$claude_settings"
+# Keep the Read tool out of secrets files (CLAUDE.md says so too; this doesn't stop cat
+# through Bash). Added to the machine's own deny rules, not replacing them.
+jq '.permissions.deny = ((.permissions.deny // []) + ["Read(**/.envrc)", "Read(**/.env)", "Read(**/.env.*)"] | unique)' \
+    "$claude_settings" >"$claude_settings.new"
 mv "$claude_settings.new" "$claude_settings"
 # The hooks that publish each Claude's state to the tmux bar and the Prefix + a picker
 # (tmux/.tmux/scripts/claude-state.sh). Only their own entries are replaced, so other
