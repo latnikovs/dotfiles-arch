@@ -77,7 +77,7 @@ render() {
 		# order the Alt + 1..9 numbers follow.
 		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{@ico_claude_busy}	#{@ico_claude_wait}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@theme_mode}	#{@thm_surface_1}	#{@thm_blue}
 #{S/i:S	#{session_id}	#{session_name}	#{@ws_git}
-#{W:#{P:#{?#{E:@claude_live},A	#{pane_id}	#{E:@claude_shown}	#{pane_title}
+#{W:#{P:#{?#{E:@claude_live},A	#{pane_id}	#{E:@claude_shown}	#{?#{&&:#{window_active},#{pane_active}},1,0}	#{pane_title}
 ,}}}}") || exit 0
 
 		local width height own visible ico_busy ico_wait ico_idle ico_jobs mode band accent
@@ -100,13 +100,14 @@ render() {
 				tmux resize-pane -t "$pane" -x "$(width)"
 				continue
 			fi
-			local out="" map="" y=1 n=0 kind id name branch state title glyph colour line pad
+			local out="" map="" y=1 n=0 kind id name branch rest current="" active state title glyph colour line pad
 			# Row 0 stays blank, level with the pane borders' title row.
 			out+=$'\033[K\n'
-			while IFS=$'\t' read -r kind id name branch; do
+			while IFS=$'\t' read -r kind id name branch rest; do
 				case "$kind" in
 				S)
 					n=$((n + 1))
+					current=$id
 					name=${name:0:$((width - 7))}
 					# The workspace this sidebar is in, in the active window
 					# chip's mauve (blue on a band on dark); the rest plain. No full
@@ -131,8 +132,9 @@ render() {
 					fi
 					;;
 				A)
-					# For agent lines the fields are pane, state and title.
-					state=$name title=$branch
+					# For agent lines the fields are pane, state, whether it is
+					# the active pane of its session's current window, and title.
+					state=$name active=$branch title=$rest
 					case "$state" in
 					busy) glyph=$ico_busy colour=33 ;;
 					wait) glyph=$ico_wait colour=31 ;;
@@ -141,7 +143,14 @@ render() {
 					esac
 					# Claude puts its own state glyph in front of the title.
 					title=$(sed -E 's/^[^[:alnum:]]+ //' <<<"$title")
-					out+=$(printf '   \033[%dm%s\033[0m %s' "$colour" "$glyph" "${title:0:$((width - 6))}")$'\033[K\n'
+					title=${title:0:$((width - 6))}
+					# The agent you are in, in the workspace this sidebar is in:
+					# drawn like that workspace's row, band and bar included.
+					if [ "$current" = "$own" ] && [ "$active" = 1 ]; then
+						out+=$(printf '%s%s  \033[%dm%s\033[39m \033[1m%s%s\033[22;39m' "$sel_bg" "$sel_bar" "$colour" "$glyph" "$sel_fg" "$title")$'\033[K\033[0m\n'
+					else
+						out+=$(printf '   \033[%dm%s\033[0m %s' "$colour" "$glyph" "$title")$'\033[K\n'
+					fi
 					map+=" $y=$id"
 					y=$((y + 1))
 					;;
