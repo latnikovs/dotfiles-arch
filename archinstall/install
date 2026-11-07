@@ -51,6 +51,7 @@ ask_password() {
 [[ -d /sys/firmware/efi ]] || die "not booted in UEFI mode (the layout and Limine setup assume UEFI)"
 command -v archinstall >/dev/null || die "archinstall not found; run this from the Arch ISO"
 curl -fsS -o /dev/null --max-time 10 https://archlinux.org || die "offline (connect with iwctl, or plug in Ethernet)"
+localectl list-keymaps | grep -qx "$keymap" || die "unknown keymap: $keymap"
 version=$(pacman -Q archinstall | awk '{ print $2 }')
 [[ $version == 4.* ]] ||
     echo "warning: archinstall $version; this was tested with 4.5. The dry run below checks the config before anything is wiped." >&2
@@ -97,6 +98,14 @@ root_end = (total - MiB) // MiB * MiB
 if root_end - root_start < 20 * 1024 * MiB:
     raise SystemExit(f'disk too small: {total // MiB} MiB')
 
+# No kb_layout: with one, archinstall boots the new system in a container to run
+# localectl, and if that system's D-Bus doesn't come up there (seen with archinstall
+# 4.5), the install aborts or hangs. The keymap goes into vconsole.conf from a plain
+# chroot instead; an empty KEYMAP is the kernel's own, us.
+keymap = os.environ['KEYMAP']
+custom_commands = [] if keymap == 'us' else [
+    f"sed -i 's/^KEYMAP=.*/KEYMAP={keymap}/' /etc/vconsole.conf"]
+
 root_id = str(uuid.uuid4())
 partition = dict(status='create', type='primary', dev_path=None)
 config = {
@@ -120,7 +129,7 @@ config = {
     },
     'hostname': os.environ['HOSTNAME_'],
     'kernels': ['linux'],
-    'locale_config': {'kb_layout': os.environ['KEYMAP'], 'sys_lang': os.environ['LOCALE'],
+    'locale_config': {'kb_layout': '', 'sys_lang': os.environ['LOCALE'],
                       'sys_enc': 'UTF-8', 'console_font': 'default8x16'},
     'network_config': {'type': 'nm'},
     'ntp': True,
@@ -131,7 +140,7 @@ config = {
     'swap': {'enabled': True, 'algorithm': 'zstd'},
     'timezone': os.environ['TIMEZONE'],
     'services': [],
-    'custom_commands': [],
+    'custom_commands': custom_commands,
 }
 print(json.dumps(config, indent=4))
 PY
