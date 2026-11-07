@@ -263,7 +263,7 @@ section dotfiles Dotfiles
 step 'Linking configs (stow)'
 for pkg in */; do
     pkg=${pkg%/}
-    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console || $pkg == syncthing || $pkg == limine ]] && continue
+    [[ $pkg == machines || $pkg == keepassxc || $pkg == browser-policies || $pkg == greeter || $pkg == console || $pkg == syncthing || $pkg == limine || $pkg == archinstall ]] && continue
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 

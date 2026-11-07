@@ -12,7 +12,29 @@ package that mirrors `$HOME`; `install.sh` installs the packages in
 
 ### 1. Arch Linux
 
-Install Arch with `archinstall`. The choices that matter here:
+Boot the [Arch ISO](https://archlinux.org/download/) (in UEFI mode), get online
+(Ethernet, or `iwctl` for Wi-Fi), then:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/archinstall/install | bash
+```
+
+`archinstall/install` lists the disks and asks which one to erase (typed out
+in full to confirm; `… | bash -s -- /dev/nvme0n1` names it up front), then the
+disk encryption and user passwords. It generates archinstall's config for that
+disk with the choices below, checks it with a dry run, and installs without
+further questions. The passwords stay on the ISO's RAM disk. Hostname, user,
+time zone, keymap and locale are set at the top of the script and can be
+overridden: `… | ARCH_HOSTNAME=work bash`.
+
+Typing that URL on the console is the slow part. The ISO runs an SSH server:
+set a root password with `passwd`, find the address with `ip -br a`, and
+`ssh root@<address>` from another machine to paste it instead.
+
+It was tested with archinstall 4.5 (ISO 2026.11.01). archinstall's Python API
+changes between releases, so the script writes its JSON config directly; a
+newer archinstall that no longer reads it fails the dry run, before anything
+is erased. Then install by hand with `archinstall`, making the same choices:
 
 - **Disk encryption: yes (LUKS).** On an encrypted disk the first login of
   each boot is automatic, since the disk password already identified you.
@@ -33,6 +55,8 @@ Install Arch with `archinstall`. The choices that matter here:
   across.
 - A user account in the `wheel` group with `sudo`. No desktop profile
   is needed.
+
+Reboot, unlock the disk and log in as that user.
 
 ### 2. Run the installer
 
@@ -160,6 +184,7 @@ other, and files both have but with different contents keep both versions (one a
 | `machines/` | Per-machine overrides: `./install.sh <name>` installs `machines/<name>.lua` as `~/.config/hypr/local.lua`, plus `<name>.mise.toml` and `<name>.greeter.lua` if they exist |
 | `browser-policies/`, `keepassxc/` | Copied into place by `install.sh` rather than stowed |
 | `syncthing/` | `setup`: Syncthing over Tailscale only, pairing (run, not stowed) |
+| `archinstall/` | `install`: installs Arch itself from the ISO, unattended, before `install.sh` (run, not stowed) |
 | `packages.txt` | Packages from the official repos; AUR packages are installed in `install.sh` |
 | everything else | One Stow package per program (`zsh/`, `tmux/`, `nvim/`, `kitty/`, …) |
 

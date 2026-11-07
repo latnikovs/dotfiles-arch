@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+# Installs Arch Linux from the Arch ISO, unattended, with the choices install.sh
+# expects (see README): GPT, a 2 GiB EFI system partition on /boot, the rest LUKS
+# with Btrfs inside (archinstall's default subvolumes, zstd compression), Limine,
+# NetworkManager, zram swap and one sudo user. No desktop: install.sh does that.
+#
+# Usage, from the ISO's root shell, online:
+#   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/archinstall/install | bash
+#   … | bash -s -- /dev/nvme0n1     (picks the disk; it is still confirmed)
+#
+# Asks for the disk, then the disk encryption and user passwords; they are kept on
+# the ISO's RAM disk only. The archinstall config is generated for the chosen disk
+# (the partition sizes depend on it, so a saved config can't be reused), checked
+# with a dry run, then installed. The settings below can be overridden from the
+# environment, e.g. … | ARCH_HOSTNAME=work bash
+#
+# Writes archinstall's JSON directly rather than through its Python API, which
+# changes between releases; the JSON format keeps old keys working. Tested with
+# archinstall 4.5 (ISO 2026.11.01).
+set -euo pipefail
+
+hostname=${ARCH_HOSTNAME:-archlinux}
+username=${ARCH_USER:-latnikovd}
+timezone=${ARCH_TIMEZONE:-Europe/Riga}
+keymap=${ARCH_KEYMAP:-us}
+locale=${ARCH_LOCALE:-en_US.UTF-8}
+
+work=/root/archinstall
+config=$work/user_configuration.json
+creds=$work/user_credentials.json
+
+die() { echo "error: $*" >&2; exit 1; }
+
+# Piped into bash, stdin is the script itself, so questions are read from the terminal
+ask() { local reply; read -r -p "$1" reply </dev/tty; printf '%s' "$reply"; }
+
+ask_password() {
+    local first second
+    while true; do
+        read -r -s -p "$1: " first </dev/tty; echo >&2
+        read -r -s -p "$1 (again): " second </dev/tty; echo >&2
+        [[ -n $first ]] || { echo "Empty, try again." >&2; continue; }
+        [[ $first == "$second" ]] && break
+        echo "They don't match, try again." >&2
+    done
+    printf '%s' "$first"
+}
+
+# --- Checks ---
+[[ $EUID -eq 0 ]] || die "run this as root, from the Arch ISO"
+[[ -d /sys/firmware/efi ]] || die "not booted in UEFI mode (the layout and Limine setup assume UEFI)"
+command -v archinstall >/dev/null || die "archinstall not found; run this from the Arch ISO"
+curl -fsS -o /dev/null --max-time 10 https://archlinux.org || die "offline (connect with iwctl, or plug in Ethernet)"
+version=$(pacman -Q archinstall | awk '{ print $2 }')
+[[ $version == 4.* ]] ||
+    echo "warning: archinstall $version; this was tested with 4.5. The dry run below checks the config before anything is wiped." >&2
+
+# --- Disk ---
+disk=${1:-}
+if [[ -z $disk ]]; then
+    echo "Disks:"
+    lsblk -dpno NAME,SIZE,MODEL,TYPE | awk '$NF == "disk"' | sed 's/ disk$//; s/^/  /'
+    disk=$(ask "Install to which disk (e.g. /dev/nvme0n1)? ")
+fi
+[[ -b $disk && $(lsblk -dno TYPE "$disk") == disk ]] || die "$disk is not a disk"
+echo
+echo "Everything on $disk will be erased:"
+lsblk -po NAME,SIZE,FSTYPE,LABEL,MOUNTPOINTS "$disk" | sed 's/^/  /'
+[[ $(ask "Type the disk's name ($disk) to erase it: ") == "$disk" ]] || die "not confirmed, nothing changed"
+
+# --- Passwords ---
+echo
+luks_password=$(ask_password "Disk encryption password")
+user_password=$(ask_password "Password for $username (also for sudo)")
+
+# --- Config ---
+umask 077
+mkdir -p "$work"
+name=$(basename "$(readlink -f "$disk")")
+# /sys/block/<disk>/size counts 512-byte sectors, whatever the disk's sector size
+DISK=$disk SECTORS=$(<"/sys/block/$name/size") SECTOR_SIZE=$(<"/sys/block/$name/queue/logical_block_size") \
+HOSTNAME_=$hostname TIMEZONE=$timezone KEYMAP=$keymap LOCALE=$locale \
+python3 -I - >"$config" <<'PY'
+import json, os, uuid
+
+MiB = 1024 ** 2
+total = int(os.environ['SECTORS']) * 512
+sector = {'unit': 'B', 'value': int(os.environ['SECTOR_SIZE'])}
+
+def size(value, unit='B'):
+    return {'sector_size': sector, 'unit': unit, 'value': value}
+
+# The ESP: 1 MiB to 2 GiB + 1 MiB. Root: from there to the last whole MiB that
+# leaves room for the backup GPT at the end of the disk.
+root_start = MiB + 2 * 1024 * MiB
+root_end = (total - MiB) // MiB * MiB
+if root_end - root_start < 20 * 1024 * MiB:
+    raise SystemExit(f'disk too small: {total // MiB} MiB')
+
+root_id = str(uuid.uuid4())
+partition = dict(status='create', type='primary', dev_path=None)
+config = {
+    'archinstall_language': 'English',
+    'bootloader_config': {'bootloader': 'Limine', 'uki': False, 'removable': True},
+    'disk_config': {
+        'config_type': 'default_layout',
+        'device_modifications': [{
+            'device': os.environ['DISK'],
+            'wipe': True,
+            'partitions': [
+                dict(partition, obj_id=str(uuid.uuid4()), start=size(1, 'MiB'), size=size(2, 'GiB'),
+                     fs_type='fat32', mountpoint='/boot', mount_options=[], flags=['boot', 'esp'], btrfs=[]),
+                dict(partition, obj_id=root_id, start=size(root_start), size=size(root_end - root_start),
+                     fs_type='btrfs', mountpoint=None, mount_options=['compress=zstd'], flags=[],
+                     btrfs=[{'name': n, 'mountpoint': m} for n, m in
+                            [('@', '/'), ('@home', '/home'), ('@log', '/var/log'), ('@pkg', '/var/cache/pacman/pkg')]]),
+            ],
+        }],
+        'disk_encryption': {'encryption_type': 'luks', 'partitions': [root_id], 'lvm_volumes': []},
+    },
+    'hostname': os.environ['HOSTNAME_'],
+    'kernels': ['linux'],
+    'locale_config': {'kb_layout': os.environ['KEYMAP'], 'sys_lang': os.environ['LOCALE'],
+                      'sys_enc': 'UTF-8', 'console_font': 'default8x16'},
+    'network_config': {'type': 'nm'},
+    'ntp': True,
+    'packages': [],
+    'pacman_config': {'color': True, 'parallel_downloads': 5},
+    'profile_config': {'profile': {'main': 'Minimal', 'details': [], 'custom_settings': {}},
+                       'gfx_driver': None, 'greeter': None},
+    'swap': {'enabled': True, 'algorithm': 'zstd'},
+    'timezone': os.environ['TIMEZONE'],
+    'services': [],
+    'custom_commands': [],
+}
+print(json.dumps(config, indent=4))
+PY
+
+# Passwords through the environment, not the command line (which ps shows)
+LUKS=$luks_password PASS=$user_password USERNAME_=$username python3 -I - >"$creds" <<'PY'
+import json, os
+print(json.dumps({
+    'encryption_password': os.environ['LUKS'],
+    'users': [{'username': os.environ['USERNAME_'], '!password': os.environ['PASS'], 'sudo': True, 'groups': []}],
+}))
+PY
+unset luks_password user_password
+
+# --- Install ---
+echo
+echo "Checking the config (dry run)..."
+archinstall --config "$config" --creds "$creds" --dry-run --silent >/dev/null ||
+    die "archinstall rejected the config, nothing changed. Its log: /var/log/archinstall/install.log"
+
+archinstall --config "$config" --creds "$creds" --silent
+
+shred -u "$creds" 2>/dev/null || rm -f "$creds"
+cat <<EOF
+
+Arch is installed on $disk. Next:
+  1. reboot (and remove the USB stick)
+  2. unlock the disk, log in as $username
+  3. curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/install.sh | bash
+EOF
