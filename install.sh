@@ -309,7 +309,11 @@ if ! command -v yay >/dev/null; then
     step 'yay (AUR helper)'
     yay_build=$(mktemp -d)
     git clone https://aur.archlinux.org/yay-bin.git "$yay_build"
-    (cd "$yay_build" && makepkg -si --noconfirm)
+    # Built, then installed by us: makepkg -i installs through `sudo -k` (pacman 7.1),
+    # which ignores the kept-fresh password and asks again, unseen behind the spinner
+    (cd "$yay_build" && makepkg --noconfirm)
+    mapfile -t yay_pkgs < <(cd "$yay_build" && makepkg --packagelist | grep -v -- '-debug-[^/]*$')
+    sudo pacman -U --needed --noconfirm "${yay_pkgs[@]}"
     rm -rf "$yay_build"
 fi
 step 'Brave Origin, Chrome, cliamp, gtypist (AUR)'
