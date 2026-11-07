@@ -23,7 +23,9 @@ curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/archin
 in full to confirm; `… | bash -s -- /dev/nvme0n1` names it up front), then the
 disk encryption and user passwords. It generates archinstall's config for that
 disk with the choices below, checks it with a dry run, and installs without
-further questions. The passwords stay on the ISO's RAM disk. Hostname, user,
+further questions. The passwords stay on the ISO's RAM disk, deleted when the
+script ends. If the install fails on a download (a mirror timing out), run it
+again; it cleans up the failed attempt first. Hostname, user,
 time zone, keymap and locale are set at the top of the script and can be
 overridden: `… | ARCH_HOSTNAME=work bash`.
 
