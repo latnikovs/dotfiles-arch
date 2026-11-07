@@ -312,9 +312,12 @@ if ! command -v yay >/dev/null; then
     (cd "$yay_build" && makepkg -si --noconfirm)
     rm -rf "$yay_build"
 fi
-step 'Brave Origin, cliamp, gtypist (AUR)'
+step 'Brave Origin, Chrome, cliamp, gtypist (AUR)'
 # Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
 yay -S --needed --noconfirm brave-origin-bin
+# Google Chrome, for Claude in Chrome (its extension comes from the policies below);
+# Google's own build for both x86_64 and aarch64
+yay -S --needed --noconfirm google-chrome
 # cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
 yay -S --needed --noconfirm cliamp-bin
 # gtypist: GNU Typist, touch-typing lessons in the terminal. Its tarball is signed and
@@ -872,6 +875,12 @@ seed_profiles "$HOME/.config/BraveSoftware/Brave-Origin" \
 # asking to sign in again, with a Sign in button whose popup never opens.
 sudo install -Dm644 browser-policies/common.json /etc/brave/policies/managed/dotfiles-common.json
 sudo install -Dm644 browser-policies/brave.json /etc/brave/policies/managed/dotfiles.json
+# Chrome gets common.json too. chrome.json: one profile (Default) with no way to add
+# others or a guest, no default-browser nagging, and Claude in Chrome from the Web
+# Store. Claude Code writes the extension's native messaging manifest into
+# ~/.config/google-chrome itself.
+sudo install -Dm644 browser-policies/common.json /etc/opt/chrome/policies/managed/dotfiles-common.json
+sudo install -Dm644 browser-policies/chrome.json /etc/opt/chrome/policies/managed/dotfiles.json
 
 step 'Default apps'
 # Links and web pages open in Brave Origin, always in its Work profile

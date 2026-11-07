@@ -395,6 +395,7 @@ bind(mainMod .. " + G", "Coding agents (tmux)", function()
     end
 end)
 bind(mainMod .. " + B", "Browser", hl.dsp.exec_cmd(browser))
+bind(mainMod .. " + SHIFT + B", "Google Chrome", hl.dsp.exec_cmd("google-chrome-stable"))
 -- File manager (Nautilus). Omarchy's keys swapped: the plain one opens in the focused
 -- terminal's directory (home for any other window), the Alt one always opens home.
 bind(mainMod .. " + SHIFT + F",       "File manager (cwd)", hl.dsp.exec_cmd(fileManager .. " cwd"))
