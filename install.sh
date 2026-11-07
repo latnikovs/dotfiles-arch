@@ -978,6 +978,12 @@ if [[ -n $machine ]]; then
         sudo install -Dm644 "machines/$machine.hwdb" /etc/udev/hwdb.d/90-machine.hwdb
         sudo systemd-hwdb update
         sudo udevadm trigger --subsystem-match=input --action=change
+    elif [[ ! -f machines/$machine.hwdb && -e /etc/udev/hwdb.d/90-machine.hwdb ]]; then
+        # The machine's remaps were dropped from the repo: remove them here too
+        step 'Keyboard remaps (removing)'
+        sudo rm /etc/udev/hwdb.d/90-machine.hwdb
+        sudo systemd-hwdb update
+        sudo udevadm trigger --subsystem-match=input --action=change
     fi
 fi
 
