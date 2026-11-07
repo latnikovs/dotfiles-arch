@@ -75,8 +75,13 @@ luks_password=$(ask_password "Disk encryption password")
 user_password=$(ask_password "Password for $username (also for sudo)")
 
 # --- Config ---
-umask 077
+# Private: the credentials go in here. Only this directory, not a umask for the whole
+# script, which archinstall would inherit: the new system's /etc would come out
+# readable by root only
 mkdir -p "$work"
+chmod 700 "$work"
+: >"$creds"
+chmod 600 "$creds"
 name=$(basename "$(readlink -f "$disk")")
 # /sys/block/<disk>/size counts 512-byte sectors, whatever the disk's sector size
 DISK=$disk SECTORS=$(<"/sys/block/$name/size") SECTOR_SIZE=$(<"/sys/block/$name/queue/logical_block_size") \
@@ -161,7 +166,14 @@ echo "Checking the config (dry run)..."
 archinstall --config "$config" --creds "$creds" --dry-run --silent >/dev/null ||
     die "archinstall rejected the config, nothing changed. Its log: /var/log/archinstall/install.log"
 
+umask 022
 archinstall --config "$config" --creds "$creds" --silent
+
+# A system that boots but where nobody but root can read /etc is worse than a failed
+# install; catch it here, while the ISO is still there to fix it from
+if [[ $(stat -c %a /mnt/etc 2>/dev/null) != 755 ]]; then
+    die "/etc on the new system has mode $(stat -c %a /mnt/etc 2>/dev/null || echo '?'), not 755; fix it before rebooting"
+fi
 
 shred -u "$creds" 2>/dev/null || rm -f "$creds"
 cat <<EOF
