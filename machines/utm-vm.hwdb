@@ -1,0 +1,7 @@
+# UTM sends the key left of 1 (` ~) as the ISO key next to left Shift (< >) and vice versa,
+# for the Keychron (ANSI) as well as the Apple ISO keyboard. Swap them back; matches only
+# the QEMU keyboard. Verified 2026-11-08 with wev: tilde arrived as keycode 94 (LSGT).
+# Installed as /etc/udev/hwdb.d/90-machine.hwdb by: ./install.sh utm-vm
+evdev:input:b0003v0627p0001*
+ KEYBOARD_KEY_70035=102nd
+ KEYBOARD_KEY_70064=grave
