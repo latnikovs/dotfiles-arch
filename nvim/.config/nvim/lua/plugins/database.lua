@@ -8,7 +8,7 @@
 -- Everything is under <leader>D, as http.nvim's is under <leader>H:
 -- <leader>Dd toggles the database view; in a query buffer <CR> (or
 -- <leader>Ds) executes, <leader>Dw saves, <leader>De edits bind parameters,
--- <leader>Dx exports to CSV; in a result <leader>Dr toggles the layout.
+-- <leader>Dx exports to CSV, <leader>Di puts an INSERT template; in a result <leader>Dr toggles the layout.
 -- dadbod-ui's own <leader>W/E/S in query buffers are off, and its <leader>R in
 -- results is removed.
 vim.g.db_ui_disable_mappings_sql = 1
@@ -51,6 +51,10 @@ vim.api.nvim_create_autocmd("FileType", {
     local export = require("config.db_export")
     vim.keymap.set("n", "<leader>Dx", export.export_paragraph, { buffer = ev.buf, desc = "Export Query to CSV" })
     vim.keymap.set("x", "<leader>Dx", export.export_selection, { buffer = ev.buf, desc = "Export Selection to CSV" })
+    -- INSERT template for the buffer's table (config/db_insert.lua)
+    vim.keymap.set("n", "<leader>Di", function()
+      require("config.db_insert").insert()
+    end, { buffer = ev.buf, desc = "Insert Template" })
     -- <C-s> in a new query (a scratch file in the tmp dir) asks for a name and
     -- saves it under Saved queries, as <leader>Dw does; dadbod-ui defines the
     -- <Plug> map only in those buffers, so everywhere else it is a plain :w.
