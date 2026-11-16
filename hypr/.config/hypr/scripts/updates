@@ -79,7 +79,13 @@ case ${1:-} in
         # Dev tools: mise upgrades each tool within what config.toml asks for (node = "lts"
         # stays on LTS). Changes are logged as "upgraded mise:<tool> (old -> new)".
         mise_changed=
-        if command -v mise >/dev/null; then
+        # mise's installer (Arch Linux ARM) puts it in ~/.local/bin, which only .zshrc adds to
+        # PATH, so a window the bar opens doesn't find it there
+        if ! command -v mise >/dev/null && [[ -x ~/.local/bin/mise ]]; then PATH=$HOME/.local/bin:$PATH; fi
+        if ! command -v mise >/dev/null; then
+            heading "Dev tools (mise)"
+            printf '   %s\n' "mise not found; skipped."
+        else
             heading "Dev tools (mise)"
             mise_current() {
                 mise ls --current --json 2>/dev/null \
