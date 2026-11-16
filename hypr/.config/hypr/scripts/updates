@@ -2,7 +2,8 @@
 # Usage: updates list   pending package updates, "name old -> new" per line, AUR ones last
 #        updates run    install them (yay -Syu, one password, one confirmation), offer to merge .pacnew files,
 #                       run the health check (scripts/healthcheck) and offer a Claude review of the update
-#                       (scripts/update-review), then refresh the bar's update icon
+#                       (scripts/update-review), then refresh the bar's update icon; the window stays
+#                       open until Q is pressed
 # The bar (Quickshell Updates.qml) checks with `list` every 6 hours and opens `run` in a
 # terminal when the icon is clicked. What an update changed is saved, as "upgraded name (old -> new)"
 # lines from pacman's log, to ~/.local/state/dotfiles/last-update for update-review.
@@ -29,6 +30,15 @@ case ${1:-} in
             title=◆ lock=› section=▸ sep=·
         fi
         heading() { printf '\n %s %s\n' "$cyan$section$r" "$b$1$r"; }
+        # The window closes when the script ends, so it waits for Q: a stray key
+        # (Enter after a y/N prompt) doesn't close it before the output is read.
+        wait_quit() {
+            local key
+            printf '\n   %s' "${d}Press Q to close.$r"
+            while read -rsn1 key; do [[ $key == [qQ] ]] && break; done
+            printf '\n'
+            exit 0
+        }
         printf '\n %s %s\n' "$blue$title$r" "${b}System update$r $d$sep $(uname -n)$r"
         pending=$("$0" list 2>/dev/null || true)
         count=$(grep -c . <<<"$pending" || true)
@@ -47,9 +57,11 @@ case ${1:-} in
         # listed them, and excluding some is a partial upgrade). --sudoloop asks for the
         # password once and keeps it fresh, so a slow answer or long AUR build doesn't
         # run past sudo's timeout and ask again.
+        yay_ok=true
         if yay -Syu --answerupgrade None --sudoloop; then
             printf '\n   %s\n' "Up to date."
         else
+            yay_ok=false
             printf '\n   %s\n' "yay failed; see above."
         fi
         # Configs you changed get the package's new version saved next to them as
@@ -67,8 +79,7 @@ case ${1:-} in
         changed=$(tail -n +"$((logged + 1))" /var/log/pacman.log \
             | sed -nE 's/^\[[^]]*\] \[ALPM\] ((upgraded|downgraded|installed|removed) .*)$/\1/p')
         if [[ -z $changed ]]; then
-            read -rsn1 -p "Press any key to close."
-            exit 0
+            wait_quit
         fi
         mkdir -p "$state"
         printf '# Updated %s on %s\n%s\n' "$started" "$(uname -n)" "$changed" >"$state/last-update"
@@ -85,6 +96,29 @@ case ${1:-} in
         if [[ $answer == [yY] ]]; then
             setsid -f "${BASH_SOURCE[0]%/*}/update-review" >/dev/null 2>&1
         fi
+
+        # What it came to, last, right above the Q prompt: the counts per kind of change
+        # (AUR ones are the foreign packages), the health check's tally, and what to restart
+        heading "Summary"
+        foreign=$(pacman -Qmq)
+        counts=
+        for kind in upgraded installed downgraded removed; do
+            names=$(sed -n "s/^$kind \([^ ]*\) .*/\1/p" <<<"$changed")
+            [[ -n $names ]] || continue
+            n=$(grep -c . <<<"$names")
+            from_aur=$(grep -cxFf <(printf '%s\n' "$foreign") <<<"$names" || true)
+            counts+="${counts:+ $sep }$n $kind$( (( from_aur == 0 )) || echo " ($from_aur AUR)")"
+        done
+        printf '   %s\n' "$counts"
+        $yay_ok || printf '   %s\n' "yay failed: not everything was updated (see above)"
+        report=$state/healthcheck.log
+        printf '   Health check: %s\n' "$(tail -n1 "$report")"
+        if grep -q '^· The kernel was updated' "$report"; then
+            printf '   %s\n' "${b}Reboot needed:$r the kernel was updated"
+        elif grep -q '^· Running the version from before the update' "$report"; then
+            printf '   %s\n' "${b}Log out and back in:$r running programs are the old versions"
+        fi
+        wait_quit
         ;;
     *)
         echo "Usage: updates list|run" >&2
