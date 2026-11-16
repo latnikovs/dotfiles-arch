@@ -51,7 +51,11 @@ case ${1:-} in
         fi
         printf '   %s\n\n' "${d}Then mise's dev tools, Neovim plugins, a health check, and Claude's review if you want it.$r"
         # The password, once, for pacman; yay's --sudoloop keeps it fresh from here on
-        sudo -v -p "   $lock sudo password for %u (to install the packages): " || exit 1
+        # sudo gives up after 5 minutes without an answer (passwd_timeout) or 3 wrong passwords;
+        # ask again then, so a window left waiting doesn't close by itself (Ctrl+C or closing it quits)
+        until sudo -v -p "   $lock sudo password for %u (to install the packages): "; do
+            printf '   %s\n' "${d}No password taken; asking again.$r"
+        done
 
         heading "Installing"
         # --answerupgrade None skips yay's "Packages to exclude" menu (the bar already
