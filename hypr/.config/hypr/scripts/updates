@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage: updates list   pending package updates, "name old -> new" per line, AUR ones last
 #        updates run    install them (yay -Syu, one password, one confirmation), offer to merge .pacnew files,
+#                       upgrade mise's dev tools and the Neovim plugins (offering to commit lazy-lock.json),
 #                       run the health check (scripts/healthcheck) and offer a Claude review of the update
 #                       (scripts/update-review), then refresh the bar's update icon; the window stays
 #                       open until Q is pressed
@@ -48,7 +49,7 @@ case ${1:-} in
         else
             printf '   %s\n' "$d$count package$( (( count == 1 )) || echo s) to update$( (( aur == 0 )) || echo ", $aur from the AUR")$r"
         fi
-        printf '   %s\n\n' "${d}Then a health check, and Claude's review if you want it.$r"
+        printf '   %s\n\n' "${d}Then mise's dev tools, Neovim plugins, a health check, and Claude's review if you want it.$r"
         # The password, once, for pacman; yay's --sudoloop keeps it fresh from here on
         sudo -v -p "   $lock sudo password for %u (to install the packages): " || exit 1
 
@@ -75,14 +76,75 @@ case ${1:-} in
         fi
         quickshell ipc call updates refresh >/dev/null 2>&1 || true
 
-        # What changed: this run's lines of pacman's log, without the timestamps
+        # Dev tools: mise upgrades each tool within what config.toml asks for (node = "lts"
+        # stays on LTS). Changes are logged as "upgraded mise:<tool> (old -> new)".
+        mise_changed=
+        if command -v mise >/dev/null; then
+            heading "Dev tools (mise)"
+            mise_current() {
+                mise ls --current --json 2>/dev/null \
+                    | jq -r 'to_entries[] | .key as $t | .value[] | select(.active) | "\($t)\t\(.version)"' \
+                    | sort -t $'\t' -k1,1 || true
+            }
+            # Arch Linux ARM has no mise package (install.sh uses mise's installer there),
+            # so mise updates itself; elsewhere pacman updated it above
+            if ! pacman -Qqo "$(command -v mise)" >/dev/null 2>&1; then
+                old=$(mise --version 2>/dev/null | cut -d' ' -f1 || true)
+                mise self-update --yes || printf '   %s\n' "mise self-update failed; see above."
+                new=$(mise --version 2>/dev/null | cut -d' ' -f1 || true)
+                [[ $old == "$new" ]] || mise_changed="upgraded mise ($old -> $new)"
+            fi
+            before=$(mise_current)
+            mise upgrade --yes || printf '   %s\n' "mise upgrade failed; see above."
+            after=$(mise_current)
+            tools=$(join -t $'\t' <(printf '%s\n' "$before") <(printf '%s\n' "$after") \
+                | awk -F'\t' '$2 != $3 { print "upgraded mise:" $1 " (" $2 " -> " $3 ")" }')
+            mise_changed=$(printf '%s\n' "$mise_changed" "$tools" | grep . || true)
+            printf '   %s\n' "${mise_changed:-Up to date.}"
+        fi
+
+        # Neovim plugins: lazy.nvim updates them and rewrites lazy-lock.json, which lives in
+        # the dotfiles, so the other machines get the same versions (Lazy restore) once it's
+        # committed. Changes are logged as "upgraded nvim:<plugin> (old -> new commit)".
+        nvim_changed=
+        lockfile=$(readlink -f ~/.config/nvim/lazy-lock.json 2>/dev/null || true)
+        if command -v nvim >/dev/null && [[ -f $lockfile ]]; then
+            heading "Neovim plugins"
+            old_lock=$(<"$lockfile")
+            # Headless lazy logs every task of every plugin, so to a file, shown only on failure
+            nvim_log=$state/nvim-update.log
+            mkdir -p "$state"
+            if nvim --headless '+Lazy! update' +qa >"$nvim_log" 2>&1; then
+                nvim_changed=$(jq -r --argjson old "$old_lock" 'to_entries[]
+                    | select($old[.key] and $old[.key].commit != .value.commit)
+                    | "upgraded nvim:\(.key) (\($old[.key].commit[:7]) -> \(.value.commit[:7]))"' \
+                    "$lockfile" || true)
+                printf '   %s\n' "${nvim_changed:-Up to date.}"
+            else
+                tail -n 20 "$nvim_log" | sed 's/^/   /'
+                printf '   %s\n' "Lazy update failed; full log: ${nvim_log/#$HOME/\~}"
+            fi
+            repo=$(git -C "${lockfile%/*}" rev-parse --show-toplevel 2>/dev/null || true)
+            if [[ -n $nvim_changed && -n $repo ]]; then
+                read -rn1 -p "   Commit the new lockfile to ${repo/#$HOME/\~}? [y/N] " answer
+                echo
+                if [[ $answer == [yY] ]]; then
+                    # Only the lockfile, whatever else is staged
+                    git -C "$repo" commit -q -m "chore(nvim): update plugin lockfile" -- "$lockfile" \
+                        && printf '   %s\n' "Committed (not pushed)." || true
+                fi
+            fi
+        fi
+
+        # What changed: this run's lines of pacman's log, without the timestamps, then mise's and lazy's
         changed=$(tail -n +"$((logged + 1))" /var/log/pacman.log \
             | sed -nE 's/^\[[^]]*\] \[ALPM\] ((upgraded|downgraded|installed|removed) .*)$/\1/p')
-        if [[ -z $changed ]]; then
+        all_changed=$(printf '%s\n' "$changed" "$mise_changed" "$nvim_changed" | grep . || true)
+        if [[ -z $all_changed ]]; then
             wait_quit
         fi
         mkdir -p "$state"
-        printf '# Updated %s on %s\n%s\n' "$started" "$(uname -n)" "$changed" >"$state/last-update"
+        printf '# Updated %s on %s\n%s\n' "$started" "$(uname -n)" "$all_changed" >"$state/last-update"
 
         # Does everything still work? (also at the next login, where more of the update takes effect)
         heading "Health check"
@@ -109,6 +171,10 @@ case ${1:-} in
             from_aur=$(grep -cxFf <(printf '%s\n' "$foreign") <<<"$names" || true)
             counts+="${counts:+ $sep }$n $kind$( (( from_aur == 0 )) || echo " ($from_aur AUR)")"
         done
+        n=$(grep -c . <<<"$mise_changed" || true)
+        (( n == 0 )) || counts+="${counts:+ $sep }$n mise tool$( (( n == 1 )) || echo s)"
+        n=$(grep -c . <<<"$nvim_changed" || true)
+        (( n == 0 )) || counts+="${counts:+ $sep }$n Neovim plugin$( (( n == 1 )) || echo s)"
         printf '   %s\n' "$counts"
         $yay_ok || printf '   %s\n' "yay failed: not everything was updated (see above)"
         report=$state/healthcheck.log

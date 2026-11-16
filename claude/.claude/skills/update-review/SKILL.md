@@ -22,7 +22,11 @@ into it). `machines/<machine>.*` holds per-machine overrides; `install.sh` insta
 ## Inputs
 
 - `~/.local/state/dotfiles/last-update`: the update's `upgraded name (old -> new)` lines
-  (also installed, removed, downgraded), from pacman's log.
+  (also installed, removed, downgraded), from pacman's log; then mise's as `upgraded mise:<tool>
+  (old -> new)` (and `upgraded mise (...)` for mise itself) and lazy.nvim's as
+  `upgraded nvim:<plugin> (old -> new commit)`. For a plugin, read its commits between the two
+  (`gh api repos/<owner>/<repo>/compare/<old>...<new>`) for breaking changes to the options the
+  config sets; for a mise tool, its release notes as for a package.
 - `~/.local/state/dotfiles/healthcheck.log`: the latest health check
   (`~/.config/hypr/scripts/healthcheck`). `✗` lines are problems, `·` lines notes. Run it
   again (`healthcheck`) to see the state now; the script's comments say what each check does.
