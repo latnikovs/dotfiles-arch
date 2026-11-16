@@ -193,8 +193,11 @@ if command -v nvim >/dev/null; then
     else bad "Neovim: errors loading the plugins (nvim, :Lazy)" "$errors"; fi
 fi
 
-# An interactive zsh, as a terminal starts it (zle can't start without a terminal: not an error)
-errors=$(timeout 20 zsh -i -c exit 2>&1 </dev/null | grep -v "can't change option: zle")
+# An interactive zsh, as a terminal starts it (zle can't start without a terminal: not an error).
+# setsid: in its own session it has no terminal; otherwise its job control makes itself the
+# terminal's foreground group and leaves it so, and the caller's next read (updates run's
+# prompts) fails with EIO.
+errors=$(setsid -w timeout 20 zsh -i -c exit 2>&1 </dev/null | grep -v "can't change option: zle")
 if [[ -z $errors ]]; then ok "zsh starts"
 else bad "zsh: errors at start (~/.zshrc)" "$errors"; fi
 
