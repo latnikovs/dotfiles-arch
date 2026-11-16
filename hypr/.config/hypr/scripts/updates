@@ -91,10 +91,15 @@ case ${1:-} in
             printf '   %s\n' "mise not found; skipped."
         else
             heading "Dev tools (mise)"
-            mise_current() {
-                mise ls --current --json 2>/dev/null \
-                    | jq -r 'to_entries[] | .key as $t | .value[] | select(.active) | "\($t)\t\(.version)"' \
-                    | sort -t $'\t' -k1,1 || true
+            # "tool<TAB>version" lines: every installed version (before), the active ones (after).
+            # Not the active ones before: `mise ls --current` shows the version a request resolves
+            # to even when it isn't installed (node = "lts" once a new LTS line is out), so the
+            # change would be missed.
+            mise_versions() {
+                mise ls "$1" --json 2>/dev/null \
+                    | jq -r --arg flag "$1" 'to_entries[] | .key as $t | .value[]
+                        | select($flag == "--installed" or (.active and .installed)) | "\($t)\t\(.version)"' \
+                    | sort -t $'\t' -k1,1 -k2,2V || true
             }
             # Arch Linux ARM has no mise package (install.sh uses mise's installer there),
             # so mise updates itself; elsewhere pacman updated it above
@@ -104,11 +109,15 @@ case ${1:-} in
                 new=$(mise --version 2>/dev/null | cut -d' ' -f1 || true)
                 [[ $old == "$new" ]] || mise_changed="upgraded mise ($old -> $new)"
             fi
-            before=$(mise_current)
+            before=$(mise_versions --installed)
             mise upgrade --yes || printf '   %s\n' "mise upgrade failed; see above."
-            after=$(mise_current)
-            tools=$(join -t $'\t' <(printf '%s\n' "$before") <(printf '%s\n' "$after") \
-                | awk -F'\t' '$2 != $3 { print "upgraded mise:" $1 " (" $2 " -> " $3 ")" }')
+            after=$(mise_versions --current)
+            # An active version that wasn't installed before is new: upgraded from the tool's
+            # newest version before it, or installed if there was none
+            tools=$(awk -F'\t' 'NR == FNR { had[$0]; last[$1] = $2; next }
+                !($0 in had) { print ($1 in last ? "upgraded mise:" $1 " (" last[$1] " -> " $2 ")" \
+                                                 : "installed mise:" $1 " (" $2 ")") }' \
+                <(printf '%s\n' "$before") <(printf '%s\n' "$after"))
             mise_changed=$(printf '%s\n' "$mise_changed" "$tools" | grep . || true)
             printf '   %s\n' "${mise_changed:-Up to date.}"
         fi
