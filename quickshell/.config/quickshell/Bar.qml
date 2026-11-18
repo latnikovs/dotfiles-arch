@@ -42,7 +42,9 @@ PanelWindow {
     }
     implicitHeight: 26
     exclusionMode: ExclusionMode.Auto
-    color: bg
+    // Frosted glass: see-through, with Hyprland blurring what's behind (layer rule "blur-bar").
+    // Less so in light mode, where a dark wallpaper would grey it out and hide the dimmed text.
+    color: Qt.rgba(bg.r, bg.g, bg.b, Theme.dark ? 0.75 : 0.88)
     WlrLayershell.namespace: "bar"
     WlrLayershell.layer: WlrLayer.Top
 
@@ -239,7 +241,7 @@ PanelWindow {
         Repeater {
             model: bar.workspaceIds
 
-            delegate: MouseArea {
+            delegate: BarButton {
                 required property int modelData
                 readonly property var workspace: bar.workspace(modelData)
                 readonly property bool focused: Hyprland.focusedWorkspace?.id === modelData
@@ -288,7 +290,7 @@ PanelWindow {
         precision: SystemClock.Minutes
     }
 
-    MouseArea {
+    BarButton {
         id: clockArea
         anchors.centerIn: parent
         width: clockText.implicitWidth
@@ -316,7 +318,7 @@ PanelWindow {
     //      them (RemindersPanel.qml), right click sets another. With none set, a dim alarm icon
     //      that lights up on hover; either click sets one.
 
-    MouseArea {
+    BarButton {
         id: remindersButton
         readonly property var next: bar.reminders.next
         readonly property string tip: next === null ? "Set a reminder"
@@ -365,7 +367,7 @@ PanelWindow {
         height: parent.height
         spacing: 12
 
-        MouseArea {
+        BarButton {
             readonly property string tip: bar.caffeine.on ? "Caffeine on: the screen stays awake" : "Caffeine off"
             width: caffeineText.implicitWidth
             height: parent.height
@@ -430,7 +432,7 @@ PanelWindow {
 
     PopupWindow {
         id: calendarPanel
-        visible: bar.calendarOpen
+        visible: calendarPanelCard.shown
         color: "transparent"
         implicitWidth: calendarColumn.implicitWidth + 48
         implicitHeight: calendarColumn.implicitHeight + 46
@@ -445,17 +447,10 @@ PanelWindow {
             gravity: Edges.Bottom | Edges.Right
         }
 
-        Rectangle {
-            anchors {
-                fill: parent
-                topMargin: 6
-            }
-            color: bar.bg
-            border.color: bar.muted
-            border.width: 1
-            radius: 10
-            focus: true
-            Keys.onPressed: event => bar.panelKey(event)
+        PanelCard {
+            id: calendarPanelCard
+            bar: bar
+            open: bar.calendarOpen
 
             ColumnLayout {
                 id: calendarColumn
@@ -730,7 +725,7 @@ PanelWindow {
     }
 
     // Left click opens the forecast, middle click refreshes
-    MouseArea {
+    BarButton {
         id: weatherButton
         anchors {
             left: clockArea.right
@@ -770,7 +765,7 @@ PanelWindow {
 
         // Mail: left click shows or hides Thunderbird (SUPER + M); highlighted on new mail,
         // dim (like the idle reminder icon) until hovered otherwise
-        MouseArea {
+        BarButton {
             id: mailButton
             readonly property string tip: bar.messaging.mailNew ? "Mail · new messages" : "Mail"
 
@@ -795,7 +790,7 @@ PanelWindow {
 
         // Teams: left click shows or hides it (SUPER + Y), right click toggles call mode
         // (SUPER + SHIFT + Y); unread count from its window title. Highlighted or dim, as mail.
-        MouseArea {
+        BarButton {
             readonly property int unread: bar.messaging.teamsUnread
             readonly property bool alert: unread > 0 || bar.messaging.teamsNew
             readonly property string tip: unread > 0 ? `Teams · ${unread} unread` : bar.messaging.teamsNew ? "Teams · new messages" : "Teams"
@@ -824,7 +819,7 @@ PanelWindow {
         }
 
         // WhatsApp: click shows or hides it (SUPER + U); unread count from its window title, as Teams
-        MouseArea {
+        BarButton {
             readonly property int unread: bar.messaging.whatsappUnread
             readonly property bool alert: unread > 0 || bar.messaging.whatsappNew
             readonly property string tip: unread > 0 ? `WhatsApp · ${unread} unread` : bar.messaging.whatsappNew ? "WhatsApp · new messages" : "WhatsApp"
@@ -874,7 +869,7 @@ PanelWindow {
 
     PopupWindow {
         id: weatherPanel
-        visible: bar.weatherOpen && bar.weather !== null
+        visible: weatherPanelCard.shown
         color: "transparent"
         implicitWidth: Math.max(480, weatherColumn.implicitWidth + 40)
         implicitHeight: weatherColumn.implicitHeight + 46
@@ -890,17 +885,10 @@ PanelWindow {
             gravity: Edges.Bottom | Edges.Right
         }
 
-        Rectangle {
-            anchors {
-                fill: parent
-                topMargin: 6
-            }
-            color: bar.bg
-            border.color: bar.muted
-            border.width: 1
-            radius: 10
-            focus: true
-            Keys.onPressed: event => bar.panelKey(event)
+        PanelCard {
+            id: weatherPanelCard
+            bar: bar
+            open: bar.weatherOpen && bar.weather !== null
 
             ColumnLayout {
                 id: weatherColumn
@@ -1221,7 +1209,7 @@ PanelWindow {
 
     PopupWindow {
         id: historyPanel
-        visible: bar.notifications.historyOpen && Hyprland.focusedMonitor?.name === bar.screen.name
+        visible: historyPanelCard.shown
         color: "transparent"
         implicitWidth: 400
         implicitHeight: Math.min(historyColumn.implicitHeight + 26, bar.screen.height * 0.7)
@@ -1237,17 +1225,10 @@ PanelWindow {
             gravity: Edges.Bottom | Edges.Right
         }
 
-        Rectangle {
-            anchors {
-                fill: parent
-                topMargin: 6
-            }
-            color: bar.bg
-            border.color: bar.muted
-            border.width: 1
-            radius: 10
-            focus: true
-            Keys.onPressed: event => bar.panelKey(event)
+        PanelCard {
+            id: historyPanelCard
+            bar: bar
+            open: bar.notifications.historyOpen && Hyprland.focusedMonitor?.name === bar.screen.name
 
             ColumnLayout {
                 id: historyColumn
@@ -1351,7 +1332,7 @@ PanelWindow {
 
     PopupWindow {
         id: layoutPanel
-        visible: bar.layoutOpen
+        visible: layoutPanelCard.shown
         color: "transparent"
         implicitWidth: layoutColumn.implicitWidth + 12
         implicitHeight: layoutColumn.implicitHeight + 18
@@ -1372,17 +1353,10 @@ PanelWindow {
             }
         }
 
-        Rectangle {
-            anchors {
-                fill: parent
-                topMargin: 6
-            }
-            color: bar.bg
-            border.color: bar.muted
-            border.width: 1
-            radius: 10
-            focus: true
-            Keys.onPressed: event => bar.panelKey(event)
+        PanelCard {
+            id: layoutPanelCard
+            bar: bar
+            open: bar.layoutOpen
 
             ColumnLayout {
                 id: layoutColumn
@@ -1455,7 +1429,7 @@ PanelWindow {
         spacing: 15
 
         // A screen recording running (Recording.qml, scripts/screenrecord), in red: a click stops it
-        MouseArea {
+        BarButton {
             visible: bar.recording.on
             implicitWidth: recordingText.implicitWidth
             Layout.fillHeight: true
@@ -1477,7 +1451,7 @@ PanelWindow {
 
         // Programs that crashed (Crashes.qml), shown only when there are some, in red: left click
         // lists them (CrashesPanel.qml), right click clears them
-        MouseArea {
+        BarButton {
             id: crashesButton
             readonly property var latest: bar.crashes.count > 0 ? bar.crashes.list[0] : null
             readonly property string tip: latest === null ? ""
@@ -1512,7 +1486,7 @@ PanelWindow {
 
         // An update's health check or Claude review running (Updates.qml tasks): a spinner while
         // they work, a still icon while the review waits for you. Left click shows the review.
-        MouseArea {
+        BarButton {
             id: updateActivity
             readonly property bool spinning: bar.updates.check !== null || bar.updates.review?.state === "busy"
             readonly property string tip: [
@@ -1552,7 +1526,7 @@ PanelWindow {
 
         // Pending package updates (Updates.qml), shown only when there are some: left click lists
         // them (UpdatesPanel.qml), right click installs them
-        MouseArea {
+        BarButton {
             id: updatesButton
             readonly property string tip: `${bar.updates.count} update${bar.updates.count === 1 ? "" : "s"}`
                 + (bar.updates.aurCount > 0 ? ` (${bar.updates.aurCount} from the AUR)` : "")
@@ -1589,7 +1563,7 @@ PanelWindow {
             Repeater {
                 model: SystemTray.items
 
-                delegate: MouseArea {
+                delegate: BarButton {
                     id: trayItem
                     required property SystemTrayItem modelData
 
@@ -1620,7 +1594,7 @@ PanelWindow {
         }
 
         // Keyboard layout: left click opens the selector, right click (or SUPER + SHIFT + SPACE) picks the next one
-        MouseArea {
+        BarButton {
             id: layoutButton
             implicitWidth: layoutText.implicitWidth
             Layout.fillHeight: true
@@ -1643,7 +1617,7 @@ PanelWindow {
             }
         }
 
-        MouseArea {
+        BarButton {
             id: cpuButton
             implicitWidth: cpuText.implicitWidth
             Layout.fillHeight: true
@@ -1658,7 +1632,7 @@ PanelWindow {
             }
         }
 
-        MouseArea {
+        BarButton {
             id: memButton
             implicitWidth: memText.implicitWidth
             Layout.fillHeight: true
@@ -1685,7 +1659,7 @@ PanelWindow {
         }
 
         // Microphone in use: shown only while an app records, crossed out if the input is muted
-        MouseArea {
+        BarButton {
             readonly property bool micMuted: Pipewire.defaultAudioSource?.audio?.muted ?? false
             readonly property string tip: {
                 const apps = [...new Set(bar.recorders.map(n => n.properties["application.name"] || n.name))];
@@ -1713,7 +1687,7 @@ PanelWindow {
         }
 
         // Volume: left click opens the mixer, right click mutes, scroll changes the volume
-        MouseArea {
+        BarButton {
             id: volumeButton
             readonly property string tip: bar.sink?.audio
                 ? `${bar.sink.description || bar.sink.name}: ${bar.sink.audio.muted ? "muted" : Math.round(bar.sink.audio.volume * 100) + "%"}`
@@ -1745,7 +1719,7 @@ PanelWindow {
         }
 
         // Bluetooth: left click opens the device list, right click turns it on or off
-        MouseArea {
+        BarButton {
             id: btButton
             readonly property string tip: !bar.btAdapter?.enabled ? "Bluetooth off"
                 : bar.btConnected.length > 0 ? bar.btConnected.map(d => d.name).join(", ") : "Bluetooth on"
@@ -1778,7 +1752,7 @@ PanelWindow {
         // Syncthing: left click opens the folders and devices, right click pauses or resumes.
         // Accent while syncing, red on errors, dim when paused or with no
         // device connected.
-        MouseArea {
+        BarButton {
             id: stButton
             readonly property var st: bar.syncthing
             readonly property string tip: st.paused ? "Syncthing paused"
@@ -1822,7 +1796,7 @@ PanelWindow {
         }
 
         // Tailscale: left click opens the devices, right click connects or disconnects
-        MouseArea {
+        BarButton {
             id: tsButton
             readonly property var ts: bar.tailscale
             readonly property string tip: ts.running
@@ -1856,7 +1830,7 @@ PanelWindow {
         }
 
         // Network: left click opens Wi-Fi and wired connections
-        MouseArea {
+        BarButton {
             id: netButton
             readonly property string tip: bar.wiredUp ? `Ethernet · ${bar.wiredUp.name}`
                 : bar.wifiNetwork ? `${bar.wifiNetwork.name} (${Math.round(bar.wifiNetwork.signalStrength * 100)}%)`
@@ -1881,7 +1855,7 @@ PanelWindow {
         }
 
         // Display: left click opens scale and brightness
-        MouseArea {
+        BarButton {
             id: displayButton
             readonly property var monitor: Hyprland.monitorFor(bar.screen)
             readonly property string tip: `${monitor?.name ?? "Display"} · scale ${Math.round((monitor?.scale ?? 1) * 100) / 100}×`
@@ -1911,7 +1885,7 @@ PanelWindow {
 
         // Appearance: left click switches light/dark (darkman, which otherwise follows
         // sunrise and sunset), right click toggles the night light
-        MouseArea {
+        BarButton {
             implicitWidth: themeIcon.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -1935,7 +1909,7 @@ PanelWindow {
         }
 
         // Bell: left click opens the history, right click toggles do-not-disturb
-        MouseArea {
+        BarButton {
             id: bell
             implicitWidth: dndIcon.implicitWidth
             Layout.fillHeight: true

@@ -13,6 +13,7 @@ Scope {
     // Below the bar (Bar.qml, height 26) with Hyprland's gaps_out (6)
     readonly property int topMargin: 26 + 6
     readonly property int sideMargin: 6
+    readonly property int gap: 6
 
     // Minimum time on screen in ms; critical stays until dismissed. A longer
     // expire_timeout from the sender is honoured up to maxLife.
@@ -71,6 +72,25 @@ Scope {
     property int hoveredId: -1
     property int tick: 0 // bumped by the countdown so bindings re-read `remaining`
 
+    // Cards slide down out from under the bar and back up when they go, as in Omarchy. Kept here
+    // by id for the same reason: `entered` cards don't slide in again when the Repeater rebuilds,
+    // and `leaving` ones are sliding away before their notification is closed.
+    property var entered: ({})
+    property var leaving: ({})
+    property var pendingCloses: []
+    readonly property int slideMs: 150
+
+    // Slides the card away, then closes the notification with `close`
+    function leave(n, close) {
+        if (leaving[n.id])
+            return;
+        leaving[n.id] = true;
+        pendingCloses = [...pendingCloses, close];
+        tick++;
+        if (!closeTimer.running)
+            closeTimer.start();
+    }
+
     readonly property var popups: server.trackedNotifications.values.slice().reverse()
 
     // 0 means sticky
@@ -93,7 +113,18 @@ Scope {
 
     function dismiss(n) {
         delete remaining[n.id];
-        n.dismiss();
+        leave(n, () => n.dismiss());
+    }
+
+    Timer {
+        id: closeTimer
+        interval: root.slideMs
+        onTriggered: {
+            const closes = root.pendingCloses;
+            root.pendingCloses = [];
+            for (const close of closes)
+                close();
+        }
     }
 
     // Left click runs the sender's default action (e.g. focus the chat), otherwise just closes.
@@ -159,6 +190,11 @@ Scope {
             // Silenced notifications are dropped, except critical ones and our own status toasts
             let entry = root.snapshot(n);
             root.messaging.noticed(n);
+            const id = n.id;
+            n.closed.connect(() => {
+                delete root.entered[id];
+                delete root.leaving[id];
+            });
             if (root.dnd && n.urgency !== NotificationUrgency.Critical && n.appName !== "notifications") {
                 root.remember(entry);
                 return;
@@ -186,7 +222,7 @@ Scope {
         running: root.popups.length > 0
         onTriggered: {
             for (const n of root.popups) {
-                if (root.lifetime(n) === 0 || n.id === root.hoveredId)
+                if (root.lifetime(n) === 0 || n.id === root.hoveredId || root.leaving[n.id])
                     continue;
                 if (!(n.id in root.remaining)) {
                     root.restart(n); // survived a config reload
@@ -195,7 +231,7 @@ Scope {
                 root.remaining[n.id] -= interval;
                 if (root.remaining[n.id] <= 0) {
                     delete root.remaining[n.id];
-                    n.expire();
+                    root.leave(n, () => n.expire());
                 }
             }
             root.tick++;
@@ -264,41 +300,84 @@ Scope {
             item: column
         }
 
-        ColumnLayout {
-            id: column
+        // Starts at the bar's bottom edge, so cards slide out from under the bar
+        Item {
             anchors {
-                top: parent.top
-                right: parent.right
-                topMargin: root.topMargin
-                rightMargin: root.sideMargin
+                fill: parent
+                topMargin: root.topMargin - root.gap
             }
-            spacing: 6
+            clip: true
 
-            Repeater {
-                model: root.popups
+            ColumnLayout {
+                id: column
+                anchors {
+                    top: parent.top
+                    right: parent.right
+                    rightMargin: root.sideMargin
+                }
+                spacing: 0
 
-                delegate: NotificationCard {
-                    required property Notification modelData
-                    appName: modelData.appName
-                    summary: modelData.summary
-                    body: modelData.body
-                    image: modelData.image
-                    appIcon: modelData.appIcon
-                    urgency: modelData.urgency
-                    actions: modelData.actions
-                    progress: {
-                        root.tick;
-                        return root.progress(modelData);
+                Repeater {
+                    model: root.popups
+
+                    // Holds the card and the gap above it; both shrink to nothing as the card slides up
+                    delegate: Item {
+                        id: slot
+                        required property Notification modelData
+                        readonly property bool leaving: {
+                            root.tick;
+                            return root.leaving[modelData.id] === true;
+                        }
+                        property real reveal: 0 // 0 under the bar, 1 in place
+                        property bool ready: false
+
+                        Behavior on reveal {
+                            enabled: slot.ready
+                            NumberAnimation {
+                                duration: slot.leaving ? root.slideMs : 200
+                                easing.type: slot.leaving ? Easing.InCubic : Easing.OutCubic
+                            }
+                        }
+
+                        Component.onCompleted: {
+                            reveal = root.entered[modelData.id] && !leaving ? 1 : 0;
+                            ready = true;
+                            reveal = Qt.binding(() => slot.leaving ? 0 : 1);
+                            root.entered[modelData.id] = true;
+                        }
+
+                        implicitWidth: card.implicitWidth
+                        implicitHeight: (card.implicitHeight + root.gap) * reveal
+                        // A card leaving from the middle slides up behind the ones above it
+                        z: leaving ? -1 : 0
+
+                        NotificationCard {
+                            id: card
+                            y: slot.height - height
+                            width: implicitWidth
+                            height: implicitHeight
+                            appName: slot.modelData.appName
+                            summary: slot.modelData.summary
+                            body: slot.modelData.body
+                            image: slot.modelData.image
+                            appIcon: slot.modelData.appIcon
+                            urgency: slot.modelData.urgency
+                            actions: slot.modelData.actions
+                            progress: {
+                                root.tick;
+                                return root.progress(slot.modelData);
+                            }
+                            onHoveredChanged: {
+                                if (hovered)
+                                    root.hoveredId = slot.modelData.id;
+                                else if (root.hoveredId === slot.modelData.id)
+                                    root.hoveredId = -1;
+                            }
+                            onActivated: root.activate(slot.modelData)
+                            onCloseRequested: root.dismiss(slot.modelData)
+                            onActionInvoked: identifier => root.invoke(slot.modelData, identifier)
+                        }
                     }
-                    onHoveredChanged: {
-                        if (hovered)
-                            root.hoveredId = modelData.id;
-                        else if (root.hoveredId === modelData.id)
-                            root.hoveredId = -1;
-                    }
-                    onActivated: root.activate(modelData)
-                    onCloseRequested: root.dismiss(modelData)
-                    onActionInvoked: identifier => root.invoke(modelData, identifier)
                 }
             }
         }

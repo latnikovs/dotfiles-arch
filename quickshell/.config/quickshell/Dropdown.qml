@@ -1,4 +1,5 @@
-// A bar dropdown: a card centered under its button (slid back on screen at the edges).
+// A bar dropdown: a card centered under its button (slid back on screen at the edges),
+// sliding out from under the bar (PanelCard.qml).
 // Esc or a click anywhere else closes it. Content goes in as children, laid out at panelWidth.
 import QtQuick
 import Quickshell
@@ -19,7 +20,7 @@ PopupWindow {
         return false;
     }
 
-    visible: open
+    visible: card.shown
     color: "transparent"
     implicitWidth: panelWidth
     implicitHeight: body.childrenRect.height + 2 * padding + 6
@@ -39,17 +40,10 @@ PopupWindow {
         }
     }
 
-    Rectangle {
-        anchors {
-            fill: parent
-            topMargin: 6
-        }
-        color: dropdown.bar.bg
-        border.color: dropdown.bar.muted
-        border.width: 1
-        radius: 10
-        focus: true
-        Keys.onPressed: event => dropdown.bar.panelKey(event)
+    PanelCard {
+        id: card
+        bar: dropdown.bar
+        open: dropdown.open
 
         Item {
             id: body
@@ -61,6 +55,8 @@ PopupWindow {
     }
 
     // The bar is included so its button can toggle the dropdown
+    // Held until the card has slid away: ending it while the popup is still up hands focus back to
+    // the last window, and a hidden scratchpad console then pops up
     HyprlandFocusGrab {
         windows: [dropdown, dropdown.bar]
         active: dropdown.backingWindowVisible

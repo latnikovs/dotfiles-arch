@@ -792,6 +792,14 @@ hl.layer_rule({
     ignore_alpha = 0.5,
 })
 
+-- The bar (Quickshell) is see-through; blur the wallpaper behind it, frosted glass as in Omarchy
+hl.layer_rule({
+    name  = "blur-bar",
+    match = { namespace = "^bar$" },
+
+    blur = true,
+})
+
 -- Terminals (kitty, and kitty under our own classes like org.dotfiles.agent), for the clipboard binds
 hl.window_rule({
     name  = "tag-terminals",
