@@ -51,3 +51,7 @@ hl.env("DOTFILES_NO_SUSPEND", "1")
 -- virtio-gpu fence, with no cursor or input, once the Mac's own display had slept and stopped
 -- rendering for UTM. Keep the screen on when idle (scripts/dpms); the lock still happens.
 hl.env("DOTFILES_NO_DPMS", "1")
+
+-- UTM passes the keyboard's F13 (Keychron screenshot key) to the VM as F24
+hl.bind("F24", hl.dsp.exec_cmd("~/.config/hypr/scripts/screenshot annotate"),
+    { description = "Screenshot region, annotate" })

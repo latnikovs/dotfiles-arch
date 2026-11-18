@@ -539,6 +539,8 @@ bind("SHIFT + Print",                 "Screenshot monitor", hl.dsp.exec_cmd(scre
 bind(mainMod .. " + CTRL + S",         "Screenshot region, annotate", hl.dsp.exec_cmd(screenshot .. " annotate"))
 bind(mainMod .. " + CTRL + ALT + S",   "Screenshot region", hl.dsp.exec_cmd(screenshot .. " region"))
 bind(mainMod .. " + CTRL + SHIFT + S", "Screenshot monitor", hl.dsp.exec_cmd(screenshot .. " output"))
+-- Keychron's screenshot key, remapped to F13 in Keychron Launcher (stock it sends macOS's Cmd+Shift+4)
+bind("F13",                           "Screenshot region, annotate", hl.dsp.exec_cmd(screenshot .. " annotate"))
 
 -- Screen recording (scripts/screenrecord): a region, without sound; pressed again (or the bar's
 -- red dot) it stops. The menu's Capture has the monitor and sound variants.
