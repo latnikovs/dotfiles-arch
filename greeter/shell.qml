@@ -42,6 +42,17 @@ ShellRoot {
     // PAM's info and error lines (expired password, locked account)
     property string message: ""
     property int shakeOffset: 0
+    // The form fades in and rises a little when the greeter appears
+    property real reveal: 0
+    property real rise: 24
+    // From /etc/passwd's comment field; empty when the account has no full name
+    property string fullName: ""
+    property string hostname: ""
+
+    function greeting() {
+        const h = clock.date.getHours();
+        return h < 5 ? "Good night" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    }
 
     signal focusInput
 
@@ -103,7 +114,32 @@ ShellRoot {
         start();
     }
 
-    Component.onCompleted: start()
+    Component.onCompleted: {
+        start();
+        intro.start();
+    }
+
+    ParallelAnimation {
+        id: intro
+        NumberAnimation { target: root; property: "reveal"; to: 1; duration: 600; easing.type: Easing.OutCubic }
+        NumberAnimation { target: root; property: "rise"; to: 0; duration: 700; easing.type: Easing.OutCubic }
+    }
+
+    onUserChanged: fullNameQuery.running = user !== ""
+
+    Process {
+        id: fullNameQuery
+        running: root.user !== ""
+        command: ["getent", "passwd", root.user]
+        stdout: StdioCollector {
+            onStreamFinished: root.fullName = (text.split(":")[4] || "").split(",")[0].trim()
+        }
+    }
+
+    FileView {
+        path: "/etc/hostname"
+        onLoaded: root.hostname = text().trim()
+    }
 
     Connections {
         target: Greetd
@@ -196,58 +232,92 @@ ShellRoot {
                 onClicked: root.focusInput()
             }
 
+            // Darker towards the bottom, under the hostname and power buttons
+            Rectangle {
+                anchors.fill: parent
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#002e3440" }
+                    GradientStop { position: 0.55; color: "#002e3440" }
+                    GradientStop { position: 1.0; color: "#b32e3440" }
+                }
+            }
+
             Column {
+                id: form
                 visible: window.hasForm
                 anchors.centerIn: parent
-                anchors.verticalCenterOffset: 40
+                anchors.verticalCenterOffset: 40 + root.rise
+                opacity: root.reveal
                 spacing: 0
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(clock.date, "HH:mm")
-                    color: root.bright
+                    text: Qt.formatDateTime(clock.date, "dddd  d MMMM").toUpperCase()
+                    color: root.accent
                     font.family: root.fontFamily
-                    font.pixelSize: 160
-                    font.weight: Font.ExtraBold
+                    font.pixelSize: 18
+                    font.weight: Font.Medium
+                    font.letterSpacing: 6
                 }
 
                 Text {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    text: Qt.formatDateTime(clock.date, "dddd, d MMMM")
+                    textFormat: Text.StyledText
+                    text: Qt.formatDateTime(clock.date, "HH") + "<font color=\"" + root.accent + "\">:</font>" + Qt.formatDateTime(clock.date, "mm")
+                    color: root.bright
+                    font.family: root.fontFamily
+                    font.pixelSize: 200
+                    font.weight: Font.Thin
+                }
+
+                Text {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.askUser ? "Who's there?" : root.greeting() + ", " + (root.fullName || root.user)
                     color: root.fg
                     font.family: root.fontFamily
-                    font.pixelSize: 29
+                    font.pixelSize: 22
+                    font.weight: Font.Light
                 }
 
                 Item {
                     width: 1
-                    height: 60
+                    height: 36
                 }
 
                 Rectangle {
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.horizontalCenterOffset: root.shakeOffset
-                    width: 340
-                    height: 56
-                    radius: 12
-                    color: "#cc2e3440"
-                    border.width: 2
-                    border.color: root.wrong ? root.urgent : root.busy ? root.warning : root.accent
+                    width: 320
+                    height: 52
+                    radius: height / 2
+                    color: input.activeFocus ? "#992e3440" : "#662e3440"
+                    border.width: 1
+                    border.color: root.wrong ? root.urgent : root.busy ? root.warning : input.text.length > 0 ? root.accent : "#40eceff4"
+
+                    Behavior on color { ColorAnimation { duration: 200 } }
+                    Behavior on border.color { ColorAnimation { duration: 200 } }
 
                     TextInput {
                         id: input
                         anchors.fill: parent
-                        anchors.leftMargin: 20
-                        anchors.rightMargin: 20
+                        anchors.leftMargin: 26
+                        anchors.rightMargin: 26
                         verticalAlignment: TextInput.AlignVCenter
                         horizontalAlignment: TextInput.AlignHCenter
                         clip: true
                         color: root.bright
                         selectionColor: root.accent
                         font.family: root.fontFamily
-                        font.pixelSize: 18
+                        font.pixelSize: root.echo ? 18 : 22
+                        font.letterSpacing: root.echo ? 0 : 4
                         echoMode: root.echo ? TextInput.Normal : TextInput.Password
                         passwordCharacter: "•"
+                        // The dots show where you are; a caret would sit on the placeholder
+                        cursorDelegate: Rectangle {
+                            width: 2
+                            color: root.accent
+                            visible: root.echo && input.text.length > 0
+                        }
                         readOnly: root.busy
                         onAccepted: {
                             const answer = text;
@@ -273,12 +343,12 @@ ShellRoot {
                             visible: input.text.length === 0
                             text: root.busy ? "Checking…"
                                 : root.wrong ? (root.askUser ? "Unknown user" : "Wrong password")
-                                : root.askUser ? "\uf007  Username"
-                                : root.prompt === "Password" ? "\uf007  " + root.user
+                                : root.askUser ? "Username"
                                 : root.prompt
-                            color: root.wrong ? root.urgent : root.fg
+                            color: root.wrong ? root.urgent : root.dim
                             font.family: root.fontFamily
                             font.pixelSize: 16
+                            font.italic: !root.wrong
                         }
                     }
                 }
@@ -297,8 +367,22 @@ ShellRoot {
                     text: root.message || (root.preview ? "Preview: Escape to quit" : root.askUser ? "" : "Esc: other user")
                     color: root.message ? root.urgent : root.dim
                     font.family: root.fontFamily
-                    font.pixelSize: 14
+                    font.pixelSize: 13
                 }
+            }
+
+            // The machine's name, bottom left, across from the power buttons
+            Text {
+                visible: window.hasForm
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: 32
+                opacity: root.reveal
+                text: "\uf108   " + root.hostname
+                color: root.dim
+                font.family: root.fontFamily
+                font.pixelSize: 15
+                font.letterSpacing: 2
             }
 
             // Restart and shut down, bottom right (logind lets the login screen do both)
@@ -308,6 +392,7 @@ ShellRoot {
                 anchors.bottom: parent.bottom
                 anchors.margins: 32
                 spacing: 28
+                opacity: root.reveal
 
                 Repeater {
                     model: [
@@ -318,9 +403,11 @@ ShellRoot {
                     Text {
                         required property var modelData
                         text: modelData.icon
-                        color: mouse.containsMouse ? root.accent : root.fg
+                        color: mouse.containsMouse ? root.accent : root.dim
                         font.family: root.fontFamily
-                        font.pixelSize: 28
+                        font.pixelSize: 24
+
+                        Behavior on color { ColorAnimation { duration: 150 } }
 
                         MouseArea {
                             id: mouse
