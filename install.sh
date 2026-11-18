@@ -316,7 +316,7 @@ if ! command -v yay >/dev/null; then
     sudo pacman -U --needed --noconfirm "${yay_pkgs[@]}"
     rm -rf "$yay_build"
 fi
-step 'Brave Origin, Chrome, cliamp, gtypist (AUR)'
+step 'Brave Origin, Chrome, cliamp, Disktree, gtypist (AUR)'
 # Brave Origin: Brave without Rewards, Wallet, VPN and the AI assistant
 yay -S --needed --noconfirm brave-origin-bin
 # Google Chrome, for Claude in Chrome (its extension comes from the policies below);
@@ -324,6 +324,8 @@ yay -S --needed --noconfirm brave-origin-bin
 yay -S --needed --noconfirm google-chrome
 # cliamp: Winamp-style terminal music player (SUPER + SHIFT + M), as in Omarchy
 yay -S --needed --noconfirm cliamp-bin
+# Disktree: treemap of what fills a disk, to mark and trash it (glib2's gio trash), as in Omarchy
+yay -S --needed --noconfirm disktree-bin
 # gtypist: GNU Typist, touch-typing lessons in the terminal. Its tarball is signed and
 # the keyservers yay asks return the key without user IDs, so import the copy the AUR
 # package ships (the PKGBUILD pins the fingerprint)
