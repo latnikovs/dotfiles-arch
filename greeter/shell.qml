@@ -348,7 +348,6 @@ ShellRoot {
                             color: root.wrong ? root.urgent : root.dim
                             font.family: root.fontFamily
                             font.pixelSize: 16
-                            font.italic: !root.wrong
                         }
                     }
                 }
