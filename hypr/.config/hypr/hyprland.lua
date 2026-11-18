@@ -362,6 +362,18 @@ local function bind(keys, description, dispatcher, opts)
     return hl.bind(keys, dispatcher, opts)
 end
 
+-- Special workspaces open only through toggleSpecial (keys, showSpecial, the bar). Hiding one
+-- leaves its hidden window focused, and Hyprland hands focus back to it, showing the workspace
+-- again, whenever something ends a focus grab, e.g. closing a bar dropdown. Anything else that
+-- shows one is undone in the same tick, before a frame is drawn.
+local showingSpecial = false
+
+hl.on("workspace.special_active", function(ws)
+    if ws and not showingSpecial then
+        hl.dispatch(hl.dsp.workspace.toggle_special((ws.name:gsub("^special:", ""))))
+    end
+end)
+
 -- Every special workspace shares one animation, and it's read as the toggle starts,
 -- so each toggle sets its own first. For slides the style names the edge the offset
 -- is measured from: "slide top" drops in from above, "slide bottom" retracts back up.
@@ -369,7 +381,9 @@ local function toggleSpecial(name, show, hide)
     return function()
         hl.animation({ leaf = "specialWorkspaceIn",  enabled = true, speed = 3, bezier = "easeOutQuint",   style = show })
         hl.animation({ leaf = "specialWorkspaceOut", enabled = true, speed = 2, bezier = "easeInOutCubic", style = hide })
+        showingSpecial = true
         hl.dispatch(hl.dsp.workspace.toggle_special(name))
+        showingSpecial = false
     end
 end
 
