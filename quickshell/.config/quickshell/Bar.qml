@@ -1291,7 +1291,7 @@ PanelWindow {
                         summary: modelData.summary
                         body: modelData.body
                         image: modelData.image
-                        appIcon: modelData.appIcon
+                        appIcon: bar.messaging.iconOf(modelData)
                         urgency: modelData.urgency
                         time: bar.historyTime(modelData.time)
                         onActivated: {

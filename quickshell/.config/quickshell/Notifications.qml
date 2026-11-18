@@ -358,7 +358,7 @@ Scope {
                             summary: slot.modelData.summary
                             body: slot.modelData.body
                             image: slot.modelData.image
-                            appIcon: slot.modelData.appIcon
+                            appIcon: root.messaging.iconOf(slot.modelData)
                             urgency: slot.modelData.urgency
                             actions: slot.modelData.actions
                             progress: {

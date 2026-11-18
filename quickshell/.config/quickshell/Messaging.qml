@@ -46,6 +46,15 @@ Scope {
         return "";
     }
 
+    // The sender's app icon, else the theme icon of the Brave web app it came from:
+    // Brave sends none, and its image data is gone once the notification closes
+    function iconOf(n): string {
+        if (n.appIcon)
+            return n.appIcon;
+        const app = appOf(n);
+        return app === "teams" || app === "whatsapp" ? app : "";
+    }
+
     function noticed(n): void {
         const app = appOf(n);
         if (app === "mail" && !shown("mail"))

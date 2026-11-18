@@ -40,6 +40,9 @@ Rectangle {
     readonly property string sender: webOrigin ? webOrigin[1].replace(/^www\./, "") : appName
     readonly property string bodyText: webOrigin ? body.slice(webOrigin[0].length) : body
     readonly property string iconSource: source(image) || source(appIcon)
+    // The icon already says which app it is. Rows test this, not their children's `visible`,
+    // which reads false while the row itself is hidden
+    readonly property bool showName: sender !== "" && sender !== summary && icon.status !== Image.Ready
 
     // Accepts a file path, a URL, or an icon theme name ("" when the theme lacks it)
     function source(s) {
@@ -81,6 +84,7 @@ Rectangle {
         spacing: 12
 
         Image {
+            id: icon
             Layout.preferredWidth: 40
             Layout.preferredHeight: 40
             Layout.alignment: Qt.AlignTop
@@ -97,25 +101,20 @@ Rectangle {
             Layout.rightMargin: 14 // keep clear of the close button
             spacing: 2
 
+            // The time sits next to the app name, or next to the summary when the name is hidden
             RowLayout {
                 Layout.fillWidth: true
-                visible: appNameText.visible || card.time !== ""
+                visible: card.showName
 
                 Text {
                     id: appNameText
                     Layout.fillWidth: true
-                    visible: text !== "" && text !== card.summary
                     text: card.sender
                     textFormat: Text.PlainText
                     color: card.dim
                     font.family: card.fontFamily
                     font.pixelSize: 11
                     elide: Text.ElideRight
-                }
-
-                Item {
-                    Layout.fillWidth: true
-                    visible: !appNameText.visible // keeps the time right-aligned
                 }
 
                 Text {
@@ -127,18 +126,39 @@ Rectangle {
                 }
             }
 
-            Text {
+            RowLayout {
                 Layout.fillWidth: true
-                visible: text !== ""
-                text: card.summary
-                textFormat: Text.PlainText
-                color: card.fg
-                font.family: card.fontFamily
-                font.pixelSize: 13
-                font.bold: true
-                wrapMode: Text.Wrap
-                maximumLineCount: 2
-                elide: Text.ElideRight
+                visible: card.summary !== "" || summaryTime.text !== ""
+
+                Text {
+                    id: summaryText
+                    Layout.fillWidth: true
+                    text: card.summary
+                    textFormat: Text.PlainText
+                    color: card.fg
+                    font.family: card.fontFamily
+                    font.pixelSize: 13
+                    font.bold: true
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                    elide: Text.ElideRight
+                }
+
+                Item {
+                    Layout.fillWidth: true
+                    visible: card.summary === "" // keeps the time right-aligned
+                }
+
+                Text {
+                    id: summaryTime
+                    Layout.alignment: Qt.AlignTop
+                    Layout.topMargin: 2 // level with the larger summary text
+                    visible: !card.showName
+                    text: card.showName ? "" : card.time
+                    color: card.dim
+                    font.family: card.fontFamily
+                    font.pixelSize: 11
+                }
             }
 
             Text {
