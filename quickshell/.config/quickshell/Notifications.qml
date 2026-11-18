@@ -200,11 +200,9 @@ Scope {
                 return;
             }
             n.tracked = true;
-            // Withdrawn by the app itself (CloseRequested) means it's no longer relevant
-            n.closed.connect(reason => {
-                if (reason !== NotificationCloseReason.CloseRequested)
-                    root.remember(entry);
-            });
+            // Kept even when the app withdraws it (CloseRequested): web apps like Teams
+            // close their own notifications seconds after showing them
+            n.closed.connect(() => root.remember(entry));
             root.restart(n);
             // A sender updating the notification in place (replaces_id) gets a fresh countdown
             const updated = () => {
