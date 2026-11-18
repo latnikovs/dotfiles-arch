@@ -23,6 +23,17 @@ Scope {
     property date checkedAt
     property bool checked: false
 
+    // When a system upgrade (pacman/yay -Syu, from `updates run` or by hand) last started,
+    // from pacman's log; null if it has none. `now` ticks hourly so "3d ago" stays current.
+    property var lastRun: null
+    property date now: new Date()
+    readonly property string lastRunAgo: {
+        if (!lastRun)
+            return "";
+        const hours = Math.floor((now - lastRun) / 3600000);
+        return hours < 1 ? "just now" : hours < 24 ? `${hours}h ago` : `${Math.floor(hours / 24)}d ago`;
+    }
+
     // name ("check", "review") -> { pid, state }; state "busy", or "waiting" (Claude waits for you)
     property var tasks: ({})
     readonly property bool active: Object.keys(tasks).length > 0
@@ -47,6 +58,7 @@ Scope {
     function refresh(): void {
         if (!check.running)
             check.running = true;
+        lastRunCheck.running = true;
     }
 
     // In a terminal of its own, tiled like any other window
@@ -78,6 +90,29 @@ Scope {
         interval: 60 * 1000
         running: true
         onTriggered: updates.refresh()
+    }
+
+    // "[2026-11-18T18:43:03+0200] [PACMAN] starting full system upgrade" -> its timestamp
+    Process {
+        id: lastRunCheck
+        running: true
+        command: ["sh", "-c", "grep -F '[PACMAN] starting full system upgrade' /var/log/pacman.log | tail -n1 | cut -d']' -f1 | tr -d '['"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                // Date() wants "+02:00", pacman writes "+0200"
+                const stamp = text.trim().replace(/([+-]\d\d)(\d\d)$/, "$1:$2");
+                const date = new Date(stamp);
+                updates.lastRun = isNaN(date) ? null : date;
+                updates.now = new Date();
+            }
+        }
+    }
+
+    Timer {
+        interval: 60 * 60 * 1000
+        running: true
+        repeat: true
+        onTriggered: updates.now = new Date()
     }
 
     Timer {

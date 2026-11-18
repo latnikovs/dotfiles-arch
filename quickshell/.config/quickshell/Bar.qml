@@ -1530,6 +1530,7 @@ PanelWindow {
             id: updatesButton
             readonly property string tip: `${bar.updates.count} update${bar.updates.count === 1 ? "" : "s"}`
                 + (bar.updates.aurCount > 0 ? ` (${bar.updates.aurCount} from the AUR)` : "")
+                + (bar.updates.lastRun ? ` · last updated ${bar.updates.lastRunAgo}` : "")
 
             visible: bar.updates.count > 0
             implicitWidth: updatesText.implicitWidth

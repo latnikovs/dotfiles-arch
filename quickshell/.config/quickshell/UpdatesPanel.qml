@@ -59,8 +59,11 @@ Dropdown {
 
             Caption {
                 Layout.fillWidth: true
-                text: panel.updates.checking ? "CHECKING…"
-                    : panel.updates.checked ? `CHECKED AT ${Qt.formatDateTime(panel.updates.checkedAt, "HH:mm")}` : ""
+                text: [
+                    panel.updates.lastRun ? `UPDATED ${panel.updates.lastRunAgo.toUpperCase()} (${Qt.formatDateTime(panel.updates.lastRun, "ddd d MMM").toUpperCase()})` : "",
+                    panel.updates.checking ? "CHECKING…"
+                        : panel.updates.checked ? `CHECKED AT ${Qt.formatDateTime(panel.updates.checkedAt, "HH:mm")}` : ""
+                ].filter(t => t !== "").join(" · ")
             }
 
             LinkText {
