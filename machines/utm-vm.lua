@@ -12,7 +12,7 @@ for _, key in ipairs({ "SUPER + Q", "SUPER + RETURN" }) do
 end
 -- The launcher starts terminal apps (htop, cliamp) in kitty too
 local launcher = hl.dsp.exec_cmd("pkill -x fuzzel || fuzzel --terminal '" .. kittyCmd .. " -e'")
-for _, key in ipairs({ "SUPER + SPACE", "SUPER + R" }) do
+for _, key in ipairs({ "SUPER + SPACE" }) do
     hl.unbind(key)
     hl.bind(key, launcher, { description = "App launcher" })
 end

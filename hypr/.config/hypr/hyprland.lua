@@ -519,7 +519,6 @@ bind(mainMod .. " + SHIFT + A", "ChatGPT", function()
 end)
 
 bind(mainMod .. " + T", "Toggle window floating", hl.dsp.window.float({ action = "toggle" }))
-bind(mainMod .. " + R", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + SPACE", "App launcher", hl.dsp.exec_cmd(menu))
 bind(mainMod .. " + ALT + SPACE", "Menu (commands, as Omarchy's)", hl.dsp.exec_cmd("~/.config/hypr/scripts/menu"))
 bind(mainMod .. " + F", "Fullscreen", hl.dsp.window.fullscreen())
