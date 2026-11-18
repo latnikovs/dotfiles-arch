@@ -40,7 +40,8 @@ case ${1:-menu} in
         [[ -n ${DOTFILES_NO_SUSPEND:-} ]] || items+=("󰒲  Suspend")
         items+=("󰍃  Logout" "󰜉  Reboot" "󰐥  Shutdown")
         [[ -z ${DOTFILES_MENU:-} ]] || items+=("󰁍  Back")
-        choice=$(printf '%s\n' "${items[@]}" \
+        # An en space after each icon, as scripts/menu does; awk below still splits on the plain spaces
+        choice=$(printf '%s\n' "${items[@]}" | sed 's/  /\xe2\x80\x82  /' \
             | fuzzel ${DOTFILES_MENU:+--config=$HOME/.config/fuzzel/menu.ini} --dmenu --prompt "󰐥   " --placeholder System --width 18 --lines ${#items[@]}) || exit
         [[ $choice != *"  Back" ]] || exit 2
         exec "$0" "$(awk '{ print tolower($2) }' <<<"$choice")"

@@ -17,7 +17,9 @@ pick() {
     local icon=$1 title=$2 choice status=0 keys=()
     shift 2
     [[ $title == Menu ]] || { set -- "$@" "󰁍  Back"; keys=("${back_keys[@]}"); }
-    choice=$(printf '%s\n' "$@" \
+    # An en space after each icon: two plain spaces leave Nerd Font icons crowding the label.
+    # It goes before the two spaces that $label is cut at, so the parsing below is unchanged.
+    choice=$(printf '%s\n' "$@" | sed 's/  /\xe2\x80\x82  /' \
         | fuzzel "${keys[@]}" --dmenu --prompt "$icon   " --placeholder "$title" --width 28 --lines $#) \
         || status=$?
     if [[ $title != Menu ]] && { (( status == 2 || status == 10 )) || [[ $choice == *"  Back" ]]; }; then

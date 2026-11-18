@@ -783,14 +783,17 @@ hl.window_rule({
 -- })
 -- overlayLayerRule:set_enabled(false)
 
--- The launcher and dmenus (fuzzel) are slightly see-through; blur what's behind
--- them, but not the fully transparent corners outside the rounded border
+-- The launcher and dmenus (fuzzel) are see-through; blur what's behind them, but not
+-- the fully transparent corners outside the rounded border. The rest of the screen
+-- dims while they're open, and they pop in rather than fade.
 hl.layer_rule({
     name  = "blur-launcher",
     match = { namespace = "^launcher$" },
 
     blur         = true,
     ignore_alpha = 0.5,
+    dim_around   = true,
+    animation    = "popin 94%",
 })
 
 -- The bar (Quickshell) is see-through; blur the wallpaper behind it, frosted glass as in Omarchy
