@@ -74,10 +74,18 @@ case ${1:-} in
         fi
         printf '   %s\n\n' "${d}Then mise's dev tools, Neovim plugins, a health check, and Claude's review if you want it.$r"
         # The password, once, for pacman; yay's --sudoloop keeps it fresh from here on
-        # sudo gives up after 5 minutes without an answer (passwd_timeout) or 3 wrong passwords;
-        # ask again then, so a window left waiting doesn't close by itself (Ctrl+C or closing it quits)
+        # sudo gives up after 5 minutes without an answer (passwd_timeout) or 3 wrong passwords,
+        # and pam_faillock counts each of those as a failed login: 3 lock the account, the lock
+        # screen included. So wait for a key before asking again; a window left unattended
+        # then costs one failure, not one every 5 minutes.
         until sudo -v -p "   $lock sudo password for %u (to install the packages): "; do
-            printf '   %s\n' "${d}No password taken; asking again.$r"
+            printf '   %s' "${d}No password taken. Enter to try again, Q to close.$r"
+            while :; do
+                read -rsn1 key || exit 1
+                [[ $key == [qQ] || -z $key ]] && break
+            done
+            printf '\n'
+            [[ $key == [qQ] ]] && exit 0
         done
 
         heading "Installing"
