@@ -19,6 +19,29 @@ case ${1:-} in
         { yay -Qua --color never || true; } | sed 's/$/ (AUR)/'
         ;;
     run)
+        # One run at a time: a second click on the bar icon (or the menu) opened another window that
+        # asked for the password again and, once given, repeated the whole update; left unanswered it
+        # re-prompts every 5 minutes for good. The lock is held on fd 9 until this run exits, and the
+        # file names the holder's terminal, so a second run focuses that window and closes its own.
+        lock=${XDG_RUNTIME_DIR:-/tmp}/dotfiles-updates.lock
+        exec 9<>"$lock"
+        if ! flock -n 9; then
+            holder=$(<"$lock")
+            if [[ $holder =~ ^[0-9]+$ ]]; then
+                # A window left on a special workspace (opened while one was showing) is hidden
+                # once that closes, and focusing it doesn't bring it back. hyprland.lua undoes any
+                # special workspace shown other than through its showSpecial(), so that shows it
+                ws=$(hyprctl clients -j | jq -r --argjson p "$holder" '.[] | select(.pid == $p) | .workspace.name' | head -1)
+                if [[ $ws == special:* ]]; then
+                    hyprctl eval "showSpecial('${ws#special:}')" >/dev/null 2>&1 || true
+                fi
+                hyprctl dispatch "hl.dsp.focus({ window = 'pid:$holder' })" >/dev/null 2>&1 || true
+            fi
+            echo "An update is already running in another window." >&2
+            exit 0
+        fi
+        printf '%s\n' "$PPID" >"$lock"
+
         state=~/.local/state/dotfiles
         started=$(date '+%F %T')
         logged=$(wc -l </var/log/pacman.log)
@@ -175,7 +198,7 @@ case ${1:-} in
         read -rn1 -p "   Review now? [y/N] " answer
         echo
         if [[ $answer == [yY] ]]; then
-            setsid -f "${BASH_SOURCE[0]%/*}/update-review" >/dev/null 2>&1
+            setsid -f "${BASH_SOURCE[0]%/*}/update-review" >/dev/null 2>&1 9>&-
         fi
 
         # What it came to, last, right above the Q prompt: the counts per kind of change
