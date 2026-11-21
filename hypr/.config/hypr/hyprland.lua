@@ -397,7 +397,6 @@ local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.cl
 -- closeWindowBind:set_enabled(false)
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
-bind(mainMod .. " + CTRL + N", "Toggle night light", hl.dsp.exec_cmd("~/.config/hypr/scripts/nightlight"))
 -- The coding agents' tmux (scripts/agents) on SUPER + G: one window; pressed again it jumps
 -- to that window
 local agentsWindow = "class:^org\\.dotfiles\\.agents$"
@@ -548,13 +547,13 @@ local screenrecord = "~/.config/hypr/scripts/screenrecord"
 bind("CTRL + Print",                 "Record screen region / stop", hl.dsp.exec_cmd(screenrecord .. " region"))
 bind(mainMod .. " + SHIFT + R",      "Record screen region / stop", hl.dsp.exec_cmd(screenrecord .. " region"))
 
--- Notifications (quickshell), same keys as Omarchy
+-- Notifications (quickshell), same keys as Omarchy; dismiss all clears the history while it is open
 local notifications = "quickshell ipc call notifications "
 bind(mainMod .. " + comma",         "Dismiss notification", hl.dsp.exec_cmd(notifications .. "dismissOne"))
 bind(mainMod .. " + SHIFT + comma", "Dismiss all notifications", hl.dsp.exec_cmd(notifications .. "dismissAll"))
 bind(mainMod .. " + ALT + comma",   "Open last notification", hl.dsp.exec_cmd(notifications .. "invokeLast"))
 bind(mainMod .. " + CTRL + comma",  "Toggle do not disturb", hl.dsp.exec_cmd("~/.config/hypr/scripts/notifications-dnd"))
-bind(mainMod .. " + SHIFT + ALT + comma", "Notification history", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
+bind(mainMod .. " + CTRL + N",      "Notification history", hl.dsp.exec_cmd(notifications .. "toggleHistory"))
 
 -- Keep the screen awake (quickshell holds the inhibitor), Omarchy's key for its idle toggle
 bind(mainMod .. " + CTRL + I", "Toggle caffeine (no idle lock)", hl.dsp.exec_cmd("~/.config/hypr/scripts/caffeine"))

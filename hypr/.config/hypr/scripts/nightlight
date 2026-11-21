@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Night light on or off by hand (SUPER + CTRL + N); hyprsunset.conf's schedule
+# Night light on or off by hand (system menu, bar); hyprsunset.conf's schedule
 # takes over again at its next switch. Starts hyprsunset if it isn't running.
 set -euo pipefail
 

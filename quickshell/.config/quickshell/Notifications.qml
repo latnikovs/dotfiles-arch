@@ -246,7 +246,12 @@ Scope {
             return "ok";
         }
 
+        // With the history open, clears it instead (SUPER + SHIFT + comma)
         function dismissAll(): string {
+            if (root.historyOpen) {
+                root.history = [];
+                return "cleared";
+            }
             for (const n of root.popups)
                 root.dismiss(n);
             return "ok";
