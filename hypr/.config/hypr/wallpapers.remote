@@ -1,0 +1,6 @@
+# Wallpapers not stored in this repo (their licenses don't allow republishing it),
+# downloaded by `scripts/wallpaper fetch` into ~/.config/hypr/wallpapers next to the
+# stowed ones. One per line: file name, download URL, sha256. Names follow
+# scripts/wallpaper: nord-light-* for light mode, the rest for dark.
+# Source: https://wallhaven.cc/w/r2ory7
+nord-3-aurora.jpg	https://w.wallhaven.cc/full/r2/wallhaven-r2ory7.jpg	ddc59fd0ac8066b7c0ae92347536cabd8fceefcc4593d8e6c5d67dc7cfd8125a

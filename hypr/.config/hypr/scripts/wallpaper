@@ -2,6 +2,7 @@
 # Usage: wallpaper init    point the current-wallpaper link at this mode's wallpaper (run before hyprpaper)
 #        wallpaper theme   the same, and show it now (scripts/theme, on a light/dark switch)
 #        wallpaper next    switch to the next wallpaper for this mode
+#        wallpaper fetch   download the wallpapers in wallpapers.remote that are missing (install.sh)
 #
 # Light mode uses the nord-light-* files in ~/.config/hypr/wallpapers, dark mode the
 # rest, so the gaps between windows stay the same lightness as the windows and the
@@ -11,9 +12,35 @@
 set -euo pipefail
 
 dir=$HOME/.config/hypr/wallpapers
+remote=$HOME/.config/hypr/wallpapers.remote
 state=${XDG_STATE_HOME:-$HOME/.local/state}/hypr
 current=$state/wallpaper
 mkdir -p "$state"
+
+# Download each wallpaper listed in wallpapers.remote that isn't in $dir yet, and keep
+# it only if its sha256 matches. They live outside the repo, next to the stowed ones.
+fetch() {
+    local name url sum tmp failed=0
+    mkdir -p "$dir"
+    while IFS=$'\t' read -r name url sum; do
+        [[ -z $name || $name == \#* || -e $dir/$name ]] && continue
+        tmp=$(mktemp "$dir/.$name.XXXXXX")
+        if curl -fsSL --max-time 120 -o "$tmp" "$url" && sha256sum -c --status <<<"$sum  $tmp"; then
+            mv "$tmp" "$dir/$name"
+            echo "Fetched $name"
+        else
+            rm -f "$tmp"
+            echo "Couldn't fetch $name from $url (download failed or sha256 differs)" >&2
+            failed=1
+        fi
+    done <"$remote"
+    return "$failed"
+}
+
+if [[ ${1:-} == fetch ]]; then
+    fetch
+    exit
+fi
 
 # Wallpapers for light or dark mode
 walls() {
@@ -62,7 +89,7 @@ case ${1:-} in
         show
         ;;
     *)
-        echo "Usage: wallpaper init|theme|next" >&2
+        echo "Usage: wallpaper init|theme|next|fetch" >&2
         exit 1
         ;;
 esac

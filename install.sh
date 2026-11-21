@@ -267,6 +267,10 @@ for pkg in */; do
     stow --no-folding --restow -t "$HOME" "$pkg"
 done
 
+# Wallpapers whose licenses keep them out of the repo, by URL (hypr/.config/hypr/wallpapers.remote)
+step 'Wallpapers (download)'
+"$HOME/.config/hypr/scripts/wallpaper" fetch || warn "Some wallpapers couldn't be downloaded; rerun ~/.config/hypr/scripts/wallpaper fetch"
+
 # zsh as the login shell (zsh/.zprofile starts Hyprland); through sudo, so chsh
 # doesn't ask for the password
 step 'Login shell: zsh'
