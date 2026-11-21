@@ -6,7 +6,7 @@
 local kittyCmd = "env LIBGL_ALWAYS_SOFTWARE=1 kitty"
 hl.env("DOTFILES_TERMINAL", kittyCmd)
 local kitty = hl.dsp.exec_cmd(kittyCmd)
-for _, key in ipairs({ "SUPER + Q", "SUPER + RETURN" }) do
+for _, key in ipairs({ "SUPER + RETURN" }) do
     hl.unbind(key)
     hl.bind(key, kitty, { description = "Terminal" })
 end

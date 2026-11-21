@@ -391,9 +391,8 @@ bind(mainMod .. " + SLASH", "Show keybindings", hl.dsp.exec_cmd("~/.config/hypr/
 bind(mainMod .. " + CTRL + SLASH", "Cycle monitor scale", hl.dsp.exec_cmd("~/.config/hypr/scripts/monitor-scale cycle"))
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-bind(mainMod .. " + Q", "Terminal", hl.dsp.exec_cmd(terminal))
 bind(mainMod .. " + RETURN", "Terminal", hl.dsp.exec_cmd(terminal))
-local closeWindowBind = bind(mainMod .. " + W", "Close window", hl.dsp.window.close())
+local closeWindowBind = bind(mainMod .. " + Q", "Close window", hl.dsp.window.close())
 -- closeWindowBind:set_enabled(false)
 bind(mainMod .. " + ESCAPE", "System menu", hl.dsp.exec_cmd("~/.config/hypr/scripts/system menu"))
 bind(mainMod .. " + CTRL + L", "Lock", hl.dsp.exec_cmd("~/.config/hypr/scripts/lock"))
