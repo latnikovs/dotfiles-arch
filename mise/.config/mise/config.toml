@@ -3,6 +3,8 @@
 [tools]
 node = "lts"
 pnpm = "latest"
+# Node 25+ no longer bundles corepack; the work repos' Makefiles call `corepack pnpm`
+"npm:corepack" = "latest"
 go = "latest"
 # Rebuilds Go on file changes (make dev / pnpm run dev)
 air = "latest"
