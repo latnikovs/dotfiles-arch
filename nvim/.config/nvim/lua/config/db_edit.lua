@@ -369,4 +369,7 @@ function M.edit()
   end)
 end
 
+-- Shared with config/db_peek.lua
+M.psql, M.vars, M.where, M.SEP = psql, vars, where, SEP
+
 return M

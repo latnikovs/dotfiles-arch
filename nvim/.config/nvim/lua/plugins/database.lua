@@ -8,7 +8,8 @@
 -- Everything is under <leader>D, as http.nvim's is under <leader>H:
 -- <leader>Dd toggles the database view; in a query buffer <CR> (or
 -- <leader>Ds) executes, <leader>Dw saves, <leader>De edits bind parameters,
--- <leader>Dx exports to CSV, <leader>Di puts an INSERT template; in a result <leader>Dr toggles the layout.
+-- <leader>Dx exports to CSV, <leader>Di puts an INSERT template; in a result <leader>Dr toggles the layout,
+-- cc edits a cell and K peeks at the row a foreign key points to.
 -- dadbod-ui's own <leader>W/E/S in query buffers are off, and its <leader>R in
 -- results is removed.
 vim.g.db_ui_disable_mappings_sql = 1
@@ -108,6 +109,10 @@ vim.api.nvim_create_autocmd("FileType", {
       vim.keymap.set("n", "cc", function()
         require("config.db_edit").edit()
       end, { buffer = ev.buf, desc = "Edit Cell" })
+      -- The row a foreign key cell points to, in a float (config/db_peek.lua)
+      vim.keymap.set("n", "K", function()
+        require("config.db_peek").peek()
+      end, { buffer = ev.buf, desc = "Peek Foreign Key" })
       -- dadbod-ui's <leader>R, moved under <leader>D with the rest; its other
       -- result keys (<C-]>, vic, yh) are not leader keys and stay
       pcall(vim.keymap.del, "n", "<leader>R", { buffer = ev.buf })
