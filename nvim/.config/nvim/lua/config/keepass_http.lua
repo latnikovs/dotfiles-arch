@@ -57,24 +57,21 @@ end
 -- { [env] = vars } for a project, or nil and an error
 function M.read(kdbx, master, project)
   local group = M.group .. "/" .. project
-  local paths, err = keepass.entries(kdbx, master, group)
-  if not paths then
-    return nil, err
-  end
-  -- One keepassxc-cli per entry, all at once: each one pays the KDF on its own
-  local jobs = {}
-  for _, path in ipairs(paths) do
-    jobs[path] = keepass.cli({ "show", "-s", "--all", kdbx, group .. "/" .. path }, master)
-  end
-  local secrets = {}
-  for path, job in pairs(jobs) do
-    local res = job:wait()
-    if res.code ~= 0 then
-      return nil, path .. ": " .. vim.trim(res.stderr)
+  return keepass.with_session(kdbx, master, function(session)
+    local paths, err = keepass.entries(session, group)
+    if not paths then
+      return nil, err
     end
-    secrets[path] = M.parse(res.stdout)
-  end
-  return secrets
+    local secrets = {}
+    for _, path in ipairs(paths) do
+      local out, show_err = keepass.show(session, group .. "/" .. path)
+      if not out then
+        return nil, path .. ": " .. show_err
+      end
+      secrets[path] = M.parse(out)
+    end
+    return secrets
+  end)
 end
 
 -- The http.nvim hook: callback(secrets), or callback(nil, err)

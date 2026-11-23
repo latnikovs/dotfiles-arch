@@ -48,45 +48,55 @@ end
 -- and an error. project is the top-level group, nil for an entry right in
 -- Databases.
 function M.read(kdbx, master)
-  local paths, err = keepass.entries(kdbx, master, M.group)
-  if not paths then
-    if err:find("Cannot find group") then
-      return nil,
-        ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>Dd again'):format(
-          M.group,
-          vim.fn.fnamemodify(kdbx, ":t")
-        )
+  return keepass.with_session(kdbx, master, function(session)
+    local paths, err = keepass.entries(session, M.group)
+    if not paths then
+      if err:find("Cannot find group") then
+        return nil,
+          ('no "%s" group in %s yet: add it, put an entry per database in it, then <leader>Dd again'):format(
+            M.group,
+            vim.fn.fnamemodify(kdbx, ":t")
+          )
+      end
+      return nil, err
     end
-    return nil, err
-  end
-  -- One keepassxc-cli per entry, all at once: each one pays the KDF on its own
-  local jobs = {}
-  local projects = {}
-  for _, path in ipairs(paths) do
-    local name = path:gsub("/", " › ")
-    local entry = M.group .. "/" .. path
-    jobs[name] = keepass.cli({ "show", "-s", "-a", "URL", "-a", "UserName", "-a", "Password", kdbx, entry }, master)
-    projects[name] = path:match("^([^/]+)/")
-  end
-  local dbs = {}
-  for name, job in pairs(jobs) do
-    local res = job:wait()
-    if res.code ~= 0 then
-      return nil, name .. ": " .. vim.trim(res.stderr)
+    local dbs = {}
+    for _, path in ipairs(paths) do
+      local name = path:gsub("/", " › ")
+      local out, show_err = keepass.show(session, M.group .. "/" .. path)
+      if not out then
+        return nil, name .. ": " .. show_err
+      end
+      local fields = M.fields(out)
+      if fields.URL and fields.URL ~= "" then
+        table.insert(dbs, {
+          name = name,
+          url = M.with_credentials(fields.URL, fields.UserName or "", fields.Password or ""),
+          project = path:match("^([^/]+)/"),
+        })
+      end
     end
-    local url, user, password = unpack(vim.split(res.stdout, "\n"))
-    if url and url ~= "" then
-      table.insert(dbs, {
-        name = name,
-        url = M.with_credentials(url, user or "", password or ""),
-        project = projects[name],
-      })
-    end
-  end
-  table.sort(dbs, function(a, b)
-    return a.name:lower() < b.name:lower()
+    table.sort(dbs, function(a, b)
+      return a.name:lower() < b.name:lower()
+    end)
+    return dbs
   end)
-  return dbs
+end
+
+-- URL, UserName and Password from `show -s --all`: the first of each, from
+-- the lines before Notes, the first field that can span lines
+function M.fields(text)
+  local fields = {}
+  for line in vim.gsplit(text, "\n", { plain = true }) do
+    if line:find("^Notes:") then
+      break
+    end
+    local name, value = line:match("^(%a+): (.*)$")
+    if name and fields[name] == nil then
+      fields[name] = value
+    end
+  end
+  return fields
 end
 
 -- The connections of the project nvim runs in, or all of them; the second
