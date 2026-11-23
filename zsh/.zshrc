@@ -94,6 +94,9 @@ ssh() {
 # bindkey -v, which would reset its bindings.
 (( $+commands[fzf] )) && source <(fzf --zsh)
 
+# Per-directory history on Alt-R (^R stays global)
+source ~/.config/zsh/dirhist.zsh
+
 (( $+commands[zoxide] )) && eval "$(zoxide init zsh)"
 alias zz='z'
 

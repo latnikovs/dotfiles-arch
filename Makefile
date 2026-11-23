@@ -11,7 +11,7 @@ QMLLINT := /usr/lib/qt6/bin/qmllint
 LUA_FILES = $(shell git ls-files '*.lua')
 QML_FILES = $(shell git ls-files '*.qml')
 JSON_FILES = $(shell git ls-files '*.json')
-ZSH_FILES = zsh/.zshrc zsh/.zprofile
+ZSH_FILES = zsh/.zshrc zsh/.zprofile zsh/.config/zsh/dirhist.zsh
 
 .PHONY: lint shellcheck qml hyprland lua zsh json
 
