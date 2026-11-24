@@ -862,7 +862,7 @@ hl.window_rule({
     name  = "size-keepassxc",
     match = { class = "^org\\.keepassxc\\.KeePassXC$", initial_title = "^(KeePassXC|.* \\[Locked\\] - KeePassXC)$" },
 
-    size  = { 1200, 800 },
+    size  = "monitor_w*0.7 monitor_h*0.8",
 })
 
 -- The music player (cliamp, scripts/music) works the same way on SUPER + SHIFT + M:
