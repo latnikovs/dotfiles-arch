@@ -8,8 +8,8 @@
 #   curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/archinstall/install | bash
 #   … | bash -s -- /dev/nvme0n1     (picks the disk; it is still confirmed)
 #
-# Asks for the disk, then the disk encryption and user passwords; they are kept on
-# the ISO's RAM disk only. The archinstall config is generated for the chosen disk
+# Asks for the hostname and the disk, then the disk encryption and user passwords;
+# the passwords are kept on the ISO's RAM disk only. The archinstall config is generated for the chosen disk
 # (the partition sizes depend on it, so a saved config can't be reused), checked
 # with a dry run, then installed. The settings below can be overridden from the
 # environment, e.g. … | ARCH_HOSTNAME=work bash
@@ -19,7 +19,7 @@
 # archinstall 4.5 (ISO 2026.11.01).
 set -euo pipefail
 
-hostname=${ARCH_HOSTNAME:-archlinux}
+hostname=${ARCH_HOSTNAME:-}
 username=${ARCH_USER:-latnikovd}
 timezone=${ARCH_TIMEZONE:-Europe/Riga}
 keymap=${ARCH_KEYMAP:-us}
@@ -55,6 +55,20 @@ localectl list-keymaps | grep -qx "$keymap" || die "unknown keymap: $keymap"
 version=$(pacman -Q archinstall | awk '{ print $2 }')
 [[ $version == 4.* ]] ||
     echo "warning: archinstall $version; this was tested with 4.5. The dry run below checks the config before anything is wiped." >&2
+
+# --- Hostname ---
+# No default: Tailscale and Syncthing tell machines apart by it. One DNS label
+# (RFC 1123), lowercase, so it is the same name in MagicDNS.
+valid_hostname() { [[ $1 =~ ^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$ ]]; }
+if [[ -n $hostname ]]; then
+    valid_hostname "$hostname" || die "invalid hostname: $hostname"
+else
+    while true; do
+        hostname=$(ask "Hostname for this machine (lowercase letters, digits, hyphens): ")
+        valid_hostname "$hostname" && break
+        echo "Not a valid hostname, try again." >&2
+    done
+fi
 
 # --- Disk ---
 disk=${1:-}

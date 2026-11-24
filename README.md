@@ -19,15 +19,16 @@ Boot the [Arch ISO](https://archlinux.org/download/) (in UEFI mode), get online
 curl -fsSL https://raw.githubusercontent.com/latnikovs/dotfiles-arch/main/archinstall/install | bash
 ```
 
-`archinstall/install` lists the disks and asks which one to erase (typed out
+`archinstall/install` asks for the hostname (Tailscale and Syncthing know the
+machine by it), lists the disks and asks which one to erase (typed out
 in full to confirm; `… | bash -s -- /dev/nvme0n1` names it up front), then the
 disk encryption and user passwords. It generates archinstall's config for that
 disk with the choices below, checks it with a dry run, and installs without
 further questions. The passwords stay on the ISO's RAM disk, deleted when the
 script ends. If the install fails on a download (a mirror timing out), run it
-again; it cleans up the failed attempt first. Hostname, user,
-time zone, keymap and locale are set at the top of the script and can be
-overridden: `… | ARCH_HOSTNAME=work bash`.
+again; it cleans up the failed attempt first. User, time zone, keymap and
+locale are set at the top of the script and can be overridden, as can the
+hostname, to skip its question: `… | ARCH_HOSTNAME=work bash`.
 
 Typing that URL on the console is the slow part. The ISO runs an SSH server:
 set a root password with `passwd`, find the address with `ip -br a`, and
