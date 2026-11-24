@@ -229,47 +229,106 @@ PanelWindow {
         return Hyprland.workspaces.values.find(ws => ws.id === id) ?? null;
     }
 
-    RowLayout {
+    // A module's icon in its own colour, the rest in the text colour (for StyledText)
+    function tint(icon, color, rest) {
+        return `<font color="${color}">${icon}</font>${rest}`;
+    }
+
+    Item {
         anchors {
             top: parent.top
             bottom: parent.bottom
             left: parent.left
             leftMargin: 8
         }
-        spacing: 3
+        width: workspaceRow.implicitWidth
 
-        Repeater {
-            model: bar.workspaceIds
+        // One pill for the focused workspace that slides to it. Its leading edge moves
+        // faster than its trailing one, so it stretches on the way and settles with a bounce.
+        Rectangle {
+            id: workspacePill
 
-            delegate: BarButton {
-                required property int modelData
-                readonly property var workspace: bar.workspace(modelData)
-                readonly property bool focused: Hyprland.focusedWorkspace?.id === modelData
-                readonly property bool empty: !workspace || workspace.toplevels.values.length === 0
+            readonly property Item target: {
+                const i = bar.workspaceIds.indexOf(Hyprland.focusedWorkspace?.id ?? -1);
+                return i >= 0 && workspaceRepeater.count > i ? workspaceRepeater.itemAt(i) : null;
+            }
+            readonly property real targetLeft: target ? target.x : 0
+            readonly property real targetRight: target ? target.x + target.width : 0
+            property real leftEdge: 0
+            property real rightEdge: 0
+            property bool movingRight: true
 
-                Layout.fillHeight: true
-                implicitWidth: Math.max(21, label.implicitWidth + 12)
-                cursorShape: Qt.PointingHandCursor
-                // Through hyprctl because this Hyprland is configured in Lua
-                onClicked: Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.focus({ workspace = ${modelData} })`])
+            function follow() {
+                if (!target)
+                    return;
+                movingRight = targetLeft > leftEdge;
+                leftEdge = targetLeft;
+                rightEdge = targetRight;
+            }
 
-                BarText {
-                    id: label
-                    anchors.centerIn: parent
-                    text: modelData === 10 ? "0" : String(modelData)
-                    font.bold: parent.focused
-                    color: parent.workspace?.urgent ? bar.urgent : parent.empty && !parent.focused ? bar.muted : bar.fg
+            onTargetLeftChanged: Qt.callLater(follow)
+            onTargetRightChanged: Qt.callLater(follow)
+            Component.onCompleted: Qt.callLater(follow)
+
+            visible: target !== null
+            x: leftEdge
+            width: rightEdge - leftEdge
+            height: 18
+            anchors.verticalCenter: parent.verticalCenter
+            radius: height / 2
+            color: bar.accent
+
+            Behavior on leftEdge {
+                NumberAnimation {
+                    duration: workspacePill.movingRight ? 300 : 170
+                    easing.type: workspacePill.movingRight ? Easing.OutBack : Easing.OutCubic
                 }
+            }
+            Behavior on rightEdge {
+                NumberAnimation {
+                    duration: workspacePill.movingRight ? 170 : 300
+                    easing.type: workspacePill.movingRight ? Easing.OutCubic : Easing.OutBack
+                }
+            }
+        }
 
-                Rectangle {
-                    anchors {
-                        left: parent.left
-                        right: parent.right
-                        bottom: parent.bottom
+        RowLayout {
+            id: workspaceRow
+            anchors.fill: parent
+            spacing: 3
+
+            Repeater {
+                id: workspaceRepeater
+                model: bar.workspaceIds
+
+                delegate: BarButton {
+                    required property int modelData
+                    readonly property var workspace: bar.workspace(modelData)
+                    readonly property bool focused: Hyprland.focusedWorkspace?.id === modelData
+                    readonly property bool empty: !workspace || workspace.toplevels.values.length === 0
+
+                    Layout.fillHeight: true
+                    implicitWidth: Math.max(21, label.implicitWidth + 12)
+                    hoverPad: 0
+                    cursorShape: Qt.PointingHandCursor
+                    // Through hyprctl because this Hyprland is configured in Lua
+                    onClicked: Quickshell.execDetached(["hyprctl", "dispatch", `hl.dsp.focus({ workspace = ${modelData} })`])
+
+                    BarText {
+                        id: label
+                        anchors.centerIn: parent
+                        text: modelData === 10 ? "0" : String(modelData)
+                        font.bold: parent.focused
+                        color: parent.workspace?.urgent ? bar.urgent
+                            : parent.focused ? bar.bg
+                            : parent.empty ? bar.muted : bar.fg
+
+                        Behavior on color {
+                            ColorAnimation {
+                                duration: 200
+                            }
+                        }
                     }
-                    height: 2
-                    visible: parent.focused
-                    color: bar.fg
                 }
             }
         }
@@ -748,7 +807,8 @@ PanelWindow {
         BarText {
             id: weatherText
             anchors.centerIn: parent
-            text: bar.weather ? `${bar.weather.icon} ${bar.weather.temp}°C` : ""
+            textFormat: Text.StyledText
+            text: bar.weather ? bar.tint(bar.weather.icon, Theme.teal, ` ${bar.weather.temp}°C`) : ""
         }
     }
 
@@ -771,6 +831,7 @@ PanelWindow {
 
             implicitWidth: mailIcon.implicitWidth
             Layout.fillHeight: true
+            watch: bar.messaging.mailNew ? 1 : 0
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onContainsMouseChanged: containsMouse ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
@@ -794,6 +855,8 @@ PanelWindow {
             readonly property int unread: bar.messaging.teamsUnread
             readonly property bool alert: unread > 0 || bar.messaging.teamsNew
             readonly property string tip: unread > 0 ? `Teams · ${unread} unread` : bar.messaging.teamsNew ? "Teams · new messages" : "Teams"
+
+            watch: unread > 0 ? unread + 1 : alert ? 1 : 0
 
             implicitWidth: teamsIcon.implicitWidth
             Layout.fillHeight: true
@@ -823,6 +886,8 @@ PanelWindow {
             readonly property int unread: bar.messaging.whatsappUnread
             readonly property bool alert: unread > 0 || bar.messaging.whatsappNew
             readonly property string tip: unread > 0 ? `WhatsApp · ${unread} unread` : bar.messaging.whatsappNew ? "WhatsApp · new messages" : "WhatsApp"
+
+            watch: unread > 0 ? unread + 1 : alert ? 1 : 0
 
             implicitWidth: whatsappIcon.implicitWidth
             Layout.fillHeight: true
@@ -1431,6 +1496,7 @@ PanelWindow {
         // A screen recording running (Recording.qml, scripts/screenrecord), in red: a click stops it
         BarButton {
             visible: bar.recording.on
+            watch: bar.recording.on ? 1 : 0
             implicitWidth: recordingText.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
@@ -1459,6 +1525,7 @@ PanelWindow {
                     + (bar.crashes.count > 1 ? `, +${bar.crashes.count - 1} more` : "")
 
             visible: bar.crashes.count > 0
+            watch: bar.crashes.count
             implicitWidth: crashesText.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -1533,6 +1600,7 @@ PanelWindow {
                 + (bar.updates.lastRun ? ` · last updated ${bar.updates.lastRunAgo}` : "")
 
             visible: bar.updates.count > 0
+            watch: bar.updates.count
             implicitWidth: updatesText.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -1553,7 +1621,8 @@ PanelWindow {
             BarText {
                 id: updatesText
                 anchors.centerIn: parent
-                text: `󰚰 ${bar.updates.count}`
+                textFormat: Text.StyledText
+                text: bar.tint("󰚰", Theme.purple, ` ${bar.updates.count}`)
             }
         }
 
@@ -1628,7 +1697,8 @@ PanelWindow {
             BarText {
                 id: cpuText
                 anchors.centerIn: parent
-                text: ` ${Math.round(bar.cpuUsage * 100)}%`
+                textFormat: Text.StyledText
+                text: bar.tint("", bar.cpuUsage >= 0.9 ? bar.urgent : Theme.teal, ` ${Math.round(bar.cpuUsage * 100)}%`)
                 color: bar.cpuUsage >= 0.9 ? bar.urgent : bar.fg
             }
         }
@@ -1648,14 +1718,17 @@ PanelWindow {
             BarText {
                 id: memText
                 anchors.centerIn: parent
-                text: ` ${Math.round(bar.memUsage * 100)}%`
+                textFormat: Text.StyledText
+                text: bar.tint("", bar.memUsage >= 0.9 ? bar.urgent : Theme.teal, ` ${Math.round(bar.memUsage * 100)}%`)
                 color: bar.memUsage >= 0.9 ? bar.urgent : bar.fg
             }
         }
 
         BarText {
             visible: bar.battery.isLaptopBattery
-            text: `${bar.batteryPercent}% ${bar.charging ? "󰂄" : ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"][Math.min(4, Math.floor(bar.batteryPercent / 20))]}`
+            textFormat: Text.StyledText
+            text: `${bar.batteryPercent}% ` + bar.tint(bar.charging ? "󰂄" : ["󰁺", "󰁼", "󰁾", "󰂀", "󰁹"][Math.min(4, Math.floor(bar.batteryPercent / 20))],
+                bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : Theme.green, "")
             color: bar.batteryPercent <= 10 ? bar.urgent : bar.batteryPercent <= 20 ? bar.warning : bar.fg
         }
 
@@ -1716,6 +1789,7 @@ PanelWindow {
                 id: volumeIcon
                 anchors.centerIn: parent
                 text: bar.volumeIcon(bar.sink)
+                color: bar.sink?.audio && !bar.sink.audio.muted ? Theme.purple : bar.muted
             }
         }
 
@@ -1746,7 +1820,7 @@ PanelWindow {
                 id: btIcon
                 anchors.centerIn: parent
                 text: !bar.btAdapter?.enabled ? "󰂲" : bar.btConnected.length > 0 ? "󰂱" : "󰂯"
-                color: bar.btAdapter?.enabled ? bar.fg : bar.muted
+                color: bar.btAdapter?.enabled ? Theme.blue : bar.muted
             }
         }
 
@@ -1791,8 +1865,8 @@ PanelWindow {
                     : "󰓦"
                 color: st.errorCount > 0 ? bar.urgent
                     : st.paused || st.connectedCount === 0 ? bar.muted
-                    : st.syncing ? bar.accent
-                    : bar.fg
+                    : st.syncing ? Theme.green
+                    : Theme.blue
             }
         }
 
@@ -1826,7 +1900,7 @@ PanelWindow {
                 id: tsIcon
                 anchors.centerIn: parent
                 text: "󰖂"
-                color: !parent.ts.running ? bar.muted : parent.ts.exitNode ? bar.accent : bar.fg
+                color: !parent.ts.running ? bar.muted : parent.ts.exitNode ? Theme.green : Theme.blue
             }
         }
 
@@ -1851,7 +1925,7 @@ PanelWindow {
                 id: netIcon
                 anchors.centerIn: parent
                 text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
-                color: bar.wiredUp || bar.wifiNetwork ? bar.fg : bar.muted
+                color: bar.wiredUp || bar.wifiNetwork ? Theme.blue : bar.muted
             }
         }
 
@@ -1906,6 +1980,7 @@ PanelWindow {
                 id: themeIcon
                 anchors.centerIn: parent
                 text: Theme.dark ? "󰖔" : "󰖙"
+                color: Theme.dark ? Theme.purple : Theme.orange
             }
         }
 
@@ -1913,6 +1988,9 @@ PanelWindow {
         BarButton {
             id: bell
             implicitWidth: dndIcon.implicitWidth
+            // A ring on each notification that shows up (silenced ones don't)
+            watch: bar.notifications.shown
+            attention: "wiggle"
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true

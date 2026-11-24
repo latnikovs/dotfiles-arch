@@ -21,6 +21,12 @@ Singleton {
     readonly property color accent: dark ? "#88c0d0" : "#5e81ac"
     readonly property color warning: dark ? "#ebcb8b" : "#ba793e"
     readonly property color urgent: dark ? "#bf616a" : "#bf616a"
+    // Per-module tints on the bar: Frost and Aurora, darkened in light mode to read on Snow Storm
+    readonly property color teal: dark ? "#8fbcbb" : "#3f7f7e"
+    readonly property color blue: dark ? "#81a1c1" : "#4c6f94"
+    readonly property color green: dark ? "#a3be8c" : "#5d7b45"
+    readonly property color orange: dark ? "#d08770" : "#b25d3e"
+    readonly property color purple: dark ? "#b48ead" : "#8a5f86"
     readonly property string fontFamily: "JetBrainsMono Nerd Font"
 
     Process {

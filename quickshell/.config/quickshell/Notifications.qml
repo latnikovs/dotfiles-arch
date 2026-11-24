@@ -22,6 +22,8 @@ Scope {
     readonly property int maxLife: 30000
 
     property bool dnd: false
+    // Counts the notifications shown on screen this session; the bar's bell rings on each
+    property int shown: 0
     // Marks new mail, Teams and WhatsApp messages, and brings their app up when a notification is clicked
     required property Messaging messaging
 
@@ -200,6 +202,7 @@ Scope {
                 return;
             }
             n.tracked = true;
+            root.shown++;
             // Kept even when the app withdraws it (CloseRequested): web apps like Teams
             // close their own notifications seconds after showing them
             n.closed.connect(() => root.remember(entry));
