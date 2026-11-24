@@ -423,6 +423,13 @@ systemctl --user enable --now syncthing.service
 syncthing_id=$(syncthing/setup | sed -n 's/^Syncthing device ID: //p')
 note "Device ID: $syncthing_id"
 
+step 'User services at boot (linger)'
+# Lingering: the user's systemd manager starts at boot and outlives the last logout, so
+# the enabled user services (Syncthing, rootless Docker) run without a login. A logout,
+# a crashed Hyprland or a broken login screen then leaves sync and containers running,
+# and a disk unlocked without anyone typing (Tang, later) still comes back with them.
+sudo loginctl enable-linger "$USER"
+
 step 'Clock (chrony)'
 # chrony instead of systemd-timesyncd: timesyncd corrects a big offset only when it
 # starts and after that only slews, so a clock that jumps behind (a paused VM, a
