@@ -84,15 +84,15 @@ render() {
 		# One call for everything: this pane's own size and visibility, the
 		# glyphs and palette, then a line per session (S) and per live agent in
 		# it (A), in the same index order the Alt + 1..9 numbers follow.
-		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{?@claude_spin,#{@claude_spin},#{@ico_claude_busy}}	#{?@claude_ring,#{@claude_ring},#{@ico_claude_wait}}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@ico_branch}	#{@frame}	#{@thm_fg}	#{@thm_subtext_0}	#{@thm_overlay_1}	#{@dim}	#{@raise}	#{@thm_surface_2}	#{@thm_sky}	#{@icon_peach}	#{@icon_red}	#{@icon_green}	#{@icon_blue}
+		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{?@claude_spin,#{@claude_spin},#{@ico_claude_busy}}	#{?@claude_ring,#{@claude_ring},#{@ico_claude_wait}}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@ico_branch}	#{@frame}	#{@thm_fg}	#{@thm_subtext_0}	#{@thm_overlay_1}	#{@dim}	#{@raise}	#{@thm_sky}	#{@icon_peach}	#{@icon_red}	#{@icon_green}	#{@icon_blue}
 #{S/i:S	#{session_id}	#{session_name}	#{@ws_git}
 #{W:#{P:#{?#{E:@claude_live},A	#{pane_id}	#{E:@claude_shown}	#{?#{&&:#{window_active},#{pane_active}},1,0}	#{pane_title}
 ,}}}}") || exit 0
 
 		local width height own visible ico_busy ico_wait ico_idle ico_jobs ico_branch
-		local c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_s2 c_sky c_busy c_wait c_idle c_jobs
+		local c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_sky c_busy c_wait c_idle c_jobs
 		IFS=$'\t' read -r width height own visible ico_busy ico_wait ico_idle ico_jobs ico_branch \
-			c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_s2 c_sky c_busy c_wait c_idle c_jobs <<<"${data%%$'\n'*}"
+			c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_sky c_busy c_wait c_idle c_jobs <<<"${data%%$'\n'*}"
 
 		# The pane is a panel: @frame, the colour the status bar is drawn in too,
 		# so bar and sidebar read as one L around the work. Set as the pane's
@@ -121,9 +121,9 @@ render() {
 		# the panel the active tab uses too, with the accent down its left edge.
 		local band=$c_raise
 		local reset=$'\033[0m' bold=$'\033[1m' nobold=$'\033[22m'
-		local f_fg f_sub f_ov1 f_ov0 f_s2 f_sky b_band
+		local f_fg f_sub f_ov1 f_ov0 f_sky b_band
 		f_fg=$(rgb fg "$c_fg") f_sub=$(rgb fg "$c_sub") f_ov1=$(rgb fg "$c_ov1")
-		f_ov0=$(rgb fg "$c_ov0") f_s2=$(rgb fg "$c_s2") f_sky=$(rgb fg "$c_sky")
+		f_ov0=$(rgb fg "$c_ov0") f_sky=$(rgb fg "$c_sky")
 		b_band=$(rgb bg "$band")
 
 		# Every line goes through row(), which keeps the click map in step
@@ -167,21 +167,27 @@ render() {
 		local nap=5
 		[[ ${data#*$'\n'} =~ $'\t'(busy|wait)$'\t' ]] && nap=0.3
 
-		local n edge bg num_fg name_fg x_fg line pad label agents count k state active title glyph colour tree title_fg
+		local n edge bg num_fg name_fg line pad label agents count k state active title glyph colour tree title_fg
 		for ((n = 0; n <= i; n++)); do
 			id=${s_id[n]} name=${s_name[n]:0:$((width - 8))} branch=${s_branch[n]}
 			label=$((n + 1))
+			line=""
 			if [ "$id" = "$own" ]; then
-				bg=$b_band edge="$f_sky▌" num_fg=$f_sky name_fg="$f_fg$bold" x_fg=$f_ov1
+				bg=$b_band edge="$f_sky▌" num_fg=$f_sky name_fg="$f_fg$bold"
+				# The close button, on the current workspace only, a column in
+				# from the right edge; the 'x' entry in the map is the click
+				# that lands on it. Elsewhere those columns are the row's.
+				pad=$((width - 2 - (3 + ${#label} + ${#name})))
+				line=$(printf '%*s%s×' "$((pad > 0 ? pad : 0))" '' "$f_ov1")
 			else
-				bg="" edge=" " num_fg=$f_ov0 name_fg=$f_sub x_fg=$f_s2
+				bg="" edge=" " num_fg=$f_ov0 name_fg=$f_sub
 			fi
-			# The close button, a column in from the right edge; 'x' entries
-			# in the map are the clicks that land on it.
-			pad=$((width - 2 - (3 + ${#label} + ${#name})))
-			line=$(printf '%s%s %s%s %s%s%s%*s%s×' "$bg" "$edge" "$num_fg" "$label" "$name_fg" "$name" "$nobold" \
-				"$((pad > 0 ? pad : 0))" '' "$x_fg")
-			row "$line " "@=$id" "x@=$id"
+			line="$bg$edge $num_fg$label $name_fg$name$nobold$line"
+			if [ "$id" = "$own" ]; then
+				row "$line" "@=$id" "x@=$id"
+			else
+				row "$line" "@=$id"
+			fi
 			# The branch and the agents hang off the number's column, so their
 			# text lines up under the workspace name.
 			[ -n "$branch" ] && row "$bg$edge $f_ov0$ico_branch $f_ov1${branch:0:$((width - 6))}" "@=$id"
