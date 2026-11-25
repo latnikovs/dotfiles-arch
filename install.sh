@@ -241,6 +241,20 @@ set -x
 
 # ── Install ──────────────────────────────────────────────────────────────────
 section packages Packages
+# Arch Linux ARM (the VM): its default mirrorlist is a single GeoIP redirector, which can
+# send every request to a mirror behind on sync, and pacman then has nothing to fall back
+# to. Direct mirrors first, the redirector last. (x86_64 gets reflector further down.)
+if [[ $(uname -m) == aarch64 ]]; then
+    step 'Mirrors (Arch Linux ARM)'
+    sudo install -Dm644 /dev/stdin /etc/pacman.d/mirrorlist <<'CONF'
+# Written by dotfiles/install.sh
+Server = http://de.mirror.archlinuxarm.org/$arch/$repo
+Server = http://de4.mirror.archlinuxarm.org/$arch/$repo
+Server = http://dk.mirror.archlinuxarm.org/$arch/$repo
+Server = http://hu.mirror.archlinuxarm.org/$arch/$repo
+Server = http://mirror.archlinuxarm.org/$arch/$repo
+CONF
+fi
 step 'System packages'
 # -Syu: sync first, or a package the mirror updated since the last sync 404s; the upgrade
 # comes with it, as Arch does not support partial upgrades (-Sy alone)
