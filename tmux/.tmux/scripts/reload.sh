@@ -34,3 +34,8 @@ while read -r opt; do
 done < <(tmux show -g | sed -n 's/^\(@thm_[a-z0-9_]*\) .*/\1/p')
 
 tmux source-file "${TMUX_CONF:-$HOME/.tmux.conf}"
+
+# The scratch server (Prefix + t, see scratch.conf) follows the flavor too. Its
+# palette is set without -o, so a plain source is enough. Nothing to do when it
+# is not running.
+tmux -L scratch source-file "$HOME/.tmux/scratch.conf" 2>/dev/null || true

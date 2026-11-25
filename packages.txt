@@ -91,6 +91,9 @@ unzip
 # 7z and other archives (7z, rar, iso, ...)
 7zip
 tmux
+# builds tmux-fingers (prefix F hints), see install.sh
+crystal
+shards
 lazygit
 zoxide
 direnv

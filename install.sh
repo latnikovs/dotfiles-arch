@@ -298,6 +298,17 @@ if [[ ! -d $HOME/.tmux/plugins/tpm ]]; then
     git clone https://github.com/tmux-plugins/tpm "$HOME/.tmux/plugins/tpm"
 fi
 "$HOME/.tmux/plugins/tpm/bin/install_plugins"
+# tmux-fingers is a Crystal program. Its plugin offers a prebuilt binary only for
+# x86_64 and the AUR package is x86_64-only, so it is built here from the plugin's
+# own checkout, on any arch. Rebuilt when the checkout's version moves past the binary's.
+fingers=$HOME/.tmux/plugins/tmux-fingers
+if [[ -d $fingers ]]; then
+    want=$(sed -n 's/^version: *//p' "$fingers/shard.yml")
+    have=$("$fingers/bin/tmux-fingers" version 2>/dev/null || true)
+    if [[ $have != "$want" ]]; then
+        (cd "$fingers" && WIZARD_INSTALLATION_METHOD=build-from-source shards build --production)
+    fi
+fi
 
 step 'mise and dev tools'
 # mise: dev tools from ~/.config/mise/config.toml (Node, pnpm, Go, Java, …). Arch Linux
