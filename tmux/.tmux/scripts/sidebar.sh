@@ -62,6 +62,15 @@ locked() {
 	flock "$lock" "$script" "$@"
 }
 
+# rgb <fg|bg> <#rrggbb>: the truecolor escape for it, or nothing for a value
+# that is not a colour (a palette not loaded yet).
+rgb() {
+	[[ $2 == \#?????? ]] || return 0
+	local layer=38
+	[ "$1" = bg ] && layer=48
+	printf '\033[%d;2;%d;%d;%dm' "$layer" "0x${2:1:2}" "0x${2:3:2}" "0x${2:5:2}"
+}
+
 render() {
 	local pane=$TMUX_PANE
 	# No cursor, no wrapping: a line too long for the pane is cut, not folded
@@ -69,109 +78,152 @@ render() {
 	printf '\033[?25l\033[?7l'
 	trap 'printf "\033[?25h\033[?7h"' EXIT
 
-	local last=""
+	local last="" panel=""
 	while :; do
 		local data
-		# One call for everything: this pane's own size and visibility, then a
-		# line per session (S) and per live agent in it (A), in the same index
-		# order the Alt + 1..9 numbers follow.
-		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{@ico_claude_busy}	#{@ico_claude_wait}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@theme_mode}	#{@thm_surface_1}	#{@thm_blue}
+		# One call for everything: this pane's own size and visibility, the
+		# glyphs and palette, then a line per session (S) and per live agent in
+		# it (A), in the same index order the Alt + 1..9 numbers follow.
+		data=$(tmux display-message -p -t "$pane" "#{pane_width}	#{pane_height}	#{session_id}	#{&&:#{window_active},#{session_attached}}	#{?@claude_spin,#{@claude_spin},#{@ico_claude_busy}}	#{?@claude_ring,#{@claude_ring},#{@ico_claude_wait}}	#{@ico_claude_idle}	#{@ico_claude_jobs}	#{@ico_branch}	#{@frame}	#{@thm_fg}	#{@thm_subtext_0}	#{@thm_overlay_1}	#{@dim}	#{@raise}	#{@thm_surface_2}	#{@thm_sky}	#{@icon_peach}	#{@icon_red}	#{@icon_green}	#{@icon_blue}
 #{S/i:S	#{session_id}	#{session_name}	#{@ws_git}
 #{W:#{P:#{?#{E:@claude_live},A	#{pane_id}	#{E:@claude_shown}	#{?#{&&:#{window_active},#{pane_active}},1,0}	#{pane_title}
 ,}}}}") || exit 0
 
-		local width height own visible ico_busy ico_wait ico_idle ico_jobs mode band accent
-		IFS=$'\t' read -r width height own visible ico_busy ico_wait ico_idle ico_jobs mode band accent <<<"${data%%$'\n'*}"
-		# On dark, mauve text alone is too quiet for the selected workspace, so its
-		# row is drawn in the theme's blue on a surface band, with a blue bar in
-		# the left column. Light keeps plain mauve.
-		local sel_bg="" sel_bar=" " sel_fg=$'\033[35m'
-		if [ "$mode" = dark ] && [[ $band == \#?????? && $accent == \#?????? ]]; then
-			sel_bg=$(printf '\033[48;2;%d;%d;%dm' "0x${band:1:2}" "0x${band:3:2}" "0x${band:5:2}")
-			sel_fg=$(printf '\033[38;2;%d;%d;%dm' "0x${accent:1:2}" "0x${accent:3:2}" "0x${accent:5:2}")
-			sel_bar="$sel_fg▌"$'\033[39m'
+		local width height own visible ico_busy ico_wait ico_idle ico_jobs ico_branch
+		local c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_s2 c_sky c_busy c_wait c_idle c_jobs
+		IFS=$'\t' read -r width height own visible ico_busy ico_wait ico_idle ico_jobs ico_branch \
+			c_mantle c_fg c_sub c_ov1 c_ov0 c_raise c_s2 c_sky c_busy c_wait c_idle c_jobs <<<"${data%%$'\n'*}"
+
+		# The pane is a panel: @frame, the colour the status bar is drawn in too,
+		# so bar and sidebar read as one L around the work. Set as the pane's
+		# own style, which every default-background cell takes, so it follows a
+		# flavor flip without a redraw of its own.
+		if [ -n "$c_mantle" ] && [ "$c_mantle" != "$panel" ]; then
+			tmux set-option -p -t "$pane" window-style "bg=$c_mantle" \; \
+				set-option -p -t "$pane" window-active-style "bg=$c_mantle"
+			panel=$c_mantle
 		fi
 
-		if [ "$visible" = 1 ]; then
-			# Back to its width whenever it is off it: tmux scales every pane
-			# when the window resizes, and a window made in a detached session
-			# is 80 wide until a client attaches to it.
-			if [ "$width" != "$(width)" ]; then
-				tmux resize-pane -t "$pane" -x "$(width)"
-				continue
+		if [ "$visible" != 1 ]; then
+			# Off screen: nothing to keep fresh until something signals.
+			tmux wait-for sidebar 2>/dev/null || exit 0
+			continue
+		fi
+		# Back to its width whenever it is off it: tmux scales every pane when
+		# the window resizes, and a window made in a detached session is 80
+		# wide until a client attaches to it.
+		if [ "$width" != "$(width)" ]; then
+			tmux resize-pane -t "$pane" -x "$(width)"
+			continue
+		fi
+
+		# The current workspace is a card: a band in @raise, the step up from
+		# the panel the active tab uses too, with the accent down its left edge.
+		local band=$c_raise
+		local reset=$'\033[0m' bold=$'\033[1m' nobold=$'\033[22m'
+		local f_fg f_sub f_ov1 f_ov0 f_s2 f_sky b_band
+		f_fg=$(rgb fg "$c_fg") f_sub=$(rgb fg "$c_sub") f_ov1=$(rgb fg "$c_ov1")
+		f_ov0=$(rgb fg "$c_ov0") f_s2=$(rgb fg "$c_s2") f_sky=$(rgb fg "$c_sky")
+		b_band=$(rgb bg "$band")
+
+		# Every line goes through row(), which keeps the click map in step
+		# and stops at the bottom edge: a line past it would scroll the pane.
+		local out="" map="" y=0
+		# Lines are padded to the full width rather than ended with an erase:
+		# tmux erases in the pane's style, not the current background, which
+		# would cut the card's band off at the end of the text.
+		row() { # row <text> [map-key...]
+			[ "$y" -lt "$height" ] || return 0
+			local plain=$1 pad
+			while [[ $plain =~ ^(.*)$'\033'\[[0-9\;]*m(.*)$ ]]; do plain=${BASH_REMATCH[1]}${BASH_REMATCH[2]}; done
+			pad=$((width - ${#plain}))
+			out+="$1$(printf '%*s' "$((pad > 0 ? pad : 0))" '')$reset"$'\033[K\n'
+			local key
+			for key in "${@:2}"; do map+=" ${key//@/$y}"; done
+			y=$((y + 1))
+		}
+
+		row ""
+		row "  $f_ov0${bold}WORKSPACES$nobold"
+		row ""
+
+		# Sessions with their agents, gathered first: an agent's tree line
+		# depends on whether another follows it.
+		local -a s_id=() s_name=() s_branch=() s_agents=()
+		local kind id name branch rest i=-1
+		while IFS=$'\t' read -r kind id name branch rest; do
+			case "$kind" in
+			S)
+				i=$((i + 1))
+				s_id[i]=$id s_name[i]=$name s_branch[i]=${branch# } s_agents[i]=""
+				;;
+			A) [ "$i" -ge 0 ] && s_agents[i]+="$id"$'\t'"$name"$'\t'"$branch"$'\t'"$rest"$'\n' ;;
+			esac
+		done <<<"${data#*$'\n'}"
+
+		# An agent busy or waiting animates (claude-spin.sh keeps the frame),
+		# so while there is one the sidebar redraws a few times a second
+		# instead of every five. A pass costs ~10ms.
+		local nap=5
+		[[ ${data#*$'\n'} =~ $'\t'(busy|wait)$'\t' ]] && nap=0.3
+
+		local n edge bg num_fg name_fg x_fg line pad label agents count k state active title glyph colour tree title_fg
+		for ((n = 0; n <= i; n++)); do
+			id=${s_id[n]} name=${s_name[n]:0:$((width - 8))} branch=${s_branch[n]}
+			label=$((n + 1))
+			if [ "$id" = "$own" ]; then
+				bg=$b_band edge="$f_sky▌" num_fg=$f_sky name_fg="$f_fg$bold" x_fg=$f_ov1
+			else
+				bg="" edge=" " num_fg=$f_ov0 name_fg=$f_sub x_fg=$f_s2
 			fi
-			local out="" map="" y=1 n=0 kind id name branch rest current="" active state title glyph colour line pad
-			# Row 0 stays blank, level with the pane borders' title row.
-			out+=$'\033[K\n'
-			while IFS=$'\t' read -r kind id name branch rest; do
-				case "$kind" in
-				S)
-					n=$((n + 1))
-					current=$id
-					name=${name:0:$((width - 7))}
-					# The workspace this sidebar is in, in the active window
-					# chip's mauve (blue on a band on dark); the rest plain. No full
-					# reset inside the line, so the band runs to the right edge
-					# through the trailing erase.
-					if [ "$id" = "$own" ]; then
-						line=$(printf '%s%s\033[2m%d\033[22m \033[1m%s%s\033[22;39m' "$sel_bg" "$sel_bar" "$n" "$sel_fg" "$name")
-					else
-						line=$(printf ' \033[2m%d\033[22m %s' "$n" "$name")
-					fi
-					# The close button, a column in from the right edge; 'x'
-					# entries in the map are the clicks that land on it.
-					pad=$((width - 2 - (3 + ${#n} + ${#name})))
-					line+=$(printf '%*s\033[2m×\033[22m' "$((pad > 0 ? pad : 0))" '')
-					out+="$line"$'\033[K\033[0m\n'
-					map+=" $y=$id x$y=$id"
-					y=$((y + 1))
-					if [ -n "$branch" ]; then
-						out+=$(printf '   \033[2m%s\033[0m' "${branch# }")$'\033[K\n'
-						map+=" $y=$id"
-						y=$((y + 1))
-					fi
-					;;
-				A)
-					# For agent lines the fields are pane, state, whether it is
-					# the active pane of its session's current window, and title.
-					state=$name active=$branch title=$rest
+			# The close button, a column in from the right edge; 'x' entries
+			# in the map are the clicks that land on it.
+			pad=$((width - 2 - (3 + ${#label} + ${#name})))
+			line=$(printf '%s%s %s%s %s%s%s%*s%s×' "$bg" "$edge" "$num_fg" "$label" "$name_fg" "$name" "$nobold" \
+				"$((pad > 0 ? pad : 0))" '' "$x_fg")
+			row "$line " "@=$id" "x@=$id"
+			# The branch and the agents hang off the number's column, so their
+			# text lines up under the workspace name.
+			[ -n "$branch" ] && row "$bg$edge $f_ov0$ico_branch $f_ov1${branch:0:$((width - 6))}" "@=$id"
+
+			agents=${s_agents[n]%$'\n'}
+			if [ -n "$agents" ]; then
+				count=$(grep -c '' <<<"$agents") k=0
+				while IFS=$'\t' read -r id state active title; do
+					k=$((k + 1))
+					tree="├"
+					[ "$k" = "$count" ] && tree="╰"
+					# The same accents as the dots on the window tabs.
 					case "$state" in
-					busy) glyph=$ico_busy colour=33 ;;
-					wait) glyph=$ico_wait colour=31 ;;
-					jobs) glyph=$ico_jobs colour=34 ;;
-					*) glyph=$ico_idle colour=32 ;;
+					busy) glyph=$ico_busy colour=$c_busy ;;
+					wait) glyph=$ico_wait colour=$c_wait ;;
+					jobs) glyph=$ico_jobs colour=$c_jobs ;;
+					*) glyph=$ico_idle colour=$c_idle ;;
 					esac
 					# Claude puts its own state glyph in front of the title.
 					title=$(sed -E 's/^[^[:alnum:]]+ //' <<<"$title")
-					title=${title:0:$((width - 6))}
-					# The agent you are in, in the workspace this sidebar is in:
-					# drawn like that workspace's row, band and bar included.
-					if [ "$current" = "$own" ] && [ "$active" = 1 ]; then
-						out+=$(printf '%s%s  \033[%dm%s\033[39m \033[1m%s%s\033[22;39m' "$sel_bg" "$sel_bar" "$colour" "$glyph" "$sel_fg" "$title")$'\033[K\033[0m\n'
-					else
-						out+=$(printf '   \033[%dm%s\033[0m %s' "$colour" "$glyph" "$title")$'\033[K\n'
-					fi
-					map+=" $y=$id"
-					y=$((y + 1))
-					;;
-				esac
-			done <<<"${data#*$'\n'}"
-			# Room permitting, a way in for the mouse to the project picker.
-			if [ $((y + 2)) -le "$height" ]; then
-				out+=$'\033[K\n'
-				out+=$'\033[2m + new workspace\033[0m\033[K\n'
-				map+=" $((y + 1))=new"
+					title=${title:0:$((width - 7))}
+					# The agent you are in, in this workspace: bright.
+					title_fg=$f_sub
+					[ "${s_id[n]}" = "$own" ] && [ "$active" = 1 ] && title_fg="$f_fg$bold"
+					row "$bg$edge $f_ov0$tree $(rgb fg "$colour")$glyph $title_fg$title$nobold" "@=$id"
+				done <<<"$agents"
 			fi
-			if [ "$out" != "$last" ]; then
-				printf '\033[H%s\033[J' "$out"
-				tmux set-option -p -t "$pane" @sidebar_map "$map"
-				last=$out
-			fi
-			timeout 5 tmux wait-for sidebar 2>/dev/null
-		else
-			# Off screen: nothing to keep fresh until something signals.
-			tmux wait-for sidebar 2>/dev/null || exit 0
+		done
+
+		# Room permitting, a way in for the mouse to the project picker, set
+		# off from the list by a blank line.
+		if [ $((y + 2)) -lt "$height" ]; then
+			row ""
+			row "  $f_sky+ ${f_ov1}new workspace" "@=new"
 		fi
+
+		if [ "$out" != "$last" ]; then
+			printf '\033[H%s\033[J' "$out"
+			tmux set-option -p -t "$pane" @sidebar_map "$map"
+			last=$out
+		fi
+		timeout "$nap" tmux wait-for sidebar 2>/dev/null
 	done
 }
 

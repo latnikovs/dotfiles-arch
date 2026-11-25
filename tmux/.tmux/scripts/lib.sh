@@ -64,3 +64,14 @@ pill() {
 	[ -n "$label" ] && printf '#[fg=%s]%s' "$text_fg" "$label"
 	printf '#[fg=%s,bg=default,nobold]%s' "$surface" "$CAP_R"
 }
+
+# chip <colour> <icon> [label]
+# What the bar's right side draws now: no pill, just the icon in <colour> and
+# the label in PILL_TEXT (or <colour> when that is empty), on the bar's own
+# background, the frame. Spacing is the caller's, as for pill().
+chip() {
+	local colour="$1" icon="$2" label="${3:-}"
+	printf '#[fg=%s]%s' "$colour" "$icon"
+	[ -n "$label" ] && printf '#[fg=%s]%s' "${PILL_TEXT:-$colour}" "$label"
+	return 0
+}

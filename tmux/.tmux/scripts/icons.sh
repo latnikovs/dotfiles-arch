@@ -19,6 +19,7 @@ tmux set -g @ico_prefix $'\U000f030c'   # md-keyboard
 tmux set -g @ico_zoom $'\U000f0293'     # md-fullscreen
 tmux set -g @ico_clock $'\U000f0150'    # md-clock_outline
 tmux set -g @ico_date $'\U000f00ed'     # md-calendar
+tmux set -g @ico_branch $'\U000f062c'   # md-source-branch, as lib.sh's ICO_BRANCH
 
 # Window icons, keyed off #{pane_current_command} by the @win_icon map.
 # Not MDI: Material has no vim glyph, and the f085e this used to point at is
@@ -40,13 +41,15 @@ tmux set -g @ico_shell $'\U000f018d'    # md-console
 tmux set -g @ico_claude $'\U000f1545'   # md-shimmer
 tmux set -g @ico_default $'\U000f0349'  # md-magnify
 
-# Claude Code state, appended to a window chip by @claude_dot and listed in the
-# sidebar. One family on purpose: all four are the same MDI circle with a
-# different interior, so they read as three values of one thing rather than as
-# three unrelated pictures -- and the interior says which without needing the
-# colour, which the window chip's mauve badge does not always give enough
-# contrast to carry.
-tmux set -g @ico_claude_busy $'\U000f0996'  # md-progress_clock: a turn is running
-tmux set -g @ico_claude_wait $'\U000f02d7'  # md-help_circle: it is asking you something
-tmux set -g @ico_claude_idle $'\U000f0133'  # md-checkbox_marked_circle: turn finished
-tmux set -g @ico_claude_jobs $'\U000f07c3'  # md-dots_horizontal_circle: finished, a background command still running
+# Claude Code state, appended to a window tab by @claude_dot and listed in the
+# sidebar. An agent is a star: it twinkles while it thinks (claude-spin.sh
+# animates it through Claude Code's own spinner, ✢ ✳ ✶ ✻ ✽, so the bar moves
+# the way the agent's own pane does), it rings a bell when it needs you, and it
+# settles into a still ✦ when the turn is done. A dotted ring means it is done
+# but a command it started is still running in the background.
+# The glyphs here are the stills: what is drawn when nothing animates them.
+# The stars come from the fallback font; JetBrains Mono has none of them.
+tmux set -g @ico_claude_busy '✻'               # mid-turn (animated by claude-spin.sh)
+tmux set -g @ico_claude_wait $'\U000f009e'      # md-bell_ring: it is asking you something (rings)
+tmux set -g @ico_claude_idle '✦'               # turn finished
+tmux set -g @ico_claude_jobs '◌'               # finished, a background command still running

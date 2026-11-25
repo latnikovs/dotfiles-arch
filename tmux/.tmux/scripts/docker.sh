@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # tmux status module: the container engine, and how much is running on it.
-# Usage: docker.sh <surface> <accent> <starting-accent>
+# Usage: docker.sh <quiet> <accent> <starting-accent>
 #
 # Prints nothing at all when there is no engine up, which is the point: a docker
 # pill that is always there tells you nothing, and a machine with the VM stopped
@@ -26,7 +26,7 @@ set -u
 # shellcheck source=lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-surface="${1:-#363a4f}"
+surface="${1:-#616e88}"
 accent="${2:-#8aadf4}"
 starting="${3:-#f5a97f}"
 
@@ -53,12 +53,17 @@ done
 # containers on a laptop for that to matter.
 if json="$(curl -s --max-time 1 --unix-socket "$sock" http://localhost/v1.41/containers/json 2>/dev/null)"; then
 	count="$(printf '%s' "$json" | grep -o '"Id"' | wc -l | tr -d ' ')"
-	pill "$surface" "$accent" "$ICO_DOCKER" " $count"
+	# The whale alone says the engine is up; a number only once something runs.
+	if [ "$count" -gt 0 ]; then
+		chip "$accent" "$ICO_DOCKER" " $count"
+	else
+		chip "$surface" "$ICO_DOCKER"
+	fi
 	exit 0
 fi
 
 # Socket present, daemon silent. Only claim it is coming up if something is
 # actually booting it.
 if pgrep -f 'limactl hostagent|colima' >/dev/null 2>&1; then
-	pill "$surface" "$starting" "$ICO_DOCKER" " ..."
+	chip "$starting" "$ICO_DOCKER" " …"
 fi

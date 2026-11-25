@@ -104,14 +104,15 @@ clear)
 	;;
 esac
 
-# The busy glyph animates, and an animation needs a clock tmux does not have;
-# claude-spin.sh is that clock. It is a singleton and exits by itself once no
-# pane is busy, so starting it on every busy event is the whole of the wiring.
+# The busy and wait glyphs animate, and an animation needs a clock tmux does not
+# have; claude-spin.sh is that clock. It is a singleton and exits by itself once
+# no pane is busy or waiting, so starting it on every such event is the whole of
+# the wiring.
 #
 # Fully detached, with all three fds closed off: it outlives this hook by
 # design, and a hook that leaves a pipe open to a living child is a hook Claude
 # waits on.
-if [ "$state" = busy ]; then
+if [ "$state" = busy ] || [ "$state" = wait ]; then
 	nohup "$(dirname "${BASH_SOURCE[0]}")/claude-spin.sh" \
 		>/dev/null 2>&1 </dev/null &
 	disown 2>/dev/null || true
