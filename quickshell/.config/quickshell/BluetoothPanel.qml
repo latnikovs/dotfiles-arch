@@ -1,4 +1,4 @@
-// Bluetooth dropdown, from the Bluetooth icon (BlueZ): an on/off switch, paired devices, and
+// Bluetooth page of the control center (BlueZ; also the Bluetooth icon): an on/off switch, paired devices, and
 // devices found nearby while it's open. Click a device to connect, disconnect, or pair.
 // There's no pairing agent, so devices that show a PIN (keyboards) need `bluetoothctl`.
 import QtQuick
@@ -6,7 +6,7 @@ import QtQuick.Layouts
 import Quickshell
 import Quickshell.Bluetooth
 
-Dropdown {
+Page {
     id: panel
 
     readonly property var adapter: Bluetooth.defaultAdapter

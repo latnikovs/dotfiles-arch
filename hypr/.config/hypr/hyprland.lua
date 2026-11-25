@@ -565,6 +565,7 @@ bind(mainMod .. " + CTRL + A",       "Audio", hl.dsp.exec_cmd(bar .. "toggleAudi
 bind(mainMod .. " + CTRL + W",       "Network", hl.dsp.exec_cmd(bar .. "toggleNetwork"))
 bind(mainMod .. " + CTRL + B",       "Bluetooth", hl.dsp.exec_cmd(bar .. "toggleBluetooth"))
 bind(mainMod .. " + CTRL + T",       "Tailscale", hl.dsp.exec_cmd(bar .. "toggleTailscale"))
+bind(mainMod .. " + CTRL + C",       "Control center", hl.dsp.exec_cmd(bar .. "toggleControlCenter"))
 
 -- Reminders (scripts/remind, listed and fired by the bar), on Omarchy's keys
 bind(mainMod .. " + CTRL + R",       "New reminder", hl.dsp.exec_cmd("~/.config/hypr/scripts/remind"))

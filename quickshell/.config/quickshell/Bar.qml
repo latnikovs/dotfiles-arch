@@ -1,5 +1,6 @@
-// Top bar: workspaces on the left, caffeine toggle, reminders, clock (with calendar) and weather in the middle, screen recording/crashed programs/pending updates/tray/keyboard layout/
-// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/display/notifications on the right. Mail and Teams follow the weather.
+// Top bar: workspaces on the left, caffeine (while on), reminders (while set), clock (with calendar) and weather in the middle, screen recording/crashed programs/pending updates/tray/keyboard layout/
+// CPU/RAM (each with its top processes)/battery/microphone in use/volume/Bluetooth/Syncthing/Tailscale/network/control center/notifications on the right. Mail and Teams follow the weather.
+// Bluetooth, Syncthing, Tailscale and network show only while their state is unusual; the control center (ControlCenter.qml) has them all.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -55,7 +56,7 @@ PanelWindow {
     // in the layout selector Up/Down (k/j) move and Enter picks; a Wi-Fi password prompt takes every key
     function panelKey(event) {
         const k = event.key;
-        if (networkPanel.open && networkPanel.handleKey(event)) {
+        if (controlCenter.open && controlCenter.handleKey(event)) {
             event.accepted = true;
             return;
         }
@@ -95,16 +96,12 @@ PanelWindow {
         layoutOpen = false;
         notifications.historyOpen = false;
         audioPanel.open = false;
-        networkPanel.open = false;
-        bluetoothPanel.open = false;
-        tailscalePanel.open = false;
-        syncthingPanel.open = false;
-        displayPanel.open = false;
         updatesPanel.open = false;
         crashesPanel.open = false;
         remindersPanel.open = false;
         cpuPanel.open = false;
         memPanel.open = false;
+        controlCenter.open = false;
     }
 
     function toggleDropdown(panel) {
@@ -117,27 +114,49 @@ PanelWindow {
         toggleDropdown(audioPanel);
     }
 
+    // The control center, on its tiles or straight on one of its pages; from the tiles a page
+    // slides in, otherwise the control center opens on it
+    function toggleControlCenter() {
+        toggleDropdown(controlCenter);
+    }
+
+    function pageOpen(name): bool {
+        return controlCenter.open && controlCenter.page === name;
+    }
+
+    function togglePage(name) {
+        if (controlCenter.open && controlCenter.page === name) {
+            controlCenter.open = false;
+        } else if (controlCenter.open) {
+            controlCenter.show(name);
+        } else {
+            closePanels();
+            controlCenter.show(name);
+            controlCenter.open = true;
+        }
+    }
+
     function toggleNetwork() {
-        toggleDropdown(networkPanel);
+        togglePage("network");
     }
 
     function toggleBluetooth() {
         if (btAdapter)
-            toggleDropdown(bluetoothPanel);
+            togglePage("bluetooth");
     }
 
     function toggleTailscale() {
         if (tailscale.available)
-            toggleDropdown(tailscalePanel);
+            togglePage("tailscale");
     }
 
     function toggleSyncthing() {
         if (syncthing.available)
-            toggleDropdown(syncthingPanel);
+            togglePage("syncthing");
     }
 
     function toggleDisplay() {
-        toggleDropdown(displayPanel);
+        togglePage("display");
     }
 
     function toggleUpdates() {
@@ -373,9 +392,9 @@ PanelWindow {
         }
     }
 
-    // ---- Reminders, left of the clock (Reminders.qml): the time to the next one; left click lists
-    //      them (RemindersPanel.qml), right click sets another. With none set, a dim alarm icon
-    //      that lights up on hover; either click sets one.
+    // ---- Reminders, left of the clock (Reminders.qml), only while one is set: the time to the next
+    //      one; left click lists them (RemindersPanel.qml), right click sets another. With none set,
+    //      the control center sets one.
 
     BarButton {
         id: remindersButton
@@ -384,12 +403,13 @@ PanelWindow {
             : `${next.message} in ${bar.reminders.left(next)}`
                 + (bar.reminders.count > 1 ? ` (+${bar.reminders.count - 1} more)` : "")
 
+        visible: next !== null
         anchors {
             right: clockArea.left
-            rightMargin: 18
+            rightMargin: visible ? 18 : 0
             verticalCenter: parent.verticalCenter
         }
-        width: remindersText.implicitWidth
+        width: visible ? remindersText.implicitWidth : 0
         height: parent.height
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         hoverEnabled: true
@@ -414,20 +434,21 @@ PanelWindow {
         }
     }
 
-    // ---- Caffeine toggle (Caffeine.qml), left of the reminders: dim while off, in the
-    //      unread mail/Teams colour while on; a click flips it.
+    // ---- Caffeine (Caffeine.qml), left of the reminders, only while on (the control center turns
+    //      it on), in the unread mail/Teams colour; a click turns it off.
 
     Row {
         anchors {
             right: remindersButton.left
-            rightMargin: 14
+            rightMargin: remindersButton.visible ? 14 : 18
             verticalCenter: parent.verticalCenter
         }
         height: parent.height
         spacing: 12
 
         BarButton {
-            readonly property string tip: bar.caffeine.on ? "Caffeine on: the screen stays awake" : "Caffeine off"
+            readonly property string tip: "Caffeine on: the screen stays awake"
+            visible: bar.caffeine.on
             width: caffeineText.implicitWidth
             height: parent.height
             hoverEnabled: true
@@ -1134,47 +1155,37 @@ PanelWindow {
         return ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"][Math.min(4, Math.floor(strength * 5))];
     }
 
-    NetworkPanel {
-        id: networkPanel
-        bar: bar
-        button: netButton
-    }
 
     // ---- Bluetooth (BlueZ), hidden without an adapter
 
     readonly property var btAdapter: Bluetooth.defaultAdapter
     readonly property var btConnected: btAdapter?.devices.values.filter(d => d.connected) ?? []
 
-    BluetoothPanel {
-        id: bluetoothPanel
-        bar: bar
-        button: btButton
-    }
 
     // ---- Tailscale, hidden without tailscaled
 
-    TailscalePanel {
-        id: tailscalePanel
-        bar: bar
-        button: tsButton
-        tailscale: bar.tailscale
-    }
 
     // ---- Syncthing, hidden while it isn't running
 
-    SyncthingPanel {
-        id: syncthingPanel
+
+    // ---- Display: scale and brightness of this bar's monitor, from the control center
+
+    readonly property var displayMonitor: Hyprland.monitorFor(bar.screen)
+
+
+    // ---- Control center (ControlCenter.qml): a tile per setting, each opening its dropdown
+
+    ControlCenter {
+        id: controlCenter
         bar: bar
-        button: stButton
+        button: ccButton
+        tailscale: bar.tailscale
         syncthing: bar.syncthing
-    }
-
-    // ---- Display: scale and brightness of this bar's monitor
-
-    DisplayPanel {
-        id: displayPanel
-        bar: bar
-        button: displayButton
+        caffeine: bar.caffeine
+        reminders: bar.reminders
+        notifications: bar.notifications
+        // A scale set by the key or the script isn't in Hyprland's monitor list until asked
+        onOpenChanged: if (open) Hyprland.refreshMonitors()
     }
 
     UpdatesPanel {
@@ -1191,11 +1202,19 @@ PanelWindow {
         crashes: bar.crashes
     }
 
-    RemindersPanel {
+    Dropdown {
         id: remindersPanel
         bar: bar
         button: remindersButton
-        reminders: bar.reminders
+        panelWidth: 400
+
+        RemindersPanel {
+            width: parent.width
+            bar: bar
+            reminders: bar.reminders
+            open: remindersPanel.open
+            onCloseRequested: remindersPanel.open = false
+        }
     }
 
     // ---- CPU usage from /proc/stat, polled every 5s; left click lists the busiest processes (ProcessPanel.qml)
@@ -1793,20 +1812,20 @@ PanelWindow {
             }
         }
 
-        // Bluetooth: left click opens the device list, right click turns it on or off
+        // Bluetooth, only while a device is connected: left click opens the device list, right click turns it off
         BarButton {
             id: btButton
             readonly property string tip: !bar.btAdapter?.enabled ? "Bluetooth off"
                 : bar.btConnected.length > 0 ? bar.btConnected.map(d => d.name).join(", ") : "Bluetooth on"
 
-            visible: bar.btAdapter !== null
+            visible: bar.btAdapter !== null && bar.btConnected.length > 0
             implicitWidth: btIcon.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse && !bluetoothPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
-            onTipChanged: if (containsMouse && !bluetoothPanel.open) bar.showTooltip(this, tip)
+            onContainsMouseChanged: containsMouse && !bar.pageOpen("bluetooth") ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !bar.pageOpen("bluetooth")) bar.showTooltip(this, tip)
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
                     bar.btAdapter.enabled = !bar.btAdapter.enabled;
@@ -1824,9 +1843,8 @@ PanelWindow {
             }
         }
 
-        // Syncthing: left click opens the folders and devices, right click pauses or resumes.
-        // Accent while syncing, red on errors, dim when paused or with no
-        // device connected.
+        // Syncthing, only while syncing, paused or failing: left click opens the folders and devices,
+        // right click pauses or resumes. Green while syncing, red on errors, dim when paused.
         BarButton {
             id: stButton
             readonly property var st: bar.syncthing
@@ -1838,14 +1856,14 @@ PanelWindow {
                 : st.uploading ? "Syncing · sending"
                 : "Syncthing · up to date"
 
-            visible: st.available
+            visible: st.available && (st.paused || st.errorCount > 0 || st.syncing)
             implicitWidth: stText.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse && !syncthingPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
-            onTipChanged: if (containsMouse && !syncthingPanel.open) bar.showTooltip(this, tip)
+            onContainsMouseChanged: containsMouse && !bar.pageOpen("syncthing") ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !bar.pageOpen("syncthing")) bar.showTooltip(this, tip)
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
                     if (st.devices.length > 0)
@@ -1870,7 +1888,8 @@ PanelWindow {
             }
         }
 
-        // Tailscale: left click opens the devices, right click connects or disconnects
+        // Tailscale, only while it's down or using an exit node: left click opens the devices,
+        // right click connects or disconnects
         BarButton {
             id: tsButton
             readonly property var ts: bar.tailscale
@@ -1878,14 +1897,14 @@ PanelWindow {
                 ? `Tailscale · ${ts.ipv4Of(ts.self)}` + (ts.exitNode ? ` · exit node ${ts.nameOf(ts.exitNode)}` : "")
                 : ts.backendState === "NeedsLogin" ? "Tailscale logged out" : "Tailscale off"
 
-            visible: ts.available
+            visible: ts.available && (!ts.running || ts.exitNode !== null)
             implicitWidth: tsIcon.implicitWidth
             Layout.fillHeight: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse && !tailscalePanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
-            onTipChanged: if (containsMouse && !tailscalePanel.open) bar.showTooltip(this, tip)
+            onContainsMouseChanged: containsMouse && !bar.pageOpen("tailscale") ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onTipChanged: if (containsMouse && !bar.pageOpen("tailscale")) bar.showTooltip(this, tip)
             onClicked: mouse => {
                 if (mouse.button === Qt.RightButton) {
                     if (ts.running || ts.backendState === "Stopped")
@@ -1904,18 +1923,19 @@ PanelWindow {
             }
         }
 
-        // Network: left click opens Wi-Fi and wired connections
+        // Network, only while offline or on weak Wi-Fi: left click opens Wi-Fi and wired connections
         BarButton {
             id: netButton
             readonly property string tip: bar.wiredUp ? `Ethernet · ${bar.wiredUp.name}`
                 : bar.wifiNetwork ? `${bar.wifiNetwork.name} (${Math.round(bar.wifiNetwork.signalStrength * 100)}%)`
                 : "Disconnected"
 
+            visible: !bar.wiredUp && (!bar.wifiNetwork || bar.wifiNetwork.signalStrength < 0.4)
             implicitWidth: netIcon.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse && !networkPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
+            onContainsMouseChanged: containsMouse && !bar.pageOpen("network") ? bar.showTooltip(this, tip) : bar.hideTooltip(this)
             onClicked: {
                 bar.hideTooltip(this);
                 bar.toggleNetwork();
@@ -1925,62 +1945,27 @@ PanelWindow {
                 id: netIcon
                 anchors.centerIn: parent
                 text: bar.wiredUp ? "󰈀" : bar.wifiNetwork ? bar.wifiIcon(bar.wifiNetwork.signalStrength) : bar.wifiDevice ? "󰤮" : "󰈂"
-                color: bar.wiredUp || bar.wifiNetwork ? Theme.blue : bar.muted
+                color: bar.wiredUp || bar.wifiNetwork ? Theme.warning : bar.muted
             }
         }
 
-        // Display: left click opens scale and brightness
+        // Control center (ControlCenter.qml)
         BarButton {
-            id: displayButton
-            readonly property var monitor: Hyprland.monitorFor(bar.screen)
-            readonly property string tip: `${monitor?.name ?? "Display"} · scale ${Math.round((monitor?.scale ?? 1) * 100) / 100}×`
-
-            implicitWidth: displayIcon.implicitWidth
+            id: ccButton
+            implicitWidth: ccIcon.implicitWidth
             Layout.fillHeight: true
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            // A scale set by the key or the script isn't in Hyprland's monitor list until asked
-            onContainsMouseChanged: {
-                if (containsMouse)
-                    Hyprland.refreshMonitors();
-                containsMouse && !displayPanel.open ? bar.showTooltip(this, tip) : bar.hideTooltip(this);
-            }
-            onTipChanged: if (containsMouse && !displayPanel.open) bar.showTooltip(this, tip)
+            onContainsMouseChanged: containsMouse && !controlCenter.open ? bar.showTooltip(this, "Control center") : bar.hideTooltip(this)
             onClicked: {
                 bar.hideTooltip(this);
-                bar.toggleDisplay();
+                bar.toggleControlCenter();
             }
 
             BarText {
-                id: displayIcon
+                id: ccIcon
                 anchors.centerIn: parent
-                text: "󰍹"
-            }
-        }
-
-        // Appearance: left click switches light/dark (darkman, which otherwise follows
-        // sunrise and sunset), right click toggles the night light
-        BarButton {
-            implicitWidth: themeIcon.implicitWidth
-            Layout.fillHeight: true
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onContainsMouseChanged: containsMouse ? bar.showTooltip(this, Theme.dark ? "Dark mode" : "Light mode") : bar.hideTooltip(this)
-            onClicked: mouse => {
-                bar.hideTooltip(this);
-                // Straight to scripts/theme if darkman isn't running (it starts with Hyprland)
-                if (mouse.button === Qt.LeftButton)
-                    Quickshell.execDetached(["sh", "-c", `darkman toggle || ~/.config/hypr/scripts/theme ${Theme.dark ? "light" : "dark"}`]);
-                else
-                    Quickshell.execDetached([Quickshell.env("HOME") + "/.config/hypr/scripts/nightlight"]);
-            }
-
-            BarText {
-                id: themeIcon
-                anchors.centerIn: parent
-                text: Theme.dark ? "󰖔" : "󰖙"
-                color: Theme.dark ? Theme.purple : Theme.orange
+                text: "󱕂"
             }
         }
 

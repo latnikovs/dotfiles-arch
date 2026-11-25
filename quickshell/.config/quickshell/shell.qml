@@ -131,5 +131,9 @@ ShellRoot {
         function toggleReminders(): void {
             root.focusedBar()?.toggleReminders();
         }
+
+        function toggleControlCenter(): void {
+            root.focusedBar()?.toggleControlCenter();
+        }
     }
 }

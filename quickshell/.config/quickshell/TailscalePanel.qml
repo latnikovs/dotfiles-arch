@@ -1,11 +1,11 @@
-// Tailscale dropdown, from the VPN icon: an on/off switch, this device, the exit node, and the
+// Tailscale page of the control center (and the VPN icon): an on/off switch, this device, the exit node, and the
 // other devices in the tailnet. Click a device to copy its address, an exit node to route
 // through it. Logged out, it opens the login page in the browser.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 
-Dropdown {
+Page {
     id: panel
 
     required property Tailscale tailscale
@@ -131,7 +131,7 @@ Dropdown {
         LinkText {
             text: "Admin console…"
             onClicked: {
-                panel.open = false;
+                panel.close();
                 Quickshell.execDetached(["xdg-open", "https://login.tailscale.com/admin/machines"]);
             }
         }

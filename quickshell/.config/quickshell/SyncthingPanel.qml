@@ -1,16 +1,15 @@
-// Syncthing dropdown, from the sync icon: a pause switch, each synced folder with its state
+// Syncthing page of the control center (and the sync icon): a pause switch, each synced folder with its state
 // (click opens it), and the paired devices, connected or not, with how far they've got.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 
-Dropdown {
+Page {
     id: panel
 
     required property Syncthing syncthing
     readonly property var st: syncthing
 
-    panelWidth: 360
 
     onOpenChanged: {
         st.watching = open;
@@ -76,7 +75,7 @@ Dropdown {
                 active: !modelData.paused
                 clickable: true
                 onClicked: {
-                    panel.open = false;
+                    panel.close();
                     Quickshell.execDetached(["xdg-open", modelData.path]);
                 }
             }
@@ -107,7 +106,7 @@ Dropdown {
         LinkText {
             text: "Web UI…"
             onClicked: {
-                panel.open = false;
+                panel.close();
                 panel.st.openWebUi();
             }
         }

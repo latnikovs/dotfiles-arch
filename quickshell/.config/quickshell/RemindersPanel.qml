@@ -1,22 +1,21 @@
-// Reminders dropdown, from the reminder icon (left click): each one with when it's due and the
+// Reminders, dropping down from the reminder countdown (left click) and a control center page: each one with when it's due and the
 // time left, soonest first, × to cancel it. "New" asks for another (as does right click on the icon).
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
 
-Dropdown {
+Page {
     id: panel
 
     required property Reminders reminders
 
-    panelWidth: 400
 
-    // The icon goes away with the last one, so the dropdown does too
+    // The countdown goes away with the last one, so this does too
     Connections {
         target: panel.reminders
         function onCountChanged() {
             if (panel.reminders.count === 0)
-                panel.open = false;
+                panel.close();
         }
     }
 
@@ -37,7 +36,7 @@ Dropdown {
             LinkText {
                 text: "Clear"
                 onClicked: {
-                    panel.open = false;
+                    panel.close();
                     panel.reminders.clear();
                 }
             }
@@ -45,7 +44,7 @@ Dropdown {
             LinkText {
                 text: "New"
                 onClicked: {
-                    panel.open = false;
+                    panel.close();
                     panel.reminders.prompt();
                 }
             }

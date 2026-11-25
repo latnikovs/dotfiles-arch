@@ -1,4 +1,4 @@
-// Network dropdown, from the network icon (NetworkManager): wired links with their address,
+// Network page of the control center (NetworkManager; also the network icon): wired links with their address,
 // then Wi-Fi with an on/off switch and the networks in range. Click a network to connect or
 // disconnect; secured networks ask for the password in the row (Ctrl + V pastes it).
 import QtQuick
@@ -7,7 +7,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 
-Dropdown {
+Page {
     id: panel
 
     readonly property var devices: Networking.devices.values
@@ -440,7 +440,7 @@ Dropdown {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    panel.open = false;
+                    panel.close();
                     Quickshell.execDetached(["nm-connection-editor"]);
                 }
             }
