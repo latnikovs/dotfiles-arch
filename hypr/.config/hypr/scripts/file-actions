@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Usage: file-actions FILE [OPEN-COMMAND...]
+# Prints the actions for a "file saved" notification, for notify-send's
+# -h "string:x-dotfiles-actions:$(file-actions FILE)": clicking the card opens FILE (with
+# OPEN-COMMAND FILE, or xdg-open), and a "Show in Files" button shows it selected in the file
+# manager. Quickshell runs them itself (Notifications.qml), so they work from the history too.
+set -euo pipefail
+
+(($# > 0)) || { echo "Usage: file-actions FILE [OPEN-COMMAND...]" >&2; exit 1; }
+file=$(realpath -- "$1")
+shift
+open=("${@:-xdg-open}")
+
+jq -cn --arg file "$file" --args '[
+    {id: "default", text: "Open", command: ($ARGS.positional + [$file])},
+    {id: "folder", text: "Show in Files", command: ["gdbus", "call", "--session",
+        "--dest", "org.freedesktop.FileManager1", "--object-path", "/org/freedesktop/FileManager1",
+        "--method", "org.freedesktop.FileManager1.ShowItems", "[\("file://" + ($file | split("/") | map(@uri) | join("/")) | tojson)]", ""]}
+]' -- "${open[@]}"

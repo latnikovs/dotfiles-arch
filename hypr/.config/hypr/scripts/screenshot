@@ -4,6 +4,7 @@
 #   region    drag a region or click a window
 #   output    capture the focused monitor
 # Saves to ~/Pictures/Screenshots, links it as latest.png and copies it to the clipboard.
+# Clicking the notification opens it; its button shows it in the file manager (also from the history).
 # In Satty, Enter does the same (Esc discards).
 set -euo pipefail
 
@@ -57,4 +58,7 @@ esac
 
 ln -sfn "$file" "$dir/latest.png"
 wl-copy --type image/png < "$file"
-notify-send -a screenshot -u low -i "$file" "Screenshot saved" "${file/#$HOME/\~}" || true
+# Clicking the notification opens the image; its "Show in Files" button opens the folder with the
+# file selected, also from the notification history
+notify-send -a screenshot -u low -i "$file" -h "string:x-dotfiles-actions:$("$HOME"/.config/hypr/scripts/file-actions "$file")" \
+    "Screenshot saved" "${file/#$HOME/\~}" || true

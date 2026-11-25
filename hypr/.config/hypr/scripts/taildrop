@@ -40,17 +40,15 @@ send() {
     fi
 }
 
-# A notification for a received file; clicking it opens the file
+# A notification for a received file; clicking it opens the file, "Show in Files" shows it in
+# the folder, also from the history
 announce() {
     local file=$1 icon=$icons/download-$mode.svg
     case ${file,,} in
         *.png | *.jpg | *.jpeg | *.gif | *.webp | *.avif | *.heic) icon=$file ;;
     esac
-    (
-        action=$(notify-send -a Taildrop -i "$icon" -A default=Open --wait \
-            "Received ${file##*/}" "Saved to ${dir/#$HOME/\~}") || exit 0
-        [[ $action == default ]] && xdg-open "$file"
-    ) &
+    notify-send -a Taildrop -i "$icon" -h "string:x-dotfiles-actions:$("$HOME"/.config/hypr/scripts/file-actions "$file")" \
+        "Received ${file##*/}" "Saved to ${dir/#$HOME/\~}" || true
 }
 
 receive() {

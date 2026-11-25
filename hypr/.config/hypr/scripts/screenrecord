@@ -37,9 +37,10 @@ stop() {
     # Its first frame as the notification's picture (cards take icons as file paths)
     local preview=$runtime/screenrecord-preview.png
     ffmpeg -y -loglevel quiet -ss 0.1 -i "$file" -frames:v 1 -vf scale=320:-1 "$preview" || preview=''
-    action=$(notify-send -a screenrecord ${preview:+-i "$preview"} -A default=Open --wait \
-        "Screen recording saved" "${file/#$HOME/\~}" || true)
-    [[ $action != default ]] || exec mpv --player-operation-mode=pseudo-gui "$file"
+    # Clicking it opens the video in mpv; "Show in Files" shows it in the folder, also from the history
+    notify-send -a screenrecord ${preview:+-i "$preview"} \
+        -h "string:x-dotfiles-actions:$("$HOME"/.config/hypr/scripts/file-actions "$file" mpv --player-operation-mode=pseudo-gui)" \
+        "Screen recording saved" "${file/#$HOME/\~}" || true
 }
 
 # Prints the geometry of a dragged region or clicked window as WxH+X+Y; fails on Escape

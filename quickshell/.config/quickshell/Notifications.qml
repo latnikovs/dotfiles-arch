@@ -43,6 +43,27 @@ Scope {
             historyView.setText(JSON.stringify(history.map(e => Object.assign({}, e, { time: e.time.getTime() }))) + "\n");
     }
 
+    // Actions our own scripts attach as commands, in the hint "x-dotfiles-actions": a JSON list of
+    // { id, text, command: [argv] }. Unlike D-Bus actions, these keep working from the history, after
+    // the sender stopped listening. "default" is the card's own click; the rest get buttons.
+    function commandActions(n) {
+        try {
+            const list = JSON.parse(n.hints["x-dotfiles-actions"] ?? "[]");
+            return Array.isArray(list) ? list.filter(a => a && typeof a.id === "string" && typeof a.text === "string" && Array.isArray(a.command) && a.command.length > 0).map(a => ({ identifier: a.id, text: a.text, command: a.command.map(String) })) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    // Runs the command action `identifier` from `actions`; false when there is none
+    function runCommand(actions, identifier) {
+        const action = (actions ?? []).find(a => a.identifier === identifier && a.command);
+        if (!action)
+            return false;
+        Quickshell.execDetached(action.command);
+        return true;
+    }
+
     // Copied while the notification is live: Quickshell clears its fields by the time `closed` fires
     function snapshot(n) {
         return {
@@ -54,7 +75,8 @@ Scope {
             // image://icon/ (files and theme icons) keeps working
             image: n.image.startsWith("image://") && !n.image.startsWith("image://icon/") ? "" : n.image,
             appIcon: n.appIcon,
-            urgency: n.urgency
+            urgency: n.urgency,
+            commands: commandActions(n)
         };
     }
 
@@ -133,6 +155,10 @@ Scope {
     // Mail, Teams and WhatsApp live on hidden special workspaces, which that can't bring up by itself.
     function activate(n) {
         messaging.reveal(n);
+        if (runCommand(commandActions(n), "default")) {
+            dismiss(n);
+            return;
+        }
         for (let i = 0; i < n.actions.length; i++) {
             if (n.actions[i].identifier === "default") {
                 n.actions[i].invoke();
@@ -145,6 +171,10 @@ Scope {
     // A button on the card (NotificationCard.qml): runs that action, which closes the notification
     // unless the sender marked it resident
     function invoke(n, identifier) {
+        if (runCommand(commandActions(n), identifier)) {
+            dismiss(n);
+            return;
+        }
         const action = n.actions.find(a => a.identifier === identifier);
         if (!action)
             return;
@@ -368,7 +398,7 @@ Scope {
                             image: slot.modelData.image
                             appIcon: root.messaging.iconOf(slot.modelData)
                             urgency: slot.modelData.urgency
-                            actions: slot.modelData.actions
+                            actions: [...slot.modelData.actions, ...root.commandActions(slot.modelData)]
                             progress: {
                                 root.tick;
                                 return root.progress(slot.modelData);

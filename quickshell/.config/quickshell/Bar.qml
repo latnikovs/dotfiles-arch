@@ -1367,7 +1367,8 @@ PanelWindow {
                     model: bar.notifications.history
 
                     // Clicking an entry removes it: the app stopped listening for
-                    // actions when the notification closed.
+                    // actions when the notification closed. Command actions from our own
+                    // scripts (Notifications.qml's commandActions) still run; the entry stays.
                     delegate: NotificationCard {
                         required property var modelData
                         width: ListView.view.width
@@ -1378,9 +1379,18 @@ PanelWindow {
                         appIcon: bar.messaging.iconOf(modelData)
                         urgency: modelData.urgency
                         time: bar.historyTime(modelData.time)
+                        actions: modelData.commands ?? []
                         onActivated: {
+                            if (bar.notifications.runCommand(modelData.commands, "default")) {
+                                bar.notifications.historyOpen = false;
+                                return;
+                            }
                             bar.messaging.reveal(modelData);
                             bar.notifications.forget(modelData.key);
+                        }
+                        onActionInvoked: identifier => {
+                            if (bar.notifications.runCommand(modelData.commands, identifier))
+                                bar.notifications.historyOpen = false;
                         }
                         onCloseRequested: bar.notifications.forget(modelData.key)
                     }
