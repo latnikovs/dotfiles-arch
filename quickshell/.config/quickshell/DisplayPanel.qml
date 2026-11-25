@@ -12,8 +12,19 @@ Page {
 
     readonly property var monitor: Hyprland.monitorFor(panel.bar.screen)
     readonly property real monitorScale: monitor?.scale ?? 1
-    readonly property var scales: [1, 1.25, 1.6, 2]
+    readonly property var scales: [1, 1.25, 1.5, 2]
     readonly property string scripts: Quickshell.env("HOME") + "/.config/hypr/scripts/"
+
+    // The scale Hyprland ends up with for s on this mode, as scripts/monitor-scale rounds it
+    // (whole logical pixels, in 1/120 steps): 1.5 on 2560x1440 is 1.6
+    function fitScale(s) {
+        if (!monitor) return s;
+        const gcd = (a, b) => b ? gcd(b, a % b) : a;
+        const g = gcd(monitor.width * 120, monitor.height * 120);
+        let k = Math.min(Math.round(s * 120), g);
+        while (g % k !== 0) k++;
+        return k / 120;
+    }
 
 
     onOpenChanged: if (open) Hyprland.refreshMonitors()
@@ -105,7 +116,7 @@ Page {
                 delegate: Chip {
                     required property real modelData
                     text: `${modelData}×`
-                    current: Math.abs(panel.monitorScale - modelData) < 0.01
+                    current: Math.abs(panel.monitorScale - panel.fitScale(modelData)) < 0.01
                     onClicked: panel.setScale(modelData)
                 }
             }

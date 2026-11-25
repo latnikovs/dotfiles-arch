@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Usage: monitor-scale [cycle|SCALE] [MONITOR]
 #   A monitor's scale (the focused one by default), after Omarchy's omarchy-hyprland-monitor-scaling:
-#   no argument prints it, cycle steps through 1 → 1.25 → 1.6 → 2 and back to 1, SCALE (1–4) sets it.
+#   no argument prints it, cycle steps through 1 → 1.25 → 1.5 → 2 and back to 1, SCALE (1–4) sets it.
 #   Changed live, and remembered in ~/.local/state/hypr/monitor-scales, which hyprland.lua applies
 #   after local.lua, so a config reload or a new session keeps it; back at 1 the line is dropped.
 set -euo pipefail
 
-scales=(1 1.25 1.6 2)
+scales=(1 1.25 1.5 2)
 state=${XDG_STATE_HOME:-$HOME/.local/state}/hypr/monitor-scales
 
 usage() { echo "Usage: monitor-scale [cycle|SCALE] [MONITOR]" >&2; }
@@ -24,7 +24,7 @@ info=$(hyprctl -j monitors | jq -ec --arg m "$monitor" '.[] | select(.name == $m
 read -r width height refresh current < <(jq -r '"\(.width) \(.height) \(.refreshRate) \(.scale)"' <<<"$info")
 
 # Hyprland takes only scales that divide the mode into whole logical pixels (in 1/120 steps),
-# so round up to the nearest one: 1.6 on 2560x1440 stays 1.6, on other modes it may not
+# so round up to the nearest one: 1.5 on 3840x2160 stays 1.5, on 2560x1440 it becomes 1.6
 clean() {
     awk -v scale="$1" -v w="$width" -v h="$height" '
         function gcd(a, b, t) { while (b) { t = a % b; a = b; b = t } return a }
@@ -43,7 +43,7 @@ case ${1:-} in
         exit 0
         ;;
     cycle)
-        # The next preset above the current scale, so an odd one (say 1.5) goes to 1.6
+        # The next preset above the current scale, so an odd one (say 1.4) goes to 1.5
         target=${scales[0]}
         for s in "${scales[@]}"; do
             if awk -v s="$(clean "$s")" -v c="$current" 'BEGIN { exit !(s > c + 0.001) }'; then
