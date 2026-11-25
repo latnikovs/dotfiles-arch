@@ -1298,10 +1298,10 @@ PanelWindow {
         implicitWidth: 400
         implicitHeight: Math.min(historyColumn.implicitHeight + 26, bar.screen.height * 0.7)
 
-        // Right-aligned with the toasts (Hyprland's gaps_out, 6)
+        // Right-aligned with the toasts (Hyprland's gaps_out, 3)
         anchor {
             window: bar
-            rect.x: bar.width - historyPanel.implicitWidth - 6
+            rect.x: bar.width - historyPanel.implicitWidth - 3
             rect.y: bar.height
             rect.width: 1
             rect.height: 1

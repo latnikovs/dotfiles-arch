@@ -23,7 +23,7 @@ PopupWindow {
     visible: card.shown
     color: "transparent"
     implicitWidth: panelWidth
-    implicitHeight: body.childrenRect.height + 2 * padding + 6
+    implicitHeight: body.childrenRect.height + 2 * padding + card.gap
 
     anchor {
         window: dropdown.bar

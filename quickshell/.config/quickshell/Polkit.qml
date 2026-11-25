@@ -111,7 +111,7 @@ Scope {
             anchors.horizontalCenterOffset: root.shakeOffset
             width: 420
             height: column.implicitHeight + 40
-            radius: 10
+            radius: 5
             color: root.bg
             border.width: 2
             border.color: root.wrong ? root.urgent : root.accent

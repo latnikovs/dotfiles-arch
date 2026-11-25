@@ -57,7 +57,7 @@ Rectangle {
 
     implicitWidth: 380
     implicitHeight: content.implicitHeight + 24
-    radius: 10
+    radius: 5
     color: Theme.bg
     border.width: 2
     border.color: critical ? urgent : accent

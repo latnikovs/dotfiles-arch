@@ -10,9 +10,9 @@ import Quickshell.Services.Notifications
 Scope {
     id: root
 
-    // Below the bar (Bar.qml, height 26) with Hyprland's gaps_out (6)
-    readonly property int topMargin: 26 + 6
-    readonly property int sideMargin: 6
+    // Below the bar (Bar.qml, height 26) with Hyprland's gaps_out (3, hyprland.lua)
+    readonly property int topMargin: 26 + 3
+    readonly property int sideMargin: 3
     readonly property int gap: 6
 
     // Minimum time on screen in ms; critical stays until dismissed. A longer

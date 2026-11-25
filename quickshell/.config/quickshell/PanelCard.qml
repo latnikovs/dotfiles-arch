@@ -14,8 +14,8 @@ Item {
     // 0 hidden under the bar, 1 in place
     property real progress: open ? 1 : 0
 
-    // Gap between the bar and the card
-    readonly property int gap: 6
+    // Gap between the bar and the card: Hyprland's gaps_out (hyprland.lua), so it lines up with the windows
+    readonly property int gap: 3
 
     Behavior on progress {
         NumberAnimation {
@@ -37,7 +37,7 @@ Item {
         color: card.bar.bg
         border.color: card.bar.muted
         border.width: 1
-        radius: 10
+        radius: 5
         focus: true
         Keys.onPressed: event => card.bar.panelKey(event)
     }

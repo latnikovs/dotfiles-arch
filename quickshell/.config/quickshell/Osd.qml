@@ -122,7 +122,7 @@ Scope {
 
         Rectangle {
             anchors.fill: parent
-            radius: 10
+            radius: 5
             color: Theme.bg
             border.width: 2
             border.color: Theme.accent
